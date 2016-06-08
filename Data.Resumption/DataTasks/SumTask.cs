@@ -25,11 +25,11 @@ namespace Data.Resumption.DataTasks
 
         public StepState<TSum> Step()
         {
-            var steps = _tasks.Select(t => t.Step());
             var sum = _accumulator;
             var pendings = new List<RequestsPending<T>>();
-            foreach (var step in steps)
+            foreach (var task in _tasks)
             {
+                var step = task.Step();
                 step.Match(pending =>
                 {
                     pendings.Add(pending);

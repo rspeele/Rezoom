@@ -60,48 +60,47 @@ namespace Data.Resumption.DataTasks
                     // If only one failed, the other needs to get an exception so it can recover.
                     if (functionException != null)
                     {
-                        try
-                        {
-                            inputNext?.Step().Match(pending => pending.Resume(new BatchAbortion<SuccessOrException>()), _ => null);
-                        }
-                        catch (Exception nextEx)
-                        {
-                            throw new AggregateException(functionException, nextEx);
-                        }
-                        ExceptionDispatchInfo.Capture(functionException).Throw();
-                        throw functionException; // should be impossible to get here
+                        inputNext.Abort(functionException);
+                        throw functionException;
                     }
-                    // ReSharper disable once RedundantIfElseBlock it looks better this way
-                    else
-                    {
-                        try
-                        {
-                            functionNext?.Step().Match(pending => pending.Resume(new BatchAbortion<SuccessOrException>()), _ => null);
-                        }
-                        catch (Exception nextEx)
-                        {
-                            throw new AggregateException(inputException, nextEx);
-                        }
-                        ExceptionDispatchInfo.Capture(inputException).Throw();
-                        throw inputException; // should be impossible to get here
-                    }
+                    functionNext.Abort(inputException);
+                    throw inputException;
                 });
 
         public StepState<TOut> Step()
         {
-            var functionStep = _functionTask.Step();
-            var inputStep = _inputTask.Step();
-            return functionStep.Match
-                (functionPending => inputStep.Match(inputPending =>
-                    {
-                        var bothPending = BothPending(functionPending, inputPending);
-                        return StepState.Pending(bothPending);
-                    }
-                , result => StepState.Pending
-                    ( functionPending.Map(dt => dt.Select(f => f(result)))))
-                    , function => inputStep.Match
-                        ( inputPending => StepState.Pending(inputPending.Map(dt => dt.Select(function)))
-                        , input => StepState.Result(function(input))));
+            Exception functionException = null, inputException = null;
+            StepState<Func<TIn, TOut>> functionStep = null;
+            StepState<TIn> inputStep = null;
+            try { functionStep = _functionTask.Step(); }
+            catch (Exception ex) { functionException = ex; }
+            try { inputStep = _inputTask.Step(); }
+            catch (Exception ex) { inputException = ex; }
+            if (functionException == null && inputException == null)
+            {
+                return functionStep.Match
+                    ( functionPending => inputStep.Match(inputPending =>
+                        {
+                            var bothPending = BothPending(functionPending, inputPending);
+                            return StepState.Pending(bothPending);
+                        }
+                    , result => StepState.Pending
+                        ( functionPending.Map(dt => dt.Select(f => f(result)))))
+                        , function => inputStep.Match
+                            ( inputPending => StepState.Pending(inputPending.Map(dt => dt.Select(function)))
+                            , input => StepState.Result(function(input))));
+            }
+            if (functionException != null && inputException != null)
+            {
+                throw new AggregateException(functionException, inputException);
+            }
+            if (functionException != null)
+            {
+                inputStep.Abort(functionException);
+                throw functionException;
+            }
+            functionStep.Abort(inputException);
+            throw inputException;
         }
     }
 }
