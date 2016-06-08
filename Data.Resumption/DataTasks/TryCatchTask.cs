@@ -29,12 +29,20 @@ namespace Data.Resumption.DataTasks
                             {
                                 return new TryCatchTask<T>(pending.Resume(response), _exceptionHandler);
                             }
+                            catch (DataTaskAbortException)
+                            {
+                                throw; // we don't allow catching these
+                            }
                             catch (Exception ex)
                             {
                                 return _exceptionHandler(ex);
                             }
                         }))
                     , StepState.Result);
+            }
+            catch (DataTaskAbortException)
+            {
+                throw; // we don't allow catching these
             }
             catch (Exception ex)
             {
