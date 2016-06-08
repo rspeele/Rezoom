@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.ExceptionServices;
 
 namespace Data.Resumption.DataTasks
 {
@@ -67,7 +68,8 @@ namespace Data.Resumption.DataTasks
                         {
                             throw new AggregateException(functionException, nextEx);
                         }
-                        throw functionException;
+                        ExceptionDispatchInfo.Capture(functionException).Throw();
+                        throw functionException; // should be impossible to get here
                     }
                     // ReSharper disable once RedundantIfElseBlock it looks better this way
                     else
@@ -80,7 +82,8 @@ namespace Data.Resumption.DataTasks
                         {
                             throw new AggregateException(inputException, nextEx);
                         }
-                        throw inputException;
+                        ExceptionDispatchInfo.Capture(inputException).Throw();
+                        throw inputException; // should be impossible to get here
                     }
                 });
 
