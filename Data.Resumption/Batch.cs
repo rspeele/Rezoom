@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,13 +10,15 @@ namespace Data.Resumption
     /// Used to represent a batch of data requests, and their eventual responses in the same tree shape.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class Batch<T>
+    public abstract class Batch<T> : IEnumerable<T>
     {
         public abstract Batch<TOut> Map<TOut>(Func<T, TOut> mapping);
         public abstract BatchLeaf<T> AssumeLeaf();
         public abstract BatchBranchN<T> AssumeBranchN();
         public abstract BatchBranch2<T> AssumeBranch2();
+        public abstract IEnumerator<T> GetEnumerator();
 
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
     public sealed class BatchBranchN<T> : Batch<T>
     {
@@ -40,6 +43,8 @@ namespace Data.Resumption
         {
             throw new InvalidOperationException("BranchN assumed to be a Branch2");
         }
+
+        public override IEnumerator<T> GetEnumerator() => Children.SelectMany(c => c).GetEnumerator();
     }
     public sealed class BatchBranch2<T> : Batch<T>
     {
@@ -56,6 +61,7 @@ namespace Data.Resumption
             => new BatchBranch2<TOut>(Left.Map(mapping), Right.Map(mapping));
 
         public override BatchBranch2<T> AssumeBranch2() => this;
+        public override IEnumerator<T> GetEnumerator() => new[] { Left, Right }.SelectMany(c => c).GetEnumerator();
 
         public override BatchLeaf<T> AssumeLeaf()
         {
@@ -89,5 +95,7 @@ namespace Data.Resumption
         {
             throw new InvalidOperationException("Leaf assumed to be a Branch2");
         }
+
+        public override IEnumerator<T> GetEnumerator() => new[] { Element }.AsEnumerable().GetEnumerator();
     }
 }

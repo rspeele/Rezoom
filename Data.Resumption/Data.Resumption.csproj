@@ -41,10 +41,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Batch.cs" />
-    <Compile Include="DataTasks\ApplicativeTask.cs" />
+    <Compile Include="DataTasks\ApplyTask.cs" />
     <Compile Include="DataTasks\BindTask.cs" />
     <Compile Include="DataTasks\SumTask.cs" />
-    <Compile Include="DataTasks\Extensions.cs" />
+    <Compile Include="DataTasks\DataTask.cs" />
     <Compile Include="DataTasks\MapTask.cs" />
     <Compile Include="DataTasks\RequestTask.cs" />
     <Compile Include="DataTasks\ReturnTask.cs" />
