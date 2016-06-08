@@ -16,7 +16,7 @@
                 {
                     var response = (TResult)batch.AssumeLeaf().Element;
                     return new ReturnTask<TResult>(response);
-                }, _ => null);
+                });
         }
 
         public StepState<TResult> Step() => StepState.Pending(_pending);

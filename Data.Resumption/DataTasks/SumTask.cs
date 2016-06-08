@@ -44,19 +44,6 @@ namespace Data.Resumption.DataTasks
                     var branchN = response.AssumeBranchN();
                     var nextTasks = branchN.Children.Zip(pendings, (subResponse, subPending) => subPending.Resume(subResponse));
                     return new SumTask<T, TSum>(nextTasks, sum, _add);
-                }
-                , exceptions =>
-                {
-                    var branchN = exceptions.AssumeBranchN();
-                    var toRethrow = new List<Exception>();
-                    var toContinue = new List<IDataTask<T>>();
-                    var pairs = branchN.Children.Zip(pendings, (subExceptions, subPending) => new { subExceptions, subPending });
-                    var allGood = true;
-                    foreach (var pair in pairs)
-                    {
-                        
-                    }
-                    return null;
                 });
             return StepState.Pending(sumPending);
         }

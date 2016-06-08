@@ -36,32 +36,6 @@ namespace Data.Resumption.DataTasks
                                 var functionNext = functionPending.Resume(branch.Left);
                                 var inputNext = inputPending.Resume(branch.Right);
                                 return new ApplyTask<T, TOut>(functionNext, inputNext);
-                            }
-                            , exceptions =>
-                            {
-                                IDataTask<Func<T, TOut>> functionHandled = null;
-                                Exception rethrowLeft = null;
-                                var branch = exceptions.AssumeBranch2();
-                                try
-                                {
-                                    functionHandled = functionPending.OnException(branch.Left);
-                                }
-                                catch (Exception ex) // catch and rethrow later, so the input task gets a chance to handle its exception (finally)
-                                {
-                                    rethrowLeft = ex;
-                                }
-                                try
-                                {
-                                    var inputHandled = inputPending.OnException(branch.Right);
-                                    if (rethrowLeft != null) throw rethrowLeft;
-                                    if (functionHandled == null && inputHandled != null) return null;
-                                    return new ApplyTask<T, TOut>(functionHandled, inputHandled);
-                                }
-                                catch (Exception ex)
-                                {
-                                    if (rethrowLeft != null && rethrowLeft != ex) throw new AggregateException(rethrowLeft, ex);
-                                    throw;
-                                }
                             });
                         return StepState.Pending(bothPending);
                     }
