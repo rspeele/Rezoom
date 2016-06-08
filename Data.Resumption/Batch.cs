@@ -20,6 +20,27 @@ namespace Data.Resumption
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
+    public sealed class BatchAbortion<T> : Batch<T>
+    {
+        public override Batch<TOut> Map<TOut>(Func<T, TOut> mapping) => new BatchAbortion<TOut>();
+
+        public override BatchLeaf<T> AssumeLeaf()
+        {
+            throw new DataTaskAbortException();
+        }
+
+        public override BatchBranchN<T> AssumeBranchN()
+        {
+            throw new DataTaskAbortException();
+        }
+
+        public override BatchBranch2<T> AssumeBranch2()
+        {
+            throw new DataTaskAbortException();
+        }
+
+        public override IEnumerator<T> GetEnumerator() => Enumerable.Empty<T>().GetEnumerator();
+    }
     public sealed class BatchBranchN<T> : Batch<T>
     {
         public BatchBranchN(IReadOnlyList<Batch<T>> children)

@@ -8,18 +8,81 @@ namespace Data.Resumption.DataTasks
     /// to execute "interleaved", since they are not dependent on each other until
     /// the end.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TIn"></typeparam>
     /// <typeparam name="TOut"></typeparam>
-    public class ApplyTask<T, TOut> : IDataTask<TOut>
+    public class ApplyTask<TIn, TOut> : IDataTask<TOut>
     {
-        private readonly IDataTask<Func<T, TOut>> _functionTask;
-        private readonly IDataTask<T> _inputTask;
+        private readonly IDataTask<Func<TIn, TOut>> _functionTask;
+        private readonly IDataTask<TIn> _inputTask;
 
-        public ApplyTask(IDataTask<Func<T, TOut>> functionTask, IDataTask<T> inputTask)
+        public ApplyTask(IDataTask<Func<TIn, TOut>> functionTask, IDataTask<TIn> inputTask)
         {
             _functionTask = functionTask;
             _inputTask = inputTask;
         }
+
+        private static RequestsPending<TOut> BothPending(RequestsPending<Func<TIn, TOut>> functionPending, RequestsPending<TIn> inputPending)
+            => new RequestsPending<TOut>
+            (new BatchBranch2<IDataRequest>(functionPending.Requests, inputPending.Requests)
+                , responses =>
+                {
+                    var branch = responses.AssumeBranch2();
+                    Exception functionException = null, inputException = null;
+                    IDataTask<Func<TIn, TOut>> functionNext = null;
+                    IDataTask<TIn> inputNext = null;
+                    try
+                    {
+                        functionNext = functionPending.Resume(branch.Left);
+                    }
+                    catch (Exception ex)
+                    {
+                        functionException = ex;
+                    }
+                    try
+                    {
+                        inputNext = inputPending.Resume(branch.Right);
+                    }
+                    catch (Exception ex)
+                    {
+                        inputException = ex;
+                    }
+                    if (functionException == null && inputException == null)
+                    {
+                        return new ApplyTask<TIn, TOut>(functionNext, inputNext);
+                    }
+                    // We got exceptions in one or both tasks, which they failed to recover from.
+                    // If they both failed, they'll have already run their `finally` code. We can safely bail.
+                    if (functionException != null && inputException != null)
+                    {
+                        throw new AggregateException(functionException, inputException);
+                    }
+                    // If only one failed, the other needs to get an exception so it can recover.
+                    if (functionException != null)
+                    {
+                        try
+                        {
+                            inputNext?.Step().Match(pending => pending.Resume(new BatchAbortion<SuccessOrException>()), _ => null);
+                        }
+                        catch (Exception nextEx)
+                        {
+                            throw new AggregateException(functionException, nextEx);
+                        }
+                        throw functionException;
+                    }
+                    // ReSharper disable once RedundantIfElseBlock it looks better this way
+                    else
+                    {
+                        try
+                        {
+                            functionNext?.Step().Match(pending => pending.Resume(new BatchAbortion<SuccessOrException>()), _ => null);
+                        }
+                        catch (Exception nextEx)
+                        {
+                            throw new AggregateException(inputException, nextEx);
+                        }
+                        throw inputException;
+                    }
+                });
 
         public StepState<TOut> Step()
         {
@@ -28,15 +91,7 @@ namespace Data.Resumption.DataTasks
             return functionStep.Match
                 (functionPending => inputStep.Match(inputPending =>
                     {
-                        var bothPending = new RequestsPending<TOut>
-                            ( new BatchBranch2<IDataRequest>(functionPending.Requests, inputPending.Requests)
-                            , responses =>
-                            {
-                                var branch = responses.AssumeBranch2();
-                                var functionNext = functionPending.Resume(branch.Left);
-                                var inputNext = inputPending.Resume(branch.Right);
-                                return new ApplyTask<T, TOut>(functionNext, inputNext);
-                            });
+                        var bothPending = BothPending(functionPending, inputPending);
                         return StepState.Pending(bothPending);
                     }
                 , result => StepState.Pending

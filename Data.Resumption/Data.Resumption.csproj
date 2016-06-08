@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Batch.cs" />
+    <Compile Include="DataTaskAbortException.cs" />
     <Compile Include="DataTasks\ApplyTask.cs" />
     <Compile Include="DataTasks\BindTask.cs" />
     <Compile Include="DataTasks\SumTask.cs" />
@@ -49,6 +50,7 @@
     <Compile Include="DataTasks\RequestTask.cs" />
     <Compile Include="DataTasks\ReturnTask.cs" />
     <Compile Include="DataTasks\TryCatchTask.cs" />
+    <Compile Include="DataTasks\TryFinallyTask.cs" />
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
     <Compile Include="IServiceContext.cs" />
