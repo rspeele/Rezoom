@@ -53,6 +53,7 @@
     <Compile Include="DataTasks\TryFinallyTask.cs" />
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
+    <Compile Include="InternalExtensions.cs" />
     <Compile Include="IServiceContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequestsPending.cs" />
