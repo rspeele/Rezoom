@@ -12,20 +12,20 @@ namespace Data.Resumption
     /// </remarks>
     public class DataTaskAbortException : Exception
     {
-        public DataTaskAbortException()
+        internal DataTaskAbortException()
             : this("This data task has been aborted due to an unhandled exception in a concurrently applied task")
         {
         }
 
-        public DataTaskAbortException(string message) : base(message)
+        internal DataTaskAbortException(string message) : base(message)
         {
         }
 
-        public DataTaskAbortException(string message, Exception innerException) : base(message, innerException)
+        internal DataTaskAbortException(string message, Exception innerException) : base(message, innerException)
         {
         }
 
-        protected DataTaskAbortException(SerializationInfo info, StreamingContext context) : base(info, context)
+        internal DataTaskAbortException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }
