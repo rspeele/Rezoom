@@ -4,7 +4,7 @@ namespace Data.Resumption
 {
     public abstract class StepState<TResult>
     {
-        public abstract T Visit<T>(Func<RequestsPending<TResult>, T> onPending, Func<TResult, T> onResult);
+        public abstract T Match<T>(Func<RequestsPending<TResult>, T> onPending, Func<TResult, T> onResult);
     }
 
     internal class PendingStepState<TResult> : StepState<TResult>
@@ -16,7 +16,7 @@ namespace Data.Resumption
             _pending = pending;
         }
 
-        public override T Visit<T>(Func<RequestsPending<TResult>, T> onPending, Func<TResult, T> onResult)
+        public override T Match<T>(Func<RequestsPending<TResult>, T> onPending, Func<TResult, T> onResult)
             => onPending(_pending);
     }
 
@@ -29,7 +29,7 @@ namespace Data.Resumption
             _result = result;
         }
 
-        public override T Visit<T>(Func<RequestsPending<TResult>, T> onPending, Func<TResult, T> onResult)
+        public override T Match<T>(Func<RequestsPending<TResult>, T> onPending, Func<TResult, T> onResult)
             => onResult(_result);
     }
 

@@ -22,7 +22,7 @@ namespace Data.Resumption.DataTasks
         public StepState<TOut> Step()
         {
             var state = _bound.Step();
-            return state.Visit(pending =>
+            return state.Match(pending =>
             {
                 var mapped = pending.Map(next => new MapTask<TIn, TOut>(next, _mapping));
                 return StepState.Pending(mapped);

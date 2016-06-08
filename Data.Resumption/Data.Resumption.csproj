@@ -48,6 +48,7 @@
     <Compile Include="DataTasks\MapTask.cs" />
     <Compile Include="DataTasks\RequestTask.cs" />
     <Compile Include="DataTasks\ReturnTask.cs" />
+    <Compile Include="DataTasks\TryCatchTask.cs" />
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
     <Compile Include="IServiceContext.cs" />
@@ -55,6 +56,7 @@
     <Compile Include="RequestsPending.cs" />
     <Compile Include="SingleOrMany.cs" />
     <Compile Include="StepState.cs" />
+    <Compile Include="SuccessOrException.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Execution\" />

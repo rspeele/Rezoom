@@ -30,7 +30,7 @@ namespace Data.Resumption.DataTasks
             var pendings = new List<RequestsPending<T>>();
             foreach (var step in steps)
             {
-                step.Visit(pending =>
+                step.Match(pending =>
                 {
                     pendings.Add(pending);
                     return default(TSum);

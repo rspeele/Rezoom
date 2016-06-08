@@ -14,8 +14,8 @@
                 ( new BatchLeaf<IDataRequest>(dataRequest)
                 , batch =>
                 {
-                    var response = (TResult)batch.AssumeLeaf().Element;
-                    return new ReturnTask<TResult>(response);
+                    var success = (TResult)batch.AssumeLeaf().Element.Success;
+                    return new ReturnTask<TResult>(success);
                 });
         }
 

@@ -25,8 +25,8 @@ namespace Data.Resumption.DataTasks
         {
             var functionStep = _functionTask.Step();
             var inputStep = _inputTask.Step();
-            return functionStep.Visit
-                (functionPending => inputStep.Visit(inputPending =>
+            return functionStep.Match
+                (functionPending => inputStep.Match(inputPending =>
                     {
                         var bothPending = new RequestsPending<TOut>
                             ( new BatchBranch2<IDataRequest>(functionPending.Requests, inputPending.Requests)
@@ -41,7 +41,7 @@ namespace Data.Resumption.DataTasks
                     }
                 , result => StepState.Pending
                     ( functionPending.Map(dt => dt.Select(f => f(result)))))
-                    , function => inputStep.Visit
+                    , function => inputStep.Match
                         ( inputPending => StepState.Pending(inputPending.Map(dt => dt.Select(function)))
                         , input => StepState.Result(function(input))));
         }

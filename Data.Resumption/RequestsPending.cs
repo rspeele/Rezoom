@@ -6,7 +6,7 @@ namespace Data.Resumption
     {
         public RequestsPending
             ( Batch<IDataRequest> requests
-            , Func<Batch<object>, IDataTask<TResult>> resume
+            , Func<Batch<SuccessOrException>, IDataTask<TResult>> resume
             )
         {
             Requests = requests;
@@ -14,7 +14,7 @@ namespace Data.Resumption
         }
 
         public Batch<IDataRequest> Requests { get; }
-        public Func<Batch<object>, IDataTask<TResult>> Resume { get; }
+        public Func<Batch<SuccessOrException>, IDataTask<TResult>> Resume { get; }
 
         public RequestsPending<TOutResult> Map<TOutResult>(Func<IDataTask<TResult>, IDataTask<TOutResult>> mapping)
         {
