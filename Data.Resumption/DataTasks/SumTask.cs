@@ -27,9 +27,27 @@ namespace Data.Resumption.DataTasks
         {
             var sum = _accumulator;
             var pendings = new List<RequestsPending<T>>();
+            var stepped = new List<StepState<T>>();
+            var failed = new List<Exception>();
             foreach (var task in _tasks)
             {
-                var step = task.Step();
+                try
+                {
+                    stepped.Add(task.Step());
+                }
+                catch (Exception ex)
+                {
+                    failed.Add(ex);
+                }
+            }
+            if (failed.Count > 0)
+            {
+                var cause = new AggregateException(failed);
+                stepped.AbortMany(cause);
+                throw cause;
+            }
+            foreach (var step in stepped)
+            {
                 step.Match(pending =>
                 {
                     pendings.Add(pending);
@@ -42,8 +60,24 @@ namespace Data.Resumption.DataTasks
                 , response =>
                 {
                     var branchN = response.AssumeBranchN();
-                    var nextTasks = branchN.Children.Zip(pendings, (subResponse, subPending) => subPending.Resume(subResponse));
-                    return new SumTask<T, TSum>(nextTasks, sum, _add);
+                    var subSucceeded = new List<IDataTask<T>>();
+                    var subFailed = new List<Exception>();
+                    for (var i = 0; i < pendings.Count; i++)
+                    {
+                        var subResponse = branchN.Children[i];
+                        try
+                        {
+                            subSucceeded.Add(pendings[i].Resume(subResponse));
+                        }
+                        catch (Exception ex)
+                        {
+                            subFailed.Add(ex);
+                        }
+                    }
+                    if (subFailed.Count <= 0) return new SumTask<T, TSum>(subSucceeded, sum, _add);
+                    var cause = new AggregateException(subFailed);
+                    subSucceeded.AbortMany(cause);
+                    throw cause;
                 });
             return StepState.Pending(sumPending);
         }
