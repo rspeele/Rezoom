@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Data.Resumption", "Data.Res
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Data.Resumption.Workflows", "Data.Resumption.Workflows\Data.Resumption.Workflows.fsproj", "{D98ACBEB-A039-4340-A7C5-6ED2B677268B}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Data.Resumption.Test", "Data.Resumption.Test\Data.Resumption.Test.fsproj", "{F5167029-2918-46B5-A3A6-AB4A91B231A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{D98ACBEB-A039-4340-A7C5-6ED2B677268B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D98ACBEB-A039-4340-A7C5-6ED2B677268B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D98ACBEB-A039-4340-A7C5-6ED2B677268B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F5167029-2918-46B5-A3A6-AB4A91B231A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5167029-2918-46B5-A3A6-AB4A91B231A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5167029-2918-46B5-A3A6-AB4A91B231A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5167029-2918-46B5-A3A6-AB4A91B231A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

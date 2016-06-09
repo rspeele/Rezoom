@@ -3,7 +3,7 @@ using Data.Resumption.Services;
 
 namespace Data.Resumption.Execution
 {
-    public class ExecutionContext
+    public class ExecutionContext : IServiceContext
     {
         private readonly ServiceContext _serviceContext;
         private readonly ResponseCache _responseCache = new ResponseCache();
@@ -45,10 +45,12 @@ namespace Data.Resumption.Execution
                     {
                         executing = false;
                         end = result;
-                        return null;
+                        return Task.FromResult<IDataTask<T>>(null);
                     });
             }
             return end;
         }
+
+        public TService GetService<TService>() => _serviceContext.GetService<TService>();
     }
 }

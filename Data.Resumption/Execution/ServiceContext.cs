@@ -54,7 +54,8 @@ namespace Data.Resumption.Execution
             {
                 var ty = typeof(TService);
                 object service;
-                if (_step.TryGetService(ty, out service) || _execution.TryGetService(ty, out service))
+                if (_step != null && _step.TryGetService(ty, out service)
+                    || _execution.TryGetService(ty, out service))
                 {
                     return (TService)service;
                 }

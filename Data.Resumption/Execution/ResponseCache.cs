@@ -6,10 +6,10 @@ namespace Data.Resumption.Execution
     internal class ResponseCache
     {
         private readonly DataSourceCache _nullDataSource = new DataSourceCache(null);
-        private readonly Dictionary<IComparable, DataSourceCache> _dataSources
-            = new Dictionary<IComparable, DataSourceCache>();
+        private readonly Dictionary<object, DataSourceCache> _dataSources
+            = new Dictionary<object, DataSourceCache>();
 
-        public void Store(IComparable dataSource, IComparable identity, SuccessOrException response)
+        public void Store(object dataSource, object identity, SuccessOrException response)
         {
             if (dataSource == null)
             {
@@ -27,7 +27,7 @@ namespace Data.Resumption.Execution
             }
         }
 
-        public void Invalidate(IComparable dataSource)
+        public void Invalidate(object dataSource)
         {
             if (dataSource == null)
             {
@@ -39,7 +39,7 @@ namespace Data.Resumption.Execution
             }
         }
 
-        public SuccessOrException? CheckCache(IComparable dataSource, IComparable identity)
+        public SuccessOrException? CheckCache(object dataSource, object identity)
         {
             if (dataSource == null)
             {

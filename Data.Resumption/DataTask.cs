@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Data.Resumption.DataTasks;
 
 namespace Data.Resumption
 {
     public static class DataTask
     {
+        public static IDataRequest<T> ToDataRequest<T>(this Func<Task<T>> asyncTask)
+            => new OpaqueAsyncDataRequest<T>(asyncTask);
+        public static IDataTask<T> ToDataTask<T>(this Func<Task<T>> asyncTask)
+            => asyncTask.ToDataRequest().ToDataTask();
         public static IDataTask<T> ToDataTask<T>(this IDataRequest<T> dataRequest)
             => new RequestTask<T>(dataRequest);
 

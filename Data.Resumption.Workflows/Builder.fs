@@ -2,10 +2,17 @@
 module Data.Resumption.Builder
 open Data.Resumption
 open System
+open System.Threading.Tasks
 
 /// Wrapper type to indicate computations should be evaluated in strict sequence
 /// with `DataMonad.bind` instead of concurrently combined with `DataMonad.apply`.
 type Strict<'a> = Strict of 'a
+
+/// Mark a data task or sequence to be evaluated in strict sequence.
+let strict x = Strict x
+
+/// Convert a TPL task to a data task.
+let await (task : unit -> Task<'a>) = (Func<_>(task)).ToDataTask()
 
 type DataTaskBuilder() =
     member __.Zero : IDataTask<unit> =
@@ -25,11 +32,12 @@ type DataTaskBuilder() =
                 (continuation Unchecked.defaultof<'a>)
         else
             DataMonad.bind task continuation
-
-    member __.Bind(Strict task, continuation) : IDataTask<_> =
-        DataMonad.bind task (fun _ -> continuation())
-    member __.Bind(task, continuation) : IDataTask<_> =
-        DataMonad.combineLazy task continuation
+    member __.Bind((taskA, taskB), continuation) =
+        DataMonad.bind (datatuple2 taskA taskB) continuation
+    member __.Bind((taskA, taskB, taskC), continuation) =
+        DataMonad.bind (datatuple3 taskA taskB taskC) continuation
+    member __.Bind((taskA, taskB, taskC, taskD), continuation) =
+        DataMonad.bind (datatuple4 taskA taskB taskC taskD) continuation
 
     member __.Using(disposable : #IDisposable, body) =
         let dispose () =

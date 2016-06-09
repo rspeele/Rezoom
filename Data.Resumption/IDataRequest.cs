@@ -23,21 +23,21 @@ namespace Data.Resumption
         /// <remarks>
         /// Ideally, identity objects should be serializable, but this is not required.
         /// </remarks>
-        IComparable Identity { get; }
+        object Identity { get; }
         /// <summary>
         /// If non-null, identifies a data source that this request's caching should be localized to.
         /// </summary>
         /// <remarks>
         /// This allows mutations to only wipe out relevant cache information, instead of the entire cache.
         /// </remarks>
-        IComparable DataSource { get; }
+        object DataSource { get; }
         /// <summary>
         /// If non-null, this request should not be executed concurrently with others in the same `SequenceGroup`.
         /// </summary>
         /// <remarks>
         /// Useful for ensuring sequential access to e.g. database contexts with `SaveChangesAsync()`.
         /// </remarks>
-        IComparable SequenceGroup { get; }
+        object SequenceGroup { get; }
         /// <summary>
         /// If true, executing this request more than once is indistinguishable from executing it once.
         /// </summary>

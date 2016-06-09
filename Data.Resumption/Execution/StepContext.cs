@@ -11,10 +11,10 @@ namespace Data.Resumption.Execution
         private readonly IServiceContext _serviceContext;
         private readonly ResponseCache _cache;
         private readonly List<Func<Task>> _unsequenced = new List<Func<Task>>();
-        private readonly Dictionary<IComparable, List<Func<Task>>> _sequenceGroups
-            = new Dictionary<IComparable, List<Func<Task>>>();
-        private readonly Dictionary<IComparable, Func<SuccessOrException>> _deduped
-            = new Dictionary<IComparable, Func<SuccessOrException>>();
+        private readonly Dictionary<object, List<Func<Task>>> _sequenceGroups
+            = new Dictionary<object, List<Func<Task>>>();
+        private readonly Dictionary<object, Func<SuccessOrException>> _deduped
+            = new Dictionary<object, Func<SuccessOrException>>();
 
         public StepContext(IServiceContext serviceContext, ResponseCache cache)
         {
