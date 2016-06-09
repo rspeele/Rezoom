@@ -47,6 +47,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Environment.fs" />
     <Compile Include="TestConcurrency.fs" />
+    <Compile Include="TestCaching.fs" />
     <Compile Include="TestExceptionCatching.fs" />
     <Compile Include="TestExceptionFinally.fs" />
   </ItemGroup>

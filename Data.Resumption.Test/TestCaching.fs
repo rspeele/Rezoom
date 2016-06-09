@@ -3,41 +3,40 @@ open Data.Resumption
 open Microsoft.VisualStudio.TestTools.UnitTesting
 
 [<TestClass>]
-type TestConcurrency() =
+type TestCaching() =
     [<TestMethod>]
-    member __.TestStrictPair() =
+    member __.TestStrictCachedPair() =
         {
             Task = fun () ->
                 datatask {
-                    let! q = send "q"
-                    let! r = send "r"
-                    return q + r
+                    let! q1 = send "q"
+                    let! q2 = send "q"
+                    return q1 + q2
                 }
             Batches =
                 [
                     [ "q" ]
-                    [ "r" ]
                 ]
-            Result = Good "qr"
+            Result = Good "qq"
         } |> test
         
     [<TestMethod>]
-    member __.TestConcurrentPair() =
+    member __.TestConcurrentCachedPair() =
         {
             Task = fun () ->
                 datatask {
-                    let! q, r = send "q", send "r"
-                    return q + r
+                    let! q1, q2 = send "q", send "q"
+                    return q1 + q2
                 }
             Batches =
                 [
-                    [ "q"; "r" ]
+                    [ "q" ]
                 ]
-            Result = Good "qr"
+            Result = Good "qq"
         } |> test
 
     [<TestMethod>]
-    member __.TestChainingConcurrency() =
+    member __.TestChainingCachedConcurrency() =
         let testTask x =
             datatask {
                 let! a = send (x + "1")
@@ -48,15 +47,15 @@ type TestConcurrency() =
         {
             Task = fun () ->
                 datatask {
-                    let! x, y, z =
-                        testTask "x", testTask "y", testTask "z"
-                    return x + " " + y + " " + z
+                    let! x1, x2, x3 =
+                        testTask "x", testTask "x", testTask "x"
+                    return x1 + " " + x2 + " " + x3
                 }
             Batches =
                 [
-                    [ "x1"; "y1"; "z1" ]
-                    [ "x2"; "y2"; "z2" ]
-                    [ "x3"; "y3"; "z3" ]
+                    [ "x1" ]
+                    [ "x2" ]
+                    [ "x3" ]
                 ]
-            Result = Good "x1x2x3 y1y2y3 z1z2z3"
+            Result = Good "x1x2x3 x1x2x3 x1x2x3"
         } |> test

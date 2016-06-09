@@ -37,6 +37,7 @@ type TestServiceFactory() =
 
 type TestRequest<'a>(query : string, pre : unit -> unit, post : string -> 'a) =
     inherit SynchronousDataRequest<'a>()
+    override __.Idempotent = true
     override __.DataSource = box typeof<TestContext>
     override __.Identity = box query
     override __.PrepareSynchronous(serviceContext) =
