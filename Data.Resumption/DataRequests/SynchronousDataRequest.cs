@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Data.Resumption.Services;
 
-namespace Data.Resumption
+namespace Data.Resumption.DataRequests
 {
     /// <summary>
     /// Abstract base class for data requests that do not use TPL tasks for data retrieval.

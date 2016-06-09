@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Data.Resumption.Services;
 
-namespace Data.Resumption
+namespace Data.Resumption.DataRequests
 {
     /// <summary>
     /// Abstract base class to help define data requests.

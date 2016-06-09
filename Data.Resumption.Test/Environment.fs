@@ -1,6 +1,7 @@
 ﻿[<AutoOpen>]
 module Data.Resumption.Test.Environment
 open Data.Resumption
+open Data.Resumption.DataRequests
 open Data.Resumption.Services
 open Data.Resumption.Execution
 open System

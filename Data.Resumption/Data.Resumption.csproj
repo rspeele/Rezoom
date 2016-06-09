@@ -40,7 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataRequest.cs" />
+    <Compile Include="DataRequests\DataRequest.cs" />
     <Compile Include="Batch.cs" />
     <Compile Include="DataTaskAbortException.cs" />
     <Compile Include="DataTasks\ApplyTask.cs" />
@@ -60,7 +60,7 @@
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
     <Compile Include="InternalExtensions.cs" />
-    <Compile Include="OpaqueAsyncDataRequest.cs" />
+    <Compile Include="DataRequests\OpaqueAsyncDataRequest.cs" />
     <Compile Include="Services\Factories\AggregateServiceFactory.cs" />
     <Compile Include="Services\Factories\ZeroServiceFactory.cs" />
     <Compile Include="Services\IServiceContext.cs" />
@@ -69,10 +69,9 @@
     <Compile Include="RequestsPending.cs" />
     <Compile Include="Services\LivingService.cs" />
     <Compile Include="Services\ServiceLifetime.cs" />
-    <Compile Include="SingleOrMany.cs" />
     <Compile Include="StepState.cs" />
     <Compile Include="SuccessOrException.cs" />
-    <Compile Include="SynchronousDataRequest.cs" />
+    <Compile Include="DataRequests\SynchronousDataRequest.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
