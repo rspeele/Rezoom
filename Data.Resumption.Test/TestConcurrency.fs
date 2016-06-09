@@ -18,7 +18,7 @@ type TestConcurrency() =
                     [ "q" ]
                     [ "r" ]
                 ]
-            Result = "qr"
+            Result = Good "qr"
         } |> test
         
     [<TestMethod>]
@@ -33,6 +33,6 @@ type TestConcurrency() =
                 [
                     [ "q"; "r" ]
                 ]
-            Result = "qr"
+            Result = Good "qr"
         } |> test
 
