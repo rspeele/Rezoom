@@ -15,7 +15,10 @@ namespace Data.Resumption
 
         public SuccessOrException(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
             _success = null;
             _exception = exception;
         }
@@ -24,7 +27,11 @@ namespace Data.Resumption
         {
             get
             {
-                if (_exception != null) ExceptionDispatchInfo.Capture(_exception).Throw(); // rethrow with original stack trace
+                if (_exception != null)
+                {
+                    // rethrow with original stack trace
+                    ExceptionDispatchInfo.Capture(_exception).Throw();
+                }
                 return _success;
             }
         }
@@ -32,7 +39,11 @@ namespace Data.Resumption
         {
             get
             {
-                if (_exception == null) throw new InvalidOperationException("Request operation succeeded unexpectedly");
+                if (_exception == null)
+                {
+                    throw new InvalidOperationException
+                        ("Request operation succeeded unexpectedly");
+                }
                 return _exception;
             }
         }

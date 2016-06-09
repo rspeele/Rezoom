@@ -16,10 +16,12 @@ namespace Data.Resumption
         public Batch<IDataRequest> Requests { get; }
         public Func<Batch<SuccessOrException>, IDataTask<TResult>> Resume { get; }
 
-        public RequestsPending<TOutResult> Map<TOutResult>(Func<IDataTask<TResult>, IDataTask<TOutResult>> mapping)
+        public RequestsPending<TOutResult> Map<TOutResult>
+            (Func<IDataTask<TResult>, IDataTask<TOutResult>> mapping)
         {
             var res = Resume;
-            return new RequestsPending<TOutResult>(Requests, response => mapping(res(response)));
+            return new RequestsPending<TOutResult>
+                (Requests, response => mapping(res(response)));
         }
     }
 }
