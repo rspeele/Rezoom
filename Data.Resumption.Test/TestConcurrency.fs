@@ -36,3 +36,28 @@ type TestConcurrency() =
             Result = Good "qr"
         } |> test
 
+    [<TestMethod>]
+    member __.TestChainingConcurrency() =
+        let testTask x =
+            datatask {
+                let! a = send (x + "1")
+                let! b = send (x + "2")
+                let! c = send (x + "3")
+                return a + b + c
+            }
+        {
+            Task = fun () ->
+                datatask {
+                    let! x, y, z =
+                        testTask "x", testTask "y", testTask "z"
+                    return x + " " + y + " " + z
+                }
+            Batches =
+                [
+                    [ "x1"; "y1"; "z1" ]
+                    [ "x2"; "y2"; "z2" ]
+                    [ "x3"; "y3"; "z3" ]
+                ]
+            Result = Good "x1x2x3 y1y2y3 z1z2z3"
+        } |> test
+
