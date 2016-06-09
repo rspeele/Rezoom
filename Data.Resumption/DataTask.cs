@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using Data.Resumption.DataTasks;
 
-namespace Data.Resumption.DataTasks
+namespace Data.Resumption
 {
     public static class DataTask
     {
+        public static IDataTask<T> ToDataTask<T>(this IDataRequest<T> dataRequest)
+            => new RequestTask<T>(dataRequest);
+
         public static IDataTask<TOut> Select<TIn, TOut>(this IDataTask<TIn> bound, Func<TIn, TOut> mapping)
             => new MapTask<TIn, TOut>(bound, mapping);
 

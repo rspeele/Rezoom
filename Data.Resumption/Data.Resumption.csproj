@@ -45,7 +45,7 @@
     <Compile Include="DataTasks\ApplyTask.cs" />
     <Compile Include="DataTasks\BindTask.cs" />
     <Compile Include="DataTasks\SumTask.cs" />
-    <Compile Include="DataTasks\DataTask.cs" />
+    <Compile Include="DataTask.cs" />
     <Compile Include="DataTasks\MapTask.cs" />
     <Compile Include="DataTasks\RequestTask.cs" />
     <Compile Include="DataTasks\ReturnTask.cs" />
