@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataTaskYield.cs" />
     <Compile Include="Internals\BatchAbortion.cs" />
     <Compile Include="Internals\BatchBranch2.cs" />
     <Compile Include="Internals\BatchBranchN.cs" />
