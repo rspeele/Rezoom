@@ -35,9 +35,12 @@ type TestServiceFactory() =
             else 
                 new Nullable<_>()
 
-type TestRequest<'a>(query : string, pre : unit -> unit, post : string -> 'a) =
+type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : string -> 'a) =
     inherit SynchronousDataRequest<'a>()
-    override __.Idempotent = true
+    new (query, pre, post) =
+        TestRequest<_>(true, query, pre, post)
+    override __.Mutation = not idem
+    override __.Idempotent = idem
     override __.DataSource = box typeof<TestContext>
     override __.Identity = box query
     override __.PrepareSynchronous(serviceContext) =
@@ -56,6 +59,8 @@ let explode str = raise <| ArtificialFailure str
 
 let sendWith query post = TestRequest<_>(query, id, post).ToDataTask()
 let send query = sendWith query id
+let mutateWith query post = TestRequest<_>(false, query, id, post).ToDataTask()
+let mutate query = mutateWith query id
 let failingPrepare msg query =
     TestRequest<_>
         ( query

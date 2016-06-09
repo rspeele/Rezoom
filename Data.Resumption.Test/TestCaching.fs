@@ -59,3 +59,42 @@ type TestCaching() =
                 ]
             Result = Good "x1x2x3 x1x2x3 x1x2x3"
         } |> test
+
+    [<TestMethod>]
+    member __.TestStillValid() =
+        {
+            Task = fun () ->
+                datatask {
+                    let! q1 = send "q"
+                    let! q2 = send "q"
+                    let! m = send "x"
+                    let! q3 = send "q"
+                    return q1 + q2 + m + q3
+                }
+            Batches =
+                [
+                    [ "q" ]
+                    [ "x" ]
+                ]
+            Result = Good "qqxq"
+        } |> test
+
+    [<TestMethod>]
+    member __.TestInvalidation() =
+        {
+            Task = fun () ->
+                datatask {
+                    let! q1 = send "q"
+                    let! q2 = send "q"
+                    let! m = mutate "x"
+                    let! q3 = send "q"
+                    return q1 + q2 + m + q3
+                }
+            Batches =
+                [
+                    [ "q" ]
+                    [ "x" ]
+                    [ "q" ]
+                ]
+            Result = Good "qqxq"
+        } |> test
