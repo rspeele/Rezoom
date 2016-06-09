@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Data.Resumption
 {
@@ -13,110 +12,11 @@ namespace Data.Resumption
     public abstract class Batch<T> : IEnumerable<T>
     {
         public abstract Batch<TOut> Map<TOut>(Func<T, TOut> mapping);
-        public abstract BatchLeaf<T> AssumeLeaf();
-        public abstract BatchBranchN<T> AssumeBranchN();
-        public abstract BatchBranch2<T> AssumeBranch2();
+        internal abstract BatchLeaf<T> AssumeLeaf();
+        internal abstract BatchBranchN<T> AssumeBranchN();
+        internal abstract BatchBranch2<T> AssumeBranch2();
         public abstract IEnumerator<T> GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-    public sealed class BatchAbortion<T> : Batch<T>
-    {
-        public override Batch<TOut> Map<TOut>(Func<T, TOut> mapping) => new BatchAbortion<TOut>();
-
-        public override BatchLeaf<T> AssumeLeaf()
-        {
-            throw new DataTaskAbortException();
-        }
-
-        public override BatchBranchN<T> AssumeBranchN()
-        {
-            throw new DataTaskAbortException();
-        }
-
-        public override BatchBranch2<T> AssumeBranch2()
-        {
-            throw new DataTaskAbortException();
-        }
-
-        public override IEnumerator<T> GetEnumerator() => Enumerable.Empty<T>().GetEnumerator();
-    }
-    public sealed class BatchBranchN<T> : Batch<T>
-    {
-        public BatchBranchN(IReadOnlyList<Batch<T>> children)
-        {
-            Children = children;
-        }
-
-        public IReadOnlyList<Batch<T>> Children { get; }
-
-        public override Batch<TOut> Map<TOut>(Func<T, TOut> mapping)
-            => new BatchBranchN<TOut>(Children.Select(batch => batch.Map(mapping)).ToList());
-
-        public override BatchBranchN<T> AssumeBranchN() => this;
-
-        public override BatchLeaf<T> AssumeLeaf()
-        {
-            throw new InvalidOperationException("BranchN assumed to be a Branch2");
-        }
-
-        public override BatchBranch2<T> AssumeBranch2()
-        {
-            throw new InvalidOperationException("BranchN assumed to be a Branch2");
-        }
-
-        public override IEnumerator<T> GetEnumerator() => Children.SelectMany(c => c).GetEnumerator();
-    }
-    public sealed class BatchBranch2<T> : Batch<T>
-    {
-        public BatchBranch2(Batch<T> left, Batch<T> right)
-        {
-            Left = left;
-            Right = right;
-        }
-
-        public Batch<T> Left { get; }
-        public Batch<T> Right { get; }
-
-        public override Batch<TOut> Map<TOut>(Func<T, TOut> mapping)
-            => new BatchBranch2<TOut>(Left.Map(mapping), Right.Map(mapping));
-
-        public override BatchBranch2<T> AssumeBranch2() => this;
-        public override IEnumerator<T> GetEnumerator() => new[] { Left, Right }.SelectMany(c => c).GetEnumerator();
-
-        public override BatchLeaf<T> AssumeLeaf()
-        {
-            throw new InvalidOperationException("Branch2 assumed to be a Leaf");
-        }
-
-        public override BatchBranchN<T> AssumeBranchN()
-        {
-            throw new InvalidOperationException("Branch2 assumed to be a BranchN");
-        }
-    }
-    public sealed class BatchLeaf<T> : Batch<T>
-    {
-        public BatchLeaf(T element)
-        {
-            Element = element;
-        }
-
-        public T Element { get; }
-
-        public override Batch<TOut> Map<TOut>(Func<T, TOut> mapping) => new BatchLeaf<TOut>(mapping(Element));
-
-        public override BatchLeaf<T> AssumeLeaf() => this;
-
-        public override BatchBranchN<T> AssumeBranchN()
-        {
-            throw new InvalidOperationException("Leaf assumed to be a BranchN");
-        }
-
-        public override BatchBranch2<T> AssumeBranch2()
-        {
-            throw new InvalidOperationException("Leaf assumed to be a Branch2");
-        }
-
-        public override IEnumerator<T> GetEnumerator() => new[] { Element }.AsEnumerable().GetEnumerator();
     }
 }

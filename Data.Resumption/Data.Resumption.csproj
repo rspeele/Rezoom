@@ -40,9 +40,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internals\BatchAbortion.cs" />
+    <Compile Include="Internals\BatchBranch2.cs" />
+    <Compile Include="Internals\BatchBranchN.cs" />
+    <Compile Include="Internals\BatchLeaf.cs" />
     <Compile Include="DataRequests\DataRequest.cs" />
     <Compile Include="Batch.cs" />
-    <Compile Include="DataTaskAbortException.cs" />
+    <Compile Include="Exceptions\DataTaskAbortException.cs" />
     <Compile Include="DataTasks\ApplyTask.cs" />
     <Compile Include="DataTasks\BindTask.cs" />
     <Compile Include="DataTasks\SumTask.cs" />
@@ -59,8 +63,11 @@
     <Compile Include="Execution\StepContext.cs" />
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
-    <Compile Include="InternalExtensions.cs" />
+    <Compile Include="IDataTaskEnumerable.cs" />
+    <Compile Include="Internals\InternalExtensions.cs" />
     <Compile Include="DataRequests\OpaqueAsyncDataRequest.cs" />
+    <Compile Include="Internals\StepStatePending.cs" />
+    <Compile Include="Internals\StepStateResult.cs" />
     <Compile Include="Services\Factories\AggregateServiceFactory.cs" />
     <Compile Include="Services\Factories\ZeroServiceFactory.cs" />
     <Compile Include="Services\IServiceContext.cs" />
@@ -73,7 +80,9 @@
     <Compile Include="SuccessOrException.cs" />
     <Compile Include="DataRequests\SynchronousDataRequest.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="DataTasks\Enumerable\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
