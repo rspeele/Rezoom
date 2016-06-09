@@ -51,6 +51,11 @@
     <Compile Include="DataTasks\ReturnTask.cs" />
     <Compile Include="DataTasks\TryCatchTask.cs" />
     <Compile Include="DataTasks\TryFinallyTask.cs" />
+    <Compile Include="Execution\DataSourceCache.cs" />
+    <Compile Include="Execution\ExecutionContext.cs" />
+    <Compile Include="Execution\ResponseCache.cs" />
+    <Compile Include="Execution\ServiceContext.cs" />
+    <Compile Include="Execution\StepContext.cs" />
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
     <Compile Include="InternalExtensions.cs" />
@@ -66,9 +71,7 @@
     <Compile Include="StepState.cs" />
     <Compile Include="SuccessOrException.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Execution\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
