@@ -41,9 +41,10 @@ namespace Data.Resumption.DataTasks
                         }
                     );
             }
-            finally
+            catch
             {
                 _onExit();
+                throw;
             }
         }
     }
