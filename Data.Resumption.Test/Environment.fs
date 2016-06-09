@@ -35,19 +35,33 @@ type TestServiceFactory() =
             else 
                 new Nullable<_>()
 
-type TestRequest<'a>(query : string, post : string -> 'a) =
+type TestRequest<'a>(query : string, pre : unit -> unit, post : string -> 'a) =
     inherit SynchronousDataRequest<'a>()
     override __.DataSource = box typeof<TestContext>
     override __.Identity = box query
     override __.PrepareSynchronous(serviceContext) =
         let db = serviceContext.GetService<TestContext>()
+        pre()
         db.Prepare(query)
         Func<_>(fun () ->
             db.Execute()
             post query)
 
-let sendWith query post = TestRequest<_>(query, post).ToDataTask()
+exception PrepareFailure of string
+exception RetrieveFailure of string
+exception ArtificialFailure of string
+
+let explode str = raise <| ArtificialFailure str
+
+let sendWith query post = TestRequest<_>(query, id, post).ToDataTask()
 let send query = sendWith query id
+let failingPrepare msg query =
+    TestRequest<_>
+        ( query
+        , fun () -> raise <| PrepareFailure msg
+        , fun _ -> Unchecked.defaultof<_>
+        ) |> fun r -> r.ToDataTask()
+let failingRetrieve msg query = sendWith query (fun _ -> raise <| RetrieveFailure msg)
 
 type ExpectedResultTest<'a> =
     {
