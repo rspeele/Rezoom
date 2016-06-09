@@ -29,9 +29,10 @@ namespace Data.Resumption.DataTasks
                             { // if we can resume successfully, our next step needs to be wrapped too
                                 return new TryFinallyTask<T>(pending.Resume(response), _onExit);
                             }
-                            finally
+                            catch
                             {
                                 _onExit();
+                                throw;
                             }
                         }))
                         , result =>
