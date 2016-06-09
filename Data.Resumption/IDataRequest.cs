@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Data.Resumption.Services;
 
 namespace Data.Resumption
 {

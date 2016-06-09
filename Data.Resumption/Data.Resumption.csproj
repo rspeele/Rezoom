@@ -54,9 +54,14 @@
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
     <Compile Include="InternalExtensions.cs" />
-    <Compile Include="IServiceContext.cs" />
+    <Compile Include="Services\Factories\AggregateServiceFactory.cs" />
+    <Compile Include="Services\Factories\ZeroServiceFactory.cs" />
+    <Compile Include="Services\IServiceContext.cs" />
+    <Compile Include="Services\IServiceFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequestsPending.cs" />
+    <Compile Include="Services\LivingService.cs" />
+    <Compile Include="Services\ServiceLifetime.cs" />
     <Compile Include="SingleOrMany.cs" />
     <Compile Include="StepState.cs" />
     <Compile Include="SuccessOrException.cs" />

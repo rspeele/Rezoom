@@ -1,9 +1,12 @@
-﻿namespace Data.Resumption
+﻿namespace Data.Resumption.Services
 {
     /// <summary>
     /// Provides the current instance for any service type
     /// (e.g. a database connection) within an execution context.
     /// </summary>
+    /// <remarks>
+    /// This is what data requests are given access to, and use to obtain their connections / etc.
+    /// </remarks>
     public interface IServiceContext
     {
         /// <summary>
