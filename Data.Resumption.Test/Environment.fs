@@ -69,7 +69,7 @@ type ExpectedResult<'a> =
 
 type ExpectedResultTest<'a> =
     {
-        Task : IDataTask<'a>
+        Task : unit -> IDataTask<'a>
         Batches : string list list
         Result : ExpectedResult<'a>
     }
@@ -78,7 +78,7 @@ let test expectedResult =
     let execContext = new ExecutionContext(new TestServiceFactory())
     let result =
         try
-            execContext.Execute(expectedResult.Task).Result |> Choice1Of2
+            execContext.Execute(expectedResult.Task()).Result |> Choice1Of2
         with
         | ex -> Choice2Of2 ex
     let testContext = execContext.GetService<TestContext>()

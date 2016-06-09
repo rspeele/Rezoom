@@ -7,7 +7,7 @@ type TestConcurrency() =
     [<TestMethod>]
     member __.TestStrictPair() =
         {
-            Task =
+            Task = fun () ->
                 datatask {
                     let! q = send "q"
                     let! r = send "r"
@@ -24,7 +24,7 @@ type TestConcurrency() =
     [<TestMethod>]
     member __.TestConcurrentPair() =
         {
-            Task =
+            Task = fun () ->
                 datatask {
                     let! q, r = send "q", send "r"
                     return q + r

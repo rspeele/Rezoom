@@ -48,6 +48,7 @@
     <Compile Include="Environment.fs" />
     <Compile Include="TestConcurrency.fs" />
     <Compile Include="TestExceptionCatching.fs" />
+    <Compile Include="TestExceptionFinally.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Data.Resumption.Workflows\Data.Resumption.Workflows.fsproj">

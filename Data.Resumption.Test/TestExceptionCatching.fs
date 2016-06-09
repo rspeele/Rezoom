@@ -8,7 +8,7 @@ type TestExceptionCatching() =
     [<TestMethod>]
     member __.TestSimpleCatch() =
         {
-            Task =
+            Task = fun () ->
                 datatask {
                     try
                         explode "fail"
@@ -21,9 +21,9 @@ type TestExceptionCatching() =
         } |> test
         
     [<TestMethod>]
-    member __.TestNestedCatch() =
+    member __.TestBoundCatch() =
         {
-            Task =
+            Task = fun () ->
                 datatask {
                     try
                         let! x = send "x"
@@ -39,7 +39,7 @@ type TestExceptionCatching() =
     [<TestMethod>]
     member __.TestSimpleFailingPrepare() =
         {
-            Task =
+            Task = fun () ->
                 datatask {
                     try
                         let! x = failingPrepare "fail" "x"
@@ -54,7 +54,7 @@ type TestExceptionCatching() =
     [<TestMethod>]
     member __.TestSimpleFailingRetrieve() =
         {
-            Task =
+            Task = fun () ->
                 datatask {
                     try
                         let! x = failingRetrieve "fail" "x"
@@ -84,7 +84,7 @@ type TestExceptionCatching() =
                 return result
             }
         {
-            Task =
+            Task = fun () ->
                 datatask {
                     let! x, y, z =
                         catching "x", catching "y", good "z"
@@ -111,7 +111,7 @@ type TestExceptionCatching() =
                 return result + next
             }
         {
-            Task =
+            Task = fun () ->
                 datatask {
                     let! x, y, z =
                         notCatching "x", notCatching "y", good "z"
