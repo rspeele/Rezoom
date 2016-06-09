@@ -6,8 +6,31 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 [<TestClass>]
 type TestExceptionFinally() =
     [<TestMethod>]
+    member __.TestFinallyNoThrow() =
+        let mutable ran = 0
+        {
+            Task = fun () ->
+                datatask {
+                    try
+                        let! q = send "q"
+                        let! r = send "r"
+                        return q + r
+                    finally
+                        ran <- ran + 1
+                }
+            Batches =
+                [
+                    [ "q" ]
+                    [ "r" ]
+                ]
+            Result = Good "qr"
+        } |> test
+        if ran <> 1 then
+            failwithf "ran was %d" ran
+
+    [<TestMethod>]
     member __.TestSimpleFinally() =
-        let mutable ran = false
+        let mutable ran = 0
         {
             Task = fun () ->
                 datatask {
@@ -15,15 +38,15 @@ type TestExceptionFinally() =
                         explode "fail"
                         return 2
                     finally
-                        ran <- true
+                        ran <- ran + 1
                 }
             Batches = []
-            Result = Bad (fun _ -> ran)
+            Result = Bad (fun _ -> ran = 1)
         } |> test
 
     [<TestMethod>]
     member __.TestBoundFinally() =
-        let mutable ran = false
+        let mutable ran = 0
         {
             Task = fun () ->
                 datatask {
@@ -32,15 +55,15 @@ type TestExceptionFinally() =
                         explode "fail"
                         return 2
                     finally
-                        ran <- true
+                        ran <- ran + 1
                 }
             Batches = [["x"]]
-            Result = Bad (fun _ -> ran)
+            Result = Bad (fun _ -> ran = 1)
         } |> test
 
     [<TestMethod>]
     member __.TestSimpleFailingPrepare() =
-        let mutable ran = false
+        let mutable ran = 0
         {
             Task = fun () ->
                 datatask {
@@ -48,15 +71,15 @@ type TestExceptionFinally() =
                         let! x = failingPrepare "fail" "x"
                         return 2
                     finally
-                        ran <- true
+                        ran <- ran + 1
                 }
             Batches = []
-            Result = Bad (fun _ -> ran)
+            Result = Bad (fun _ -> ran = 1)
         } |> test
 
     [<TestMethod>]
     member __.TestSimpleFailingRetrieve() =
-        let mutable ran = false
+        let mutable ran = 0
         {
             Task = fun () ->
                 datatask {
@@ -64,10 +87,38 @@ type TestExceptionFinally() =
                         let! x = failingRetrieve "fail" "x"
                         return 2
                     finally
-                        ran <- true
+                        ran <- ran + 1
                 }
             Batches = [["x"]]
-            Result = Bad (fun _ -> ran)
+            Result = Bad (fun _ -> ran = 1)
+        } |> test
+
+    [<TestMethod>]
+    member __.TestUsingThrow() =
+        let mutable ran = 0
+        {
+            Task = fun () ->
+                datatask {
+                    use d = { new IDisposable with member x.Dispose() = ran <- ran + 1 }
+                    let! x = failingRetrieve "fail" "x"
+                    return 2
+                }
+            Batches = [["x"]]
+            Result = Bad (fun _ -> ran = 1)
+        } |> test
+
+    [<TestMethod>]
+    member __.TestUsingNoThrow() =
+        let mutable ran = 0
+        {
+            Task = fun () ->
+                datatask {
+                    use d = { new IDisposable with member x.Dispose() = ran <- ran + 1 }
+                    let! x = send "x"
+                    return 2
+                }
+            Batches = [["x"]]
+            Result = Good 2
         } |> test
 
     [<TestMethod>]
@@ -124,3 +175,4 @@ type TestExceptionFinally() =
                 ]
             Result = Bad (fun ex -> ranFinally)
         } |> test
+        
