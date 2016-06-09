@@ -40,6 +40,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataTasks\Enumerable\BindEnumerable.cs" />
+    <Compile Include="DataTasks\Enumerable\CombineEnumerable.cs" />
+    <Compile Include="DataTasks\Enumerable\YieldEnumerable.cs" />
+    <Compile Include="DataTasks\Enumerable\ZeroEnumerable.cs" />
     <Compile Include="DataTaskYield.cs" />
     <Compile Include="Internals\BatchAbortion.cs" />
     <Compile Include="Internals\BatchBranch2.cs" />
@@ -64,7 +68,7 @@
     <Compile Include="Execution\StepContext.cs" />
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
-    <Compile Include="IDataTaskEnumerable.cs" />
+    <Compile Include="IDataEnumerable.cs" />
     <Compile Include="Internals\InternalExtensions.cs" />
     <Compile Include="DataRequests\OpaqueAsyncDataRequest.cs" />
     <Compile Include="Internals\StepStatePending.cs" />
@@ -81,9 +85,7 @@
     <Compile Include="SuccessOrException.cs" />
     <Compile Include="DataRequests\SynchronousDataRequest.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="DataTasks\Enumerable\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -7,7 +7,7 @@
     /// because the act of iterating can itself be asynchronous.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IDataTaskEnumerable<T>
+    public interface IDataEnumerable<T>
     {
         /// <summary>
         /// Get an `IDataTask` which produces either:

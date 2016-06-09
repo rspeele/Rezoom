@@ -1,13 +1,13 @@
 ﻿namespace Data.Resumption
 {
     /// <summary>
-    /// Represents a value yielded from an IDataTaskEnumerable,
-    /// along with an IDataTaskEnumerable which will yield the remaining values.
+    /// Represents a value yielded from an IDataEnumerable,
+    /// along with an IDataEnumerable which will yield the remaining values.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public struct DataTaskYield<T>
     {
-        public DataTaskYield(T value, IDataTaskEnumerable<T> remaining)
+        public DataTaskYield(T value, IDataEnumerable<T> remaining)
         {
             Value = value;
             Remaining = remaining;
@@ -17,8 +17,8 @@
         /// </summary>
         public T Value { get; }
         /// <summary>
-        /// An IDataTaskEnumerable to yield the remaining values of the sequence.
+        /// The remaining values of the sequence.
         /// </summary>
-        public IDataTaskEnumerable<T> Remaining { get; }
+        public IDataEnumerable<T> Remaining { get; }
     }
 }
