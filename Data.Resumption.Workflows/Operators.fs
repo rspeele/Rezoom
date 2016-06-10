@@ -3,13 +3,13 @@
 [<AutoOpen>]
 module Data.Resumption.Operators
     /// Operator version of DataMonad.bind.
-    let (>>=) task continuation = DataMonad.bind task continuation
+    let (>>=) task continuation = DataTaskMonad.bind task continuation
     /// Operator version of DataMonad.map. Use like `function <@> task`.
     /// In Haskell, this would be <$>, but that is not a legal operator name in F#.
-    let (<@>) mapping task = DataMonad.map mapping task
+    let (<@>) mapping task = DataTaskMonad.map mapping task
     /// Operator version of DataMonad.apply.
     /// Best used in conjunction with `<@>`, like `(fun a b -> ...) <@> taskA <*> taskB`.
-    let (<*>) functionTask inputTask = DataMonad.apply functionTask inputTask
+    let (<*>) functionTask inputTask = DataTaskMonad.apply functionTask inputTask
 
     /// Apply two DataTasks, combining their results into a tuple.
     let datatuple2 taskA taskB = (fun a b -> (a, b)) <@> taskA <*> taskB

@@ -44,7 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="DataMonad.fs" />
+    <Compile Include="DataTaskMonad.fs" />
+    <Compile Include="DataEnumerableMonad.fs" />
     <Compile Include="Operators.fs" />
     <Compile Include="Builder.fs" />
   </ItemGroup>

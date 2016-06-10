@@ -1,6 +1,6 @@
 ﻿/// Provides an F# compatibility layer over the extension methods in Data.Resumption.DataTask.
 /// This handles converting between Funcs and FSharpFuncs.
-module Data.Resumption.DataMonad
+module Data.Resumption.DataTaskMonad
 open Data.Resumption
 open System
 
@@ -20,11 +20,19 @@ let apply (functionTask : IDataTask<'a -> 'b>) (inputTask : IDataTask<'a>) =
 let sum (tasks : IDataTask<'a> seq) (initial : 's) (add : 's -> 'a -> 's) =
     DataTask.Sum(tasks, initial, fun sum extra -> add sum extra)
 
-let tryWith (wrapped : IDataTask<'a>) (exceptionHandler : exn -> IDataTask<'a>) =
-    DataTask.TryCatch(wrapped, Func<_, _>(exceptionHandler))
+let tryWith (wrapped : unit -> IDataTask<'a>) (exceptionHandler : exn -> IDataTask<'a>) =
+    try
+        DataTask.TryCatch(wrapped(), Func<_, _>(exceptionHandler))
+    with
+    | ex -> exceptionHandler(ex)
 
-let tryFinally (wrapped : IDataTask<'a>) (onExit : unit -> unit) =
-    DataTask.TryFinally(wrapped, Action(onExit))
+let tryFinally (wrapped : unit -> IDataTask<'a>) (onExit : unit -> unit) =
+        try
+            DataTask.TryFinally(wrapped(), Action(onExit))
+        with
+        | _ ->
+            onExit()
+            reraise()
 
 let combineStrict (taskA : IDataTask<'a>) (taskB : unit -> IDataTask<'b>) =
     bind taskA (fun _ -> taskB())
