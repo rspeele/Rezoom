@@ -50,6 +50,7 @@
     <Compile Include="TestCaching.fs" />
     <Compile Include="TestExceptionCatching.fs" />
     <Compile Include="TestExceptionFinally.fs" />
+    <Compile Include="TestDataSeq.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Data.Resumption.Workflows\Data.Resumption.Workflows.fsproj">
