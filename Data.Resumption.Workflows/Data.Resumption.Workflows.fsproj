@@ -47,7 +47,7 @@
     <Compile Include="DataTaskMonad.fs" />
     <Compile Include="DataEnumerableMonad.fs" />
     <Compile Include="Operators.fs" />
-    <Compile Include="Builder.fs" />
+    <Compile Include="DataTaskBuilder.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Data.Resumption\Data.Resumption.csproj">

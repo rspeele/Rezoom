@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Data.Resumption.Builder
+module Data.Resumption.DataTaskBuilder
 open Data.Resumption
 open System
 open System.Threading.Tasks
