@@ -4,18 +4,8 @@ open Data.Resumption
 open System
 open System.Threading.Tasks
 
-/// Wrapper type to indicate computations should be evaluated in strict sequence
-/// with `DataTaskMonad.bind` instead of concurrently combined with `DataTaskMonad.apply`.
-type Strict<'a> = Strict of 'a
-
-/// Mark a data task or sequence to be evaluated in strict sequence.
-let strict x = Strict x
-
-/// Convert a TPL task to a data task.
-let await (task : unit -> Task<'a>) = (Func<_>(task)).ToDataTask()
-
 type DataTaskBuilder() =
-    member __.Zero : IDataTask<unit> =
+    member __.Zero() : IDataTask<unit> =
         DataTaskMonad.zero
 
     member __.Return(value) : IDataTask<_> =

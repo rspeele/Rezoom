@@ -44,10 +44,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Aliases.fs" />
     <Compile Include="DataTaskMonad.fs" />
-    <Compile Include="DataEnumerableMonad.fs" />
+    <Compile Include="DataSeqMonad.fs" />
     <Compile Include="Operators.fs" />
     <Compile Include="DataTaskBuilder.fs" />
+    <Compile Include="DataSeqBuilder.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Data.Resumption\Data.Resumption.csproj">

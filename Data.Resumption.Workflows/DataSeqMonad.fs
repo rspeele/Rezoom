@@ -1,6 +1,6 @@
 ﻿/// Provides an F# compatibility layer over the extension methods in Data.Resumption.DataEnumerable.
 /// This handles converting between Funcs and FSharpFuncs.
-module Data.Resumption.DataEnumerableMonad
+module Data.Resumption.DataSeqMonad
 open Data.Resumption
 open System
 
@@ -30,3 +30,9 @@ let tryFinally (wrapped : unit -> IDataEnumerable<'a>) (onExit : unit -> unit) =
     | _ ->
         onExit()
         reraise()
+
+let rec loop (condition : unit -> bool) (iteration : unit -> IDataEnumerable<'a>) =
+    if condition() then
+        combine (iteration()) (fun () -> loop condition iteration)
+    else
+        zero()
