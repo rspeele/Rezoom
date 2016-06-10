@@ -32,7 +32,32 @@ namespace Data.Resumption
         public static IDataTask<T> TryCatch<T>(this IDataTask<T> wrapped, Func<Exception, IDataTask<T>> exceptionHandler)
             => new TryCatchTask<T>(wrapped, exceptionHandler);
 
+        public static IDataTask<T> TryCatch<T>(this Func<IDataTask<T>> wrapped, Func<Exception, IDataTask<T>> exceptionHandler)
+        {
+            try
+            {
+                return wrapped().TryCatch(exceptionHandler);
+            }
+            catch (Exception ex)
+            {
+                return exceptionHandler(ex);
+            }
+        }
+
         public static IDataTask<T> TryFinally<T>(this IDataTask<T> wrapped, Action onExit)
             => new TryFinallyTask<T>(wrapped, onExit);
+
+        public static IDataTask<T> TryFinally<T>(this Func<IDataTask<T>> wrapped, Action onExit)
+        {
+            try
+            {
+                return wrapped().TryFinally(onExit);
+            }
+            catch
+            {
+                onExit();
+                throw;
+            }
+        }
     }
 }
