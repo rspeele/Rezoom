@@ -32,8 +32,7 @@ namespace Data.Resumption.DataEnumerables
             return wrapYieldTask
                 .Select(wrapYield =>
                 {
-                    // if we get to the end of the sequence safely, we still need to run our
-                    // finally block.
+                    // if we get to the end of the sequence safely, we still need to run our finally block.
                     if (wrapYield == null)
                     {
                         _onExit();
