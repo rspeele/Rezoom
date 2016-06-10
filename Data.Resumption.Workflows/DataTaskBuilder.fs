@@ -56,6 +56,8 @@ type DataTaskBuilder() =
     member __.TryWith(task : unit -> IDataTask<_>, exceptionHandler) : IDataTask<_> =
         DataTaskMonad.tryWith task exceptionHandler
 
+    member __.For(dataSequence, iteration) : IDataTask<unit> =
+        DataTaskMonad.forEach dataSequence iteration
     member __.For(Strict sequence, iteration) : IDataTask<unit> =
         let binder soFar nextElement =
             DataTaskMonad.combineStrict soFar (fun () -> iteration nextElement)

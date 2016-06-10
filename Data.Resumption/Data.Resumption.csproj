@@ -49,6 +49,7 @@
     <Compile Include="DataEnumerables\YieldEnumerable.cs" />
     <Compile Include="DataEnumerables\YieldManyEnumerable.cs" />
     <Compile Include="DataEnumerables\ZeroEnumerable.cs" />
+    <Compile Include="DataTasks\ForEachTask.cs" />
     <Compile Include="DataTaskYield.cs" />
     <Compile Include="Internals\BatchAbortion.cs" />
     <Compile Include="Internals\BatchBranch2.cs" />

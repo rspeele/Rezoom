@@ -45,3 +45,6 @@ let rec loop (condition : unit -> bool) (iteration : unit -> IDataTask<'a>) =
         bind (iteration()) (fun _ -> loop condition iteration)
     else
         zero
+
+let forEach (sequence : IDataEnumerable<'a>) (iteration : 'a -> IDataTask<unit>) =
+    DataTask.ForEach(sequence, Func<_, _>(iteration))
