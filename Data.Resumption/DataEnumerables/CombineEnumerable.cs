@@ -1,7 +1,11 @@
 ﻿using System;
 
-namespace Data.Resumption.DataTasks.Enumerable
+namespace Data.Resumption.DataEnumerables
 {
+    /// <summary>
+    /// Represents the concatenation of two data enumerables.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     internal class CombineEnumerable<T> : IDataEnumerable<T>
     {
         private readonly IDataEnumerable<T> _first;

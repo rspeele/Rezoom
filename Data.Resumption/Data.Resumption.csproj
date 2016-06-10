@@ -40,10 +40,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataTasks\Enumerable\BindEnumerable.cs" />
-    <Compile Include="DataTasks\Enumerable\CombineEnumerable.cs" />
-    <Compile Include="DataTasks\Enumerable\YieldEnumerable.cs" />
-    <Compile Include="DataTasks\Enumerable\ZeroEnumerable.cs" />
+    <Compile Include="DataEnumerable.cs" />
+    <Compile Include="DataEnumerables\BindEnumerable.cs" />
+    <Compile Include="DataEnumerables\BindTaskEnumerable.cs" />
+    <Compile Include="DataEnumerables\CombineEnumerable.cs" />
+    <Compile Include="DataEnumerables\TryCatchEnumerable.cs" />
+    <Compile Include="DataEnumerables\TryFinallyEnumerable.cs" />
+    <Compile Include="DataEnumerables\YieldEnumerable.cs" />
+    <Compile Include="DataEnumerables\YieldManyEnumerable.cs" />
+    <Compile Include="DataEnumerables\ZeroEnumerable.cs" />
     <Compile Include="DataTaskYield.cs" />
     <Compile Include="Internals\BatchAbortion.cs" />
     <Compile Include="Internals\BatchBranch2.cs" />

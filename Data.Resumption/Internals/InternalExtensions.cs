@@ -28,8 +28,10 @@ namespace Data.Resumption
             {
                 throw new AggregateException(causeOfAbortion, new AggregateException(subExceptions));
             }
-            ExceptionDispatchInfo.Capture(causeOfAbortion).Throw(); // this should rethrow the exception with its original trace
-            throw causeOfAbortion; // should be impossible to get here, but if we did, the best thing to do is rethrow normally
+            // this should rethrow the exception with its original trace
+            ExceptionDispatchInfo.Capture(causeOfAbortion).Throw();
+            // should be impossible to get here, but if we did, the best thing to do is rethrow normally
+            throw causeOfAbortion;
         }
         internal static void AbortMany<T>(this IEnumerable<IDataTask<T>> taskToAbort, Exception causeOfAbortion)
             => AbortMany(taskToAbort.Select(t => (Func<StepState<T>>)t.Step), causeOfAbortion);
@@ -48,10 +50,21 @@ namespace Data.Resumption
             {
                 throw new AggregateException(causeOfAbortion, subEx);
             }
-            ExceptionDispatchInfo.Capture(causeOfAbortion).Throw(); // this should rethrow the exception with its original trace
-            throw causeOfAbortion; // should be impossible to get here, but if we did, the best thing to do is rethrow normally
+            // this should rethrow the exception with its original trace
+            ExceptionDispatchInfo.Capture(causeOfAbortion).Throw();
+            // should be impossible to get here, but if we did, the best thing to do is rethrow normally
+            throw causeOfAbortion;
         }
-        internal static void Abort<T>(this IDataTask<T> taskToAbort, Exception causeOfAbortion) => Abort(taskToAbort.Step, causeOfAbortion);
-        internal static void Abort<T>(this StepState<T> stepToAbort, Exception causeOfAbortion) => Abort(() => stepToAbort, causeOfAbortion);
+        internal static void Abort<T>(this IDataTask<T> taskToAbort, Exception causeOfAbortion)
+            => Abort(taskToAbort.Step, causeOfAbortion);
+        internal static void Abort<T>(this StepState<T> stepToAbort, Exception causeOfAbortion)
+            => Abort(() => stepToAbort, causeOfAbortion);
+
+        internal static DataTaskYield<T>? MapRemaining<T>
+            ( this DataTaskYield<T>? yielded
+            , Func<IDataEnumerable<T>, IDataEnumerable<T>> mapping
+            ) => yielded != null
+                ? (DataTaskYield<T>?)new DataTaskYield<T>(yielded.Value.Value, mapping(yielded.Value.Remaining))
+                : null;
     }
 }

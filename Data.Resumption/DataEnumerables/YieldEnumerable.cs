@@ -1,5 +1,9 @@
-﻿namespace Data.Resumption.DataTasks.Enumerable
+﻿namespace Data.Resumption.DataEnumerables
 {
+    /// <summary>
+    /// Represents the yielding of a single value within a data enumerable.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     internal class YieldEnumerable<T> : IDataEnumerable<T>
     {
         private readonly T _value;
