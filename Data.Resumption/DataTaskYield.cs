@@ -19,7 +19,7 @@ namespace Data.Resumption
             get
             {
                 if (!HasValue) throw new InvalidOperationException("Cannot obtain a value from the end of a sequence");
-                return Value;
+                return _value;
             }
         }
     }
