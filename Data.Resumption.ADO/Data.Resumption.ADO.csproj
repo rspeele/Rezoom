@@ -45,7 +45,9 @@
     <Compile Include="CommandRequest.cs" />
     <Compile Include="DbServiceFactory.cs" />
     <Compile Include="DbTypeRecognizer.cs" />
+    <Compile Include="FormattableStringAdapter.cs" />
     <Compile Include="IDbTypeRecognizer.cs" />
+    <Compile Include="IFormattableString.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CommandResponse.cs" />
   </ItemGroup>

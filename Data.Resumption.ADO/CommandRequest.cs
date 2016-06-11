@@ -15,7 +15,7 @@ namespace Data.Resumption.ADO
             _command = command;
         }
 
-        public override object Identity => _command.Text.ToString();
+        public override object Identity => string.Format(_command.Text.Format, _command.Text.Arguments);
         public override object DataSource => typeof(CommandContext);
         public override bool Mutation => _command.Mutation;
         public override bool Idempotent => _command.Idempotent;

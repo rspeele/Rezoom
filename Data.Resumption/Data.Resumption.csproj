@@ -52,6 +52,7 @@
     <Compile Include="DataTasks\ForEachDataEnumerableTask.cs" />
     <Compile Include="DataTasks\ForEachEnumerableTask.cs" />
     <Compile Include="DataTaskYield.cs" />
+    <Compile Include="Execution\DebugExecutionLog.cs" />
     <Compile Include="Execution\IExecutionLog.cs" />
     <Compile Include="IDataEnumerator.cs" />
     <Compile Include="Internals\BatchAbortion.cs" />

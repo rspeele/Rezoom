@@ -37,7 +37,7 @@ namespace Data.Resumption.ADO
         {
             if (_executing != null)
                 throw new InvalidOperationException("Command is already executing");
-            var parameterValues = command.Text.GetArguments();
+            var parameterValues = command.Text.Arguments;
             var parameterNames = new object[parameterValues.Length];
             for (var i = 0; i < parameterValues.Length; i++)
             {

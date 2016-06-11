@@ -47,6 +47,9 @@ namespace Data.Resumption
                 return _exception;
             }
         }
-        public bool HasSuccess => _exception != null;
+        public bool HasSuccess => _exception == null;
+
+        public override string ToString()
+            => HasSuccess ? $"Success: {Success}" : $"Exception: {_exception?.Message}";
     }
 }

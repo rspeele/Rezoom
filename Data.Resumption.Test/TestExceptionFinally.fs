@@ -201,6 +201,7 @@ type TestExceptionFinally() =
                             do! good q
                         else
                             do! deadly q
+                    return ()
                 }
             Batches =
                 [
