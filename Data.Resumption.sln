@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Data.Resumption.ADO", "Data
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Data.Resumption.ADO.Test", "Data.Resumption.ADO.Test\Data.Resumption.ADO.Test.fsproj", "{39B23D3A-43D2-442F-9B83-B68ECE642FAD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Data.Resumption.EF", "Data.Resumption.EF\Data.Resumption.EF.csproj", "{51023E89-6081-4BBF-8945-8F17E6C4D65C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{39B23D3A-43D2-442F-9B83-B68ECE642FAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39B23D3A-43D2-442F-9B83-B68ECE642FAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{39B23D3A-43D2-442F-9B83-B68ECE642FAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51023E89-6081-4BBF-8945-8F17E6C4D65C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51023E89-6081-4BBF-8945-8F17E6C4D65C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51023E89-6081-4BBF-8945-8F17E6C4D65C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51023E89-6081-4BBF-8945-8F17E6C4D65C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
