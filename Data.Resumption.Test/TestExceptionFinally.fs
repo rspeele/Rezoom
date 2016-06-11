@@ -175,4 +175,37 @@ type TestExceptionFinally() =
                 ]
             Result = Bad (fun ex -> ranFinally)
         } |> test
+
+    [<TestMethod>]
+    member __.TestConcurrentLoopAbortion() =
+        let mutable ranFinally = false
+        let deadly query =
+            datatask {
+                let! x = failingRetrieve "fail" query
+                return ()
+            }
+        let good query =
+            datatask {
+                try
+                    let! result = send query
+                    let! next = send "jim"
+                    return ()
+                finally
+                    ranFinally <- true
+            }
+        {
+            Task = fun () ->
+                datatask {
+                    for q in ["x"; "y"; "z"] do
+                        if q = "y" then
+                            do! good q
+                        else
+                            do! deadly q
+                }
+            Batches =
+                [
+                    [ "x"; "y"; "z" ]
+                ]
+            Result = Bad (fun ex -> ranFinally)
+        } |> test
         
