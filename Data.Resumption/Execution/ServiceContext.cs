@@ -59,7 +59,7 @@ namespace Data.Resumption.Execution
                 {
                     return (TService)service;
                 }
-                var living = _factory.CreateService<TService>();
+                var living = _factory.CreateService<TService>(this);
                 if (living == null) throw new NotSupportedException($"The service type {ty} is not supported by the service factory");
                 switch (living.Value.Lifetime)
                 {

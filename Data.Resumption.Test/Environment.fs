@@ -28,7 +28,7 @@ type TestContext() =
 
 type TestServiceFactory() =
     interface IServiceFactory with
-        member __.CreateService<'a>() =
+        member __.CreateService<'a>(_) =
             if typeof<'a> = typeof<TestContext> then
                 let service = new TestContext() :> obj
                 let living = new LivingService<'a>(unbox service, ServiceLifetime.ExecutionContext)

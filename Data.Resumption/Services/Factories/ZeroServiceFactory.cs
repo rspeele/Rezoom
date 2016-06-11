@@ -5,6 +5,6 @@
     /// </summary>
     public class ZeroServiceFactory : IServiceFactory
     {
-        public LivingService<T>? CreateService<T>() => null;
+        public LivingService<T>? CreateService<T>(IServiceContext context) => null;
     }
 }

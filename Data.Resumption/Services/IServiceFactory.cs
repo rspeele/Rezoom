@@ -10,7 +10,8 @@
         /// Return null if the service type is not supported.
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="context"></param>
         /// <returns></returns>
-        LivingService<T>? CreateService<T>();
+        LivingService<T>? CreateService<T>(IServiceContext context);
     }
 }

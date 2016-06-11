@@ -20,14 +20,14 @@ namespace Data.Resumption.Services.Factories
             _factories.AddRange(factories);
         }
 
-        public LivingService<T>? CreateService<T>()
+        public LivingService<T>? CreateService<T>(IServiceContext context)
         {
             var ty = typeof(T);
             IServiceFactory cached;
-            if (_cache.TryGetValue(ty, out cached)) return cached.CreateService<T>();
+            if (_cache.TryGetValue(ty, out cached)) return cached.CreateService<T>(context);
             foreach (var factory in _factories)
             {
-                var living = factory.CreateService<T>();
+                var living = factory.CreateService<T>(context);
                 if (living == null) continue;
                 _cache[ty] = factory;
                 return living;
