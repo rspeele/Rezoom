@@ -43,6 +43,8 @@
     <Compile Include="Command.cs" />
     <Compile Include="CommandContext.cs" />
     <Compile Include="CommandRequest.cs" />
+    <Compile Include="DbServiceFactory.cs" />
+    <Compile Include="DbTypeRecognizer.cs" />
     <Compile Include="IDbTypeRecognizer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CommandResponse.cs" />
