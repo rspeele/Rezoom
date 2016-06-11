@@ -18,22 +18,42 @@ namespace Data.Resumption.DataEnumerables
             _exceptionHandler = exceptionHandler;
         }
 
-        public IDataTask<DataTaskYield<T>?> Yield()
+        private class TryCatchEnumerator : IDataEnumerator<T>
         {
-            IDataTask<DataTaskYield<T>?> wrapYieldTask;
-            try
+            private IDataEnumerator<T> _wrapped;
+            private Func<Exception, IDataEnumerable<T>> _exceptionHandler;
+
+            public TryCatchEnumerator
+                (IDataEnumerator<T> wrapped, Func<Exception, IDataEnumerable<T>> exceptionHandler)
             {
-                wrapYieldTask = _wrapped.Yield();
+                _wrapped = wrapped;
+                _exceptionHandler = exceptionHandler;
             }
-            catch (Exception ex)
+
+            private IDataTask<DataTaskYield<T>> HandleException(Exception ex)
             {
-                return _exceptionHandler(ex).Yield();
+                _wrapped = _exceptionHandler(ex).GetEnumerator();
+                _exceptionHandler = null;
+                return MoveNext();
             }
-            return wrapYieldTask
-                .Select(wrapYield =>
-                    wrapYield.MapRemaining(remaining =>
-                        new TryCatchEnumerable<T>(remaining, _exceptionHandler)))
-                .TryCatch(ex => _exceptionHandler(ex).Yield());
+
+            public IDataTask<DataTaskYield<T>> MoveNext()
+            {
+                if (_exceptionHandler == null) return _wrapped.MoveNext();
+                try
+                {
+                    return _wrapped.MoveNext().TryCatch(HandleException);
+                }
+                catch (Exception ex)
+                {
+                    return HandleException(ex);
+                }
+            }
+
+            public void Dispose() => _wrapped.Dispose();
         }
+
+        public IDataEnumerator<T> GetEnumerator()
+            => new TryCatchEnumerator(_wrapped.GetEnumerator(), _exceptionHandler);
     }
 }

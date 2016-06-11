@@ -17,33 +17,32 @@ namespace Data.Resumption.DataEnumerables
             _onExit = onExit;
         }
 
-        public IDataTask<DataTaskYield<T>?> Yield()
+        private class TryFinallyEnumerator : IDataEnumerator<T>
         {
-            IDataTask<DataTaskYield<T>?> wrapYieldTask;
-            try
+            private readonly IDataEnumerator<T> _wrapped;
+            private readonly Action _onExit;
+
+            public TryFinallyEnumerator(IDataEnumerator<T> wrapped, Action onExit)
             {
-                wrapYieldTask = _wrapped.Yield();
+                _wrapped = wrapped;
+                _onExit = onExit;
             }
-            catch
+
+            public IDataTask<DataTaskYield<T>> MoveNext() => _wrapped.MoveNext();
+            public void Dispose()
             {
-                _onExit();
-                throw;
-            }
-            return wrapYieldTask
-                .Select(wrapYield =>
+                try
                 {
-                    // if we get to the end of the sequence safely, we still need to run our finally block.
-                    if (wrapYield == null)
-                    {
-                        _onExit();
-                        return null;
-                    }
-                    // otherwise we just keep chaining the finally forward
-                    return wrapYield.MapRemaining
-                        (remaining =>
-                            new TryFinallyEnumerable<T>(remaining, _onExit));
-                })
-                .TryCatch(ex => { _onExit(); throw ex; });
+                    _wrapped.Dispose();
+                }
+                finally 
+                {
+                    _onExit();
+                }
+            }
         }
+
+        public IDataEnumerator<T> GetEnumerator()
+            => new TryFinallyEnumerator(_wrapped.GetEnumerator(), _onExit);
     }
 }

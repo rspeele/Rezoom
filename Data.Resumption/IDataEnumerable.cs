@@ -9,13 +9,6 @@
     /// <typeparam name="T"></typeparam>
     public interface IDataEnumerable<T>
     {
-        /// <summary>
-        /// Get an `IDataTask` which produces either:
-        ///   a. The next value in this sequence, and the remaining sequence
-        /// or
-        ///   b. null to indicate the end of the sequence has been reached.
-        /// </summary>
-        /// <returns></returns>
-        IDataTask<DataTaskYield<T>?> Yield();
+        IDataEnumerator<T> GetEnumerator();
     }
 }

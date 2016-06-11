@@ -6,7 +6,14 @@
     /// <typeparam name="T"></typeparam>
     internal class ZeroEnumerable<T> : IDataEnumerable<T>
     {
-        public IDataTask<DataTaskYield<T>?> Yield()
-            => DataTask.Return<DataTaskYield<T>?>(null);
+        private class ZeroEnumerator : IDataEnumerator<T>
+        {
+            public IDataTask<DataTaskYield<T>> MoveNext() => DataTask.Return(new DataTaskYield<T>());
+
+            public void Dispose()
+            {
+            }
+        }
+        public IDataEnumerator<T> GetEnumerator() => new ZeroEnumerator();
     }
 }

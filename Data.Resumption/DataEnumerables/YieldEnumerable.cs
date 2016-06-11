@@ -13,8 +13,28 @@
             _value = value;
         }
 
-        public IDataTask<DataTaskYield<T>?> Yield()
-            => DataTask.Return<DataTaskYield<T>?>
-                (new DataTaskYield<T>(_value, new ZeroEnumerable<T>()));
+        private class YieldEnumerator : IDataEnumerator<T>
+        {
+            private readonly T _value;
+            private bool _moved;
+
+            public YieldEnumerator(T value)
+            {
+                _value = value;
+            }
+
+            public IDataTask<DataTaskYield<T>> MoveNext()
+            {
+                if (_moved) return DataTask.Return(new DataTaskYield<T>());
+                _moved = true;
+                return DataTask.Return(new DataTaskYield<T>(_value));
+            }
+
+            public void Dispose()
+            {
+            }
+        }
+
+        public IDataEnumerator<T> GetEnumerator() => new YieldEnumerator(_value);
     }
 }

@@ -59,12 +59,5 @@ namespace Data.Resumption
             => Abort(taskToAbort.Step, causeOfAbortion);
         internal static void Abort<T>(this StepState<T> stepToAbort, Exception causeOfAbortion)
             => Abort(() => stepToAbort, causeOfAbortion);
-
-        internal static DataTaskYield<T>? MapRemaining<T>
-            ( this DataTaskYield<T>? yielded
-            , Func<IDataEnumerable<T>, IDataEnumerable<T>> mapping
-            ) => yielded != null
-                ? (DataTaskYield<T>?)new DataTaskYield<T>(yielded.Value.Value, mapping(yielded.Value.Remaining))
-                : null;
     }
 }

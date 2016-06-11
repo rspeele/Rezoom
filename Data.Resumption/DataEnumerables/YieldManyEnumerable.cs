@@ -12,25 +12,30 @@ namespace Data.Resumption.DataEnumerables
     /// <typeparam name="T"></typeparam>
     internal class YieldManyEnumerable<T> : IDataEnumerable<T>
     {
-        private readonly List<T> _values;
-        private readonly int _index;
+        private readonly IEnumerable<T> _values;
 
-        private YieldManyEnumerable(List<T> values, int index)
+        public YieldManyEnumerable(IEnumerable<T> values)
         {
             _values = values;
-            _index = index;
         }
 
-        public YieldManyEnumerable(IEnumerable<T> values) : this(values.ToList(), 0) { }
-
-        public IDataTask<DataTaskYield<T>?> Yield()
+        private class YieldManyEnumerator : IDataEnumerator<T>
         {
-            if (_values.Count <= _index)
+            private readonly IEnumerator<T> _enumerator;
+
+            public YieldManyEnumerator(IEnumerator<T> enumerator)
             {
-                return DataTask.Return<DataTaskYield<T>?>(null);
+                _enumerator = enumerator;
             }
-            return DataTask.Return<DataTaskYield<T>?>
-                (new DataTaskYield<T>(_values[_index], new YieldManyEnumerable<T>(_values, _index + 1)));
+
+            public IDataTask<DataTaskYield<T>> MoveNext()
+                => DataTask.Return(_enumerator.MoveNext()
+                    ? new DataTaskYield<T>(_enumerator.Current)
+                    : new DataTaskYield<T>());
+
+            public void Dispose() => _enumerator.Dispose();
         }
+
+        public IDataEnumerator<T> GetEnumerator() => new YieldManyEnumerator(_values.GetEnumerator());
     }
 }

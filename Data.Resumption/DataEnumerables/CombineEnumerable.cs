@@ -17,13 +17,34 @@ namespace Data.Resumption.DataEnumerables
             _second = second;
         }
 
-        public IDataTask<DataTaskYield<T>?> Yield()
-            => _first.Yield().SelectMany(firstYield =>
-                firstYield.HasValue
-                    ? DataTask.Return<DataTaskYield<T>?>(new DataTaskYield<T>
-                        ( firstYield.Value.Value
-                        , new CombineEnumerable<T>(firstYield.Value.Remaining, _second)
-                        ))
-                    : _second().Yield());
+        private class CombineEnumerator : IDataEnumerator<T>
+        {
+            private IDataEnumerator<T> _current;
+            private Func<IDataEnumerator<T>> _next;
+
+            public CombineEnumerator(IDataEnumerator<T> current, Func<IDataEnumerator<T>> next)
+            {
+                _current = current;
+                _next = next;
+            }
+
+            private IDataTask<DataTaskYield<T>> AdvanceEnumerators()
+            {
+                if (_next == null) return DataTask.Return(new DataTaskYield<T>());
+                _current.Dispose();
+                _current = _next();
+                _next = null;
+                return _current.MoveNext();
+            }
+
+            public IDataTask<DataTaskYield<T>> MoveNext()
+                => _current.MoveNext()
+                    .SelectMany(y => y.HasValue ? DataTask.Return(y) : AdvanceEnumerators());
+
+            public void Dispose() => _current?.Dispose();
+        }
+
+        public IDataEnumerator<T> GetEnumerator()
+            => new CombineEnumerator(_first.GetEnumerator(), () => _second().GetEnumerator());
     }
 }

@@ -19,17 +19,13 @@ namespace Data.Resumption.DataTasks
             _iteration = iteration;
         }
 
-        public StepState<TVoid> Step()
-            => _enumerable.Yield()
-                .SelectMany(yielded =>
-                {
-                    if (yielded == null)
-                    {
-                        return DataTask.Return(default(TVoid));
-                    }
-                    return _iteration(yielded.Value.Value)
-                        .SelectMany(_ =>
-                            new ForEachTask<TElement, TVoid>(yielded.Value.Remaining, _iteration));
-                }).Step();
+        private IDataTask<TVoid> Iterate(IDataEnumerator<TElement> enumerator)
+            => enumerator.MoveNext().SelectMany(yield =>
+                yield.HasValue
+                ? _iteration(yield.Value).SelectMany(_ => Iterate(enumerator))
+                : DataTask.Return(default(TVoid)));
+
+        public StepState<TVoid> Step() 
+            => DataTask.Using(() => _enumerable.GetEnumerator(), Iterate).Step();
     }
 }
