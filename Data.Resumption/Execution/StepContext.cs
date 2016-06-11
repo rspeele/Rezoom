@@ -9,6 +9,7 @@ namespace Data.Resumption.Execution
     internal class StepContext
     {
         private readonly IServiceContext _serviceContext;
+        private readonly IExecutionLog _executionLog;
         private readonly ResponseCache _cache;
         private readonly List<Func<Task>> _unsequenced = new List<Func<Task>>();
         private readonly Dictionary<object, List<Func<Task>>> _sequenceGroups
@@ -16,10 +17,29 @@ namespace Data.Resumption.Execution
         private readonly Dictionary<object, Func<SuccessOrException>> _deduped
             = new Dictionary<object, Func<SuccessOrException>>();
 
-        public StepContext(IServiceContext serviceContext, ResponseCache cache)
+        public StepContext(IServiceContext serviceContext, IExecutionLog executionLog, ResponseCache cache)
         {
             _serviceContext = serviceContext;
+            _executionLog = executionLog;
             _cache = cache;
+        }
+
+        private class PendingResult
+        {
+            private SuccessOrException _result;
+            public SuccessOrException Get() => _result;
+            public async Task Run(IDataRequest request, IExecutionLog log, Func<Task<object>> prepared)
+            {
+                try
+                {
+                    _result = new SuccessOrException(await prepared());
+                }
+                catch (Exception ex)
+                {
+                    _result = new SuccessOrException(ex);
+                }
+                log?.OnComplete(request, _result);
+            }
         }
 
         private Func<SuccessOrException> AddRequestToRun(IDataRequest request)
@@ -28,29 +48,19 @@ namespace Data.Resumption.Execution
             {
                 _cache.Invalidate(request.DataSource);
             }
-            var eventual = default(SuccessOrException);
-            Func<SuccessOrException> getEventual = () => eventual;
+            var eventual = new PendingResult();
             Func<Task<object>> prepared;
             try
             {
                 prepared = request.Prepare(_serviceContext);
+                _executionLog?.OnPrepare(request);
             }
             catch (Exception ex)
             {
+                _executionLog?.OnPrepareFailure(ex);
                 return () => new SuccessOrException(ex);
             }
-            Func<Task> run = async () =>
-            {
-                try
-                {
-                    var success = await prepared();
-                    eventual = new SuccessOrException(success);
-                }
-                catch (Exception ex)
-                {
-                    eventual = new SuccessOrException(ex);
-                }
-            };
+            Func<Task> run = async () => await eventual.Run(request, _executionLog, prepared);
             var sequenceGroupId = request.SequenceGroup;
             if (sequenceGroupId == null)
             {
@@ -66,7 +76,7 @@ namespace Data.Resumption.Execution
                 }
                 sequenceGroup.Add(run);
             }
-            return getEventual;
+            return eventual.Get;
         }
 
         public Func<SuccessOrException> AddRequest(IDataRequest request)

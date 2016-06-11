@@ -5,21 +5,24 @@ namespace Data.Resumption.Execution
 {
     public class ExecutionContext : IServiceContext
     {
+        private readonly IExecutionLog _log;
         private readonly ServiceContext _serviceContext;
         private readonly ResponseCache _responseCache = new ResponseCache();
 
-        public ExecutionContext(IServiceFactory serviceFactory)
+        public ExecutionContext(IServiceFactory serviceFactory, IExecutionLog log = null)
         {
             _serviceContext = new ServiceContext(serviceFactory);
+            _log = log;
         }
 
         private async Task<IDataTask<T>> ExecutePending<T>(RequestsPending<T> pending)
         {
+            _log?.OnStepStart();
             _serviceContext.BeginStep();
             Batch<SuccessOrException> responses;
             try
             {
-                var stepContext = new StepContext(_serviceContext, _responseCache);
+                var stepContext = new StepContext(_serviceContext, _log, _responseCache);
                 var retrievals = pending.Requests.Map
                     (request => stepContext.AddRequest(request));
                 await stepContext.Execute();
@@ -28,6 +31,7 @@ namespace Data.Resumption.Execution
             finally
             {
                 _serviceContext.EndStep();
+                _log?.OnStepFinish();
             }
             return pending.Resume(responses);
         }
