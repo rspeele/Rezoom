@@ -46,5 +46,8 @@ let rec loop (condition : unit -> bool) (iteration : unit -> IDataTask<'a>) =
     else
         zero
 
-let forEach (sequence : IDataEnumerable<'a>) (iteration : 'a -> IDataTask<unit>) =
+let forEach (sequence : 'a seq) (iteration : 'a -> unit datatask) =
+    DataTask.ForEach(sequence, Func<_, _>(iteration))
+
+let forEachData (sequence : IDataEnumerable<'a>) (iteration : 'a -> IDataTask<unit>) =
     DataTask.ForEach(sequence, Func<_, _>(iteration))

@@ -3,17 +3,17 @@
 namespace Data.Resumption.DataTasks
 {
     /// <summary>
-    /// Represents iteration over an asynchronous sequence.
+    /// Represents iteration over a lazily evaluated asynchronous sequence.
     /// Always returns default(<typeparamref name="TVoid"/>).
     /// </summary>
     /// <typeparam name="TElement"></typeparam>
     /// <typeparam name="TVoid"></typeparam>
-    internal class ForEachTask<TElement, TVoid> : IDataTask<TVoid>
+    internal class ForEachDataEnumerableTask<TElement, TVoid> : IDataTask<TVoid>
     {
         private readonly IDataEnumerable<TElement> _enumerable;
         private readonly Func<TElement, IDataTask<TVoid>> _iteration;
 
-        public ForEachTask(IDataEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
+        public ForEachDataEnumerableTask(IDataEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
         {
             _enumerable = enumerable;
             _iteration = iteration;

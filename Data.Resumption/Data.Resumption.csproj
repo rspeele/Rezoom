@@ -49,7 +49,8 @@
     <Compile Include="DataEnumerables\YieldEnumerable.cs" />
     <Compile Include="DataEnumerables\YieldManyEnumerable.cs" />
     <Compile Include="DataEnumerables\ZeroEnumerable.cs" />
-    <Compile Include="DataTasks\ForEachTask.cs" />
+    <Compile Include="DataTasks\ForEachDataEnumerableTask.cs" />
+    <Compile Include="DataTasks\ForEachEnumerableTask.cs" />
     <Compile Include="DataTaskYield.cs" />
     <Compile Include="Execution\IExecutionLog.cs" />
     <Compile Include="IDataEnumerator.cs" />
