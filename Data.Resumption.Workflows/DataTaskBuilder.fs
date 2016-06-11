@@ -48,12 +48,12 @@ type DataTaskBuilder() =
 
     member __.For(dataSequence, iteration) : datatask<unit> Serial =
         serial <| DataTaskMonad.forEachData dataSequence iteration
-    member __.For(Serial sequence, iteration) : datatask<unit> =
-        DataTaskMonad.forEach sequence iteration
-    member __.For(sequence, iteration) : datatask<unit> =
+    member __.For(Serial sequence, iteration) : datatask<unit> Serial =
+        serial <| DataTaskMonad.forEach sequence iteration
+    member __.For(sequence, iteration) : datatask<unit> Serial =
         let tasks =
             sequence |> Seq.map iteration
-        DataTaskMonad.sum tasks () (fun () () -> ())
+        serial <| DataTaskMonad.sum tasks () (fun () () -> ())
 
     member __.While(condition, iteration) =
         DataTaskMonad.loop condition iteration
