@@ -13,7 +13,7 @@ type DataTaskBuilder() =
     member __.ReturnFrom(task : IDataTask<_>) : IDataTask<_> =
         task
 
-    member __.Bind(Strict task, continuation) : IDataTask<_> =
+    member __.Bind(Serial task, continuation) : IDataTask<_> =
         DataTaskMonad.bind task continuation
     member __.Bind(task : IDataTask<'a>, continuation) : IDataTask<_> =
         if typeof<'a> = typeof<unit> then
@@ -36,7 +36,7 @@ type DataTaskBuilder() =
             | d -> d.Dispose()
         DataTaskMonad.tryFinally (fun () -> body disposable) dispose
 
-    member __.Combine(Strict task, continuation) : IDataTask<_> =
+    member __.Combine(Serial task, continuation) : IDataTask<_> =
         DataTaskMonad.combineStrict task continuation
     member __.Combine(task, continuation) : IDataTask<_> =
         DataTaskMonad.combineLazy task continuation
@@ -46,9 +46,9 @@ type DataTaskBuilder() =
     member __.TryWith(task : unit -> IDataTask<_>, exceptionHandler) : IDataTask<_> =
         DataTaskMonad.tryWith task exceptionHandler
 
-    member __.For(dataSequence, iteration) : IDataTask<unit> Strict =
-        strict <| DataTaskMonad.forEachData dataSequence iteration
-    member __.For(Strict sequence, iteration) : IDataTask<unit> =
+    member __.For(dataSequence, iteration) : IDataTask<unit> Serial =
+        serial <| DataTaskMonad.forEachData dataSequence iteration
+    member __.For(Serial sequence, iteration) : IDataTask<unit> =
         DataTaskMonad.forEach sequence iteration
     member __.For(sequence, iteration) : IDataTask<unit> =
         let tasks =

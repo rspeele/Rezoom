@@ -24,12 +24,12 @@ let datatuple3 taskA taskB taskC =
 let datatuple4 taskA taskB taskC taskD =
     (fun a b c d -> (a, b, c, d)) <@> taskA <*> taskB <*> taskC <*> taskD
 
-/// Wrapper type to indicate computations should be evaluated in strict sequence
+/// Wrapper type to indicate computations should be evaluated in series
 /// with `DataTaskMonad.bind` instead of concurrently combined with `DataTaskMonad.apply`.
-type Strict<'a> = internal Strict of 'a
+type Serial<'a> = internal Serial of 'a
 
-/// Mark a data task or sequence to be evaluated in strict sequence.
-let strict x = Strict x
+/// Mark a data task or sequence to be evaluated in series.
+let serial x = Serial x
 
 /// Convert a TPL task to a data task.
 let await (task : unit -> Task<'a>) = (Func<_>(task)).ToDataTask()
