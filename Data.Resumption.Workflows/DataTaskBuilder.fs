@@ -5,17 +5,17 @@ open System
 open System.Threading.Tasks
 
 type DataTaskBuilder() =
-    member __.Zero() : IDataTask<unit> =
+    member __.Zero() : datatask<unit> =
         DataTaskMonad.zero
 
-    member __.Return(value) : IDataTask<_> =
+    member __.Return(value) : datatask<_> =
         DataTaskMonad.ret value
-    member __.ReturnFrom(task : IDataTask<_>) : IDataTask<_> =
+    member __.ReturnFrom(task : datatask<_>) : datatask<_> =
         task
 
-    member __.Bind(Serial task, continuation) : IDataTask<_> =
+    member __.Bind(Serial task, continuation) : datatask<_> =
         DataTaskMonad.bind task continuation
-    member __.Bind(task : IDataTask<'a>, continuation) : IDataTask<_> =
+    member __.Bind(task : datatask<'a>, continuation) : datatask<_> =
         if typeof<'a> = typeof<unit> then
             DataTaskMonad.apply
                 ((fun _ b -> b) <@> task)
@@ -36,21 +36,21 @@ type DataTaskBuilder() =
             | d -> d.Dispose()
         DataTaskMonad.tryFinally (fun () -> body disposable) dispose
 
-    member __.Combine(Serial task, continuation) : IDataTask<_> =
+    member __.Combine(Serial task, continuation) : datatask<_> =
         DataTaskMonad.combineStrict task continuation
-    member __.Combine(task, continuation) : IDataTask<_> =
+    member __.Combine(task, continuation) : datatask<_> =
         DataTaskMonad.combineLazy task continuation
 
-    member __.TryFinally(task : unit -> IDataTask<_>, onExit) : IDataTask<_> =
+    member __.TryFinally(task : unit -> datatask<_>, onExit) : datatask<_> =
         DataTaskMonad.tryFinally task onExit
-    member __.TryWith(task : unit -> IDataTask<_>, exceptionHandler) : IDataTask<_> =
+    member __.TryWith(task : unit -> datatask<_>, exceptionHandler) : datatask<_> =
         DataTaskMonad.tryWith task exceptionHandler
 
-    member __.For(dataSequence, iteration) : IDataTask<unit> Serial =
+    member __.For(dataSequence, iteration) : datatask<unit> Serial =
         serial <| DataTaskMonad.forEachData dataSequence iteration
-    member __.For(Serial sequence, iteration) : IDataTask<unit> =
+    member __.For(Serial sequence, iteration) : datatask<unit> =
         DataTaskMonad.forEach sequence iteration
-    member __.For(sequence, iteration) : IDataTask<unit> =
+    member __.For(sequence, iteration) : datatask<unit> =
         let tasks =
             sequence |> Seq.map iteration
         DataTaskMonad.sum tasks () (fun () () -> ())
@@ -58,7 +58,7 @@ type DataTaskBuilder() =
     member __.While(condition, iteration) =
         DataTaskMonad.loop condition iteration
 
-    member __.Delay(f : unit -> IDataTask<_>) = f
-    member __.Run(f : unit -> IDataTask<_>) = f()
+    member __.Delay(f : unit -> datatask<_>) = f
+    member __.Run(f : unit -> datatask<_>) = f()
 
 let datatask = new DataTaskBuilder()

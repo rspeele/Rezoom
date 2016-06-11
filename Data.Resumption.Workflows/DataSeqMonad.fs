@@ -11,7 +11,7 @@ let yieldM xs = DataEnumerable.YieldMany(xs)
 let bind (enumerable : IDataEnumerable<'a>) (continuation : 'a -> IDataEnumerable<'b>) =
     DataEnumerable.SelectMany(enumerable, Func<_, _>(continuation))
 
-let bindTask (task : IDataTask<'a>) (continuation : 'a -> IDataEnumerable<'b>) =
+let bindTask (task : datatask<'a>) (continuation : 'a -> IDataEnumerable<'b>) =
     DataEnumerable.SelectMany(task, Func<_, _>(continuation))
 
 let combine (first : IDataEnumerable<'a>) (next : unit -> IDataEnumerable<'a>) =

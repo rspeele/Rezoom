@@ -76,7 +76,7 @@ type ExpectedResult<'a> =
 
 type ExpectedResultTest<'a> =
     {
-        Task : unit -> IDataTask<'a>
+        Task : unit -> 'a datatask
         Batches : string list list
         Result : ExpectedResult<'a>
     }
