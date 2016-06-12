@@ -22,7 +22,7 @@ type TestQueries() =
                 datatask {
                     let! users = query "select Id from Users" []
                     let names = new ResizeArray<string>()
-                    for user in users.Rows do
+                    for user in weave users.Rows do
                         let id = user.[0]
                         let! name = query "select Name from Users where Id = {0}" [id]
                         names.Add(name.Rows.[0].[0] |> string)

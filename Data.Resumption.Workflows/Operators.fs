@@ -24,12 +24,14 @@ let datatuple3 taskA taskB taskC =
 let datatuple4 taskA taskB taskC taskD =
     (fun a b c d -> (a, b, c, d)) <@> taskA <*> taskB <*> taskC <*> taskD
 
-/// Wrapper type to indicate computations should be evaluated in series
-/// with `DataTaskMonad.bind` instead of concurrently combined with `DataTaskMonad.apply`.
-type Serial<'a> = internal Serial of 'a
+/// Wraps a datatask or sequence to indicate that it can be woven together
+/// with the following task via `apply`. This is used in overload resolution
+/// within `DataTaskBuilder`.
+type Weave<'a> = internal Weave of 'a
 
-/// Mark a data task or sequence to be evaluated in series.
-let serial x = Serial x
+/// Mark a datatask or sequence to be evaluated woven together with following
+/// tasks if possible.
+let weave x = Weave x
 
 /// Convert a TPL task to a data task.
-let await (task : unit -> Task<'a>) = (Func<_>(task)).ToDataTask()
+let await (task : Task<'a>) = (Func<_>(fun () -> task)).ToDataTask()

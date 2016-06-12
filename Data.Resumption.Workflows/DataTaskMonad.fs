@@ -37,7 +37,7 @@ let tryFinally (wrapped : unit -> datatask<'a>) (onExit : unit -> unit) =
 let combineStrict (taskA : datatask<'a>) (taskB : unit -> datatask<'b>) =
     bind taskA (fun _ -> taskB())
 
-let combineLazy (taskA : datatask<'a>) (taskB : unit -> datatask<'b>) =
+let combineWeave (taskA : datatask<'a>) (taskB : unit -> datatask<'b>) =
     apply (map (fun _ b -> b) taskA) (taskB())
 
 let rec loop (condition : unit -> bool) (iteration : unit -> datatask<'a>) =
