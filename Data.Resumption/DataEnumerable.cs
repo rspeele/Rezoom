@@ -23,6 +23,43 @@ namespace Data.Resumption
             (this IDataTask<TIn> input, Func<TIn, IDataEnumerable<TOut>> selector)
             => new BindTaskEnumerable<TIn, TOut>(input, selector);
 
+        public static IDataEnumerable<TOut> Select<TIn, TOut>
+            (this IDataEnumerable<TIn> inputs, Func<TIn, TOut> mapping)
+            => new MapEnumerable<TIn, TOut>(inputs, mapping);
+
+        public static IDataEnumerable<T> Where<T>
+            (this IDataEnumerable<T> inputs, Func<T, bool> predicate)
+            => new FilterEnumerable<T>(inputs, predicate);
+
+        public static IDataEnumerable<T> Where<T>
+            (this IDataEnumerable<T> inputs, Func<T, IDataTask<bool>> predicate)
+            => inputs.SelectMany(e => predicate(e).SelectMany(t => t ? Yield(e) : Zero<T>()));
+
+        public static IDataEnumerable<T> Take<T>
+            (this IDataEnumerable<T> inputs, int count)
+            => new TakeEnumerable<T>(inputs, count);
+
+        public static IDataEnumerable<T> TakeWhile<T>
+            (this IDataEnumerable<T> inputs, Func<T, IDataTask<bool>> predicate)
+            => new TakeWhileEnumerable<T>(inputs, predicate);
+
+        public static IDataEnumerable<T> TakeWhile<T>
+            (this IDataEnumerable<T> inputs, Func<T, bool> predicate)
+            => inputs.TakeWhile(x => DataTask.Return(predicate(x)));
+
+        public static IDataEnumerable<TOut> Zip<TLeft, TRight, TOut>
+            ( IDataEnumerable<TLeft> left
+            , IDataEnumerable<TRight> right
+            , Func<TLeft, TRight, IDataTask<TOut>> zipper
+            ) => new ZipEnumerable<TLeft, TRight, TOut>(left, right, zipper);
+
+        public static IDataEnumerable<TOut> Zip<TLeft, TRight, TOut>
+            ( IDataEnumerable<TLeft> left
+            , IDataEnumerable<TRight> right
+            , Func<TLeft, TRight, TOut> zipper
+            ) => new ZipEnumerable<TLeft, TRight, TOut>
+                (left, right, (l, r) => DataTask.Return(zipper(l, r)));
+
         public static IDataEnumerable<T> Combine<T>
             (this IDataEnumerable<T> first, Func<IDataEnumerable<T>> second)
             => new CombineEnumerable<T>(first, second);

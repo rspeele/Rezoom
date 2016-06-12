@@ -44,11 +44,16 @@
     <Compile Include="DataEnumerables\BindEnumerable.cs" />
     <Compile Include="DataEnumerables\BindTaskEnumerable.cs" />
     <Compile Include="DataEnumerables\CombineEnumerable.cs" />
+    <Compile Include="DataEnumerables\FilterEnumerable.cs" />
+    <Compile Include="DataEnumerables\MapEnumerable.cs" />
+    <Compile Include="DataEnumerables\TakeEnumerable.cs" />
+    <Compile Include="DataEnumerables\TakeWhileEnumerable.cs" />
     <Compile Include="DataEnumerables\TryCatchEnumerable.cs" />
     <Compile Include="DataEnumerables\TryFinallyEnumerable.cs" />
     <Compile Include="DataEnumerables\YieldEnumerable.cs" />
     <Compile Include="DataEnumerables\YieldManyEnumerable.cs" />
     <Compile Include="DataEnumerables\ZeroEnumerable.cs" />
+    <Compile Include="DataEnumerables\ZipEnumerable.cs" />
     <Compile Include="DataTasks\ForEachDataEnumerableTask.cs" />
     <Compile Include="DataTasks\ForEachEnumerableTask.cs" />
     <Compile Include="DataTaskYield.cs" />

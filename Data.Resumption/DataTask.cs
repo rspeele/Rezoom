@@ -31,6 +31,12 @@ namespace Data.Resumption
             (this IDataTask<Func<T, TOut>> functionTask, IDataTask<T> inputTask)
             => new ApplyTask<T, TOut>(functionTask, inputTask);
 
+        public static IDataTask<TOut> Zip<TLeft, TRight, TOut>
+            (this IDataTask<TLeft> left, IDataTask<TRight> right, Func<TLeft, TRight, TOut> zipper)
+            => left
+                .Select(lf => (Func<TRight, TOut>)(rt => zipper(lf, rt)))
+                .Apply(right);
+
         public static IDataTask<TSum> Sum<T, TSum>
             (this IEnumerable<IDataTask<T>> tasks, TSum initial, Func<TSum, T, TSum> add)
             => new SumTask<T, TSum>(tasks, initial, add);
