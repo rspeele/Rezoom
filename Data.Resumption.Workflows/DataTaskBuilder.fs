@@ -13,7 +13,7 @@ type DataTaskBuilder() =
     member __.ReturnFrom(task : datatask<_>) : datatask<_> =
         task
 
-    member __.Bind(Weave (task : datatask<unit>), continuation) : datatask<_> =
+    member __.Bind(Batch (task : datatask<unit>), continuation) : datatask<_> =
         DataTaskMonad.combineWeave task continuation
     member __.Bind(task : datatask<'a>, continuation) : datatask<_> =
         DataTaskMonad.bind task continuation
@@ -31,7 +31,7 @@ type DataTaskBuilder() =
             | d -> d.Dispose()
         DataTaskMonad.tryFinally (fun () -> body disposable) dispose
 
-    member __.Combine(Weave task, continuation) : datatask<_> =
+    member __.Combine(Batch task, continuation) : datatask<_> =
         DataTaskMonad.combineWeave task continuation
     member __.Combine(task, continuation) : datatask<_> =
         DataTaskMonad.combineStrict task continuation
@@ -45,7 +45,7 @@ type DataTaskBuilder() =
         DataTaskMonad.forEachData dataSequence iteration
     member __.For(sequence, iteration) : datatask<unit> =
         DataTaskMonad.forEach sequence iteration
-    member __.For(Weave sequence, iteration) : datatask<unit> =
+    member __.For(Batch sequence, iteration) : datatask<unit> =
         let tasks =
             sequence |> Seq.map iteration
         DataTaskMonad.sum tasks () (fun () () -> ())

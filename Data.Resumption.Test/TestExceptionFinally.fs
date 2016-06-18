@@ -196,7 +196,7 @@ type TestExceptionFinally() =
         {
             Task = fun () ->
                 datatask {
-                    for q in weave ["x"; "y"; "z"] do
+                    for q in batch ["x"; "y"; "z"] do
                         if q = "y" then
                             do! good q
                         else

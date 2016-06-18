@@ -24,14 +24,14 @@ let datatuple3 taskA taskB taskC =
 let datatuple4 taskA taskB taskC taskD =
     (fun a b c d -> (a, b, c, d)) <@> taskA <*> taskB <*> taskC <*> taskD
 
-/// Wraps a datatask or sequence to indicate that it can be woven together
+/// Wraps a datatask or sequence to indicate that it can be mixed together
 /// with the following task via `apply`. This is used in overload resolution
 /// within `DataTaskBuilder`.
-type Weave<'a> = internal Weave of 'a
+type Batch<'a> = internal Batch of 'a
 
-/// Mark a datatask or sequence to be evaluated woven together with following
+/// Mark a datatask or sequence to be evaluated mixed together with following
 /// tasks if possible.
-let weave x = Weave x
+let batch x = Batch x
 
 /// Convert a TPL task to a data task.
 let await (task : Task<'a>) = (Func<_>(fun () -> task)).ToDataTask()
