@@ -82,6 +82,14 @@ namespace Data.Resumption
             (this IEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
             => new ForEachEnumerableTask<TElement, TVoid>(enumerable, iteration);
 
+        public static IDataTask<List<TElement>> ToList<TElement>
+            (this IDataEnumerable<TElement> enumerable)
+        {
+            var list = new List<TElement>();
+            return new ForEachDataEnumerableTask<TElement, bool>
+                (enumerable, e => { list.Add(e); return Return(false); }).Select(_ => list);
+        }
+
         public static IDataTask<T> Using<TDisposable, T>
             (this Func<TDisposable> getDisposable, Func<TDisposable, IDataTask<T>> getBlock)
             where TDisposable : IDisposable
