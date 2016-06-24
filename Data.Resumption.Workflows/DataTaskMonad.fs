@@ -9,7 +9,7 @@ let ret value = DataTask.Return(value)
 let zero = ret ()
 
 let bind (task : datatask<'a>) (continuation : 'a -> datatask<'b>) =
-    DataTask.SelectMany(task, Func<_, _>(continuation))
+    DataTask.Bind(task, Func<_, _>(continuation))
 
 let map (mapping : 'a -> 'b) (task : datatask<'a>) =
     DataTask.Select(task, Func<_, _>(mapping))

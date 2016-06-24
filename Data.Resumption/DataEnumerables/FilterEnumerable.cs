@@ -33,7 +33,7 @@ namespace Data.Resumption.DataEnumerables
 
             public IDataTask<DataTaskYield<T>> MoveNext()
                 => _inputs.MoveNext()
-                    .SelectMany(yield =>
+                    .Bind(yield =>
                         yield.HasValue && !_predicate(yield.Value)
                         ? MoveNext()
                         : DataTask.Return(yield));

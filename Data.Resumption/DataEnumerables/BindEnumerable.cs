@@ -32,7 +32,7 @@ namespace Data.Resumption.DataEnumerables
             
             private IDataTask<DataTaskYield<TOut>> MoveNextInside(IDataEnumerator<TOut> subSelect)
                 => subSelect.MoveNext()
-                    .SelectMany(yielded =>
+                    .Bind(yielded =>
                     {
                         if (yielded.HasValue) return DataTask.Return(yielded);
                         subSelect.Dispose();
@@ -42,7 +42,7 @@ namespace Data.Resumption.DataEnumerables
 
             private IDataTask<DataTaskYield<TOut>> MoveNextOutside()
                 => _inputs.MoveNext()
-                    .SelectMany(yielded =>
+                    .Bind(yielded =>
                     {
                         if (!yielded.HasValue)
                         {

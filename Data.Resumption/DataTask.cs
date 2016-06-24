@@ -6,21 +6,101 @@ using Data.Resumption.DataTasks;
 
 namespace Data.Resumption
 {
+    /// <summary>
+    /// Contains useful extension methods for creating and composing <see cref="IDataTask{TResult}"/>s.
+    /// </summary>
     public static class DataTask
     {
+        /// <summary>
+        /// Convert a CLR <see cref="Task"/> to an <see cref="IDataRequest{TResponse}"/>.
+        /// </summary>
+        /// <param name="asyncTask"></param>
+        /// <returns></returns>
+        public static IDataRequest<object> ToDataRequest(this Func<Task> asyncTask)
+            => new OpaqueAsyncDataRequest<object>(() => asyncTask().ContinueWith(_ => (object)null));
+
+        /// <summary>
+        /// Convert a CLR <see cref="Task{T}"/> to an <see cref="IDataRequest{T}"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="asyncTask"></param>
+        /// <returns></returns>
         public static IDataRequest<T> ToDataRequest<T>(this Func<Task<T>> asyncTask)
             => new OpaqueAsyncDataRequest<T>(asyncTask);
 
+        /// <summary>
+        /// Convert a CLR <see cref="Task"/> to an <see cref="IDataTask{TResult}"/>.
+        /// </summary>
+        /// <param name="asyncTask"></param>
+        /// <returns></returns>
+        public static IDataTask<object> ToDataTask(this Func<Task> asyncTask)
+            => asyncTask.ToDataRequest().ToDataTask();
+
+        /// <summary>
+        /// Convert a CLR <see cref="Task{T}"/> to an <see cref="IDataTask{T}"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="asyncTask"></param>
+        /// <returns></returns>
         public static IDataTask<T> ToDataTask<T>(this Func<Task<T>> asyncTask)
             => asyncTask.ToDataRequest().ToDataTask();
 
+        /// <summary>
+        /// Convert an <see cref="IDataRequest{T}"/> to a <see cref="IDataTask{T}"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dataRequest"></param>
+        /// <returns></returns>
         public static IDataTask<T> ToDataTask<T>(this IDataRequest<T> dataRequest)
             => new RequestTask<T>(dataRequest);
 
+        /// <summary>
+        /// Map a synchronous function <paramref name="mapping"/> over the result of an
+        /// <see cref="IDataTask{TIn}"/> to obtain an <see cref="IDataTask{TOut}"/>.
+        /// </summary>
+        /// <typeparam name="TIn"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="bound"></param>
+        /// <param name="mapping"></param>
+        /// <returns></returns>
         public static IDataTask<TOut> Select<TIn, TOut>
             (this IDataTask<TIn> bound, Func<TIn, TOut> mapping)
             => new MapTask<TIn, TOut>(bound, mapping);
 
+        /// <summary>
+        /// Chain a dependent task onto an <see cref="IDataTask{TPending}"/> to obtain an <see cref="IDataTask{TOut}"/>.
+        /// <paramref name="continuation"/> uses the result of the <paramref name="bound"/> task to decide
+        /// what task to perform next.
+        /// </summary>
+        /// <typeparam name="TPending"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="bound"></param>
+        /// <param name="continuation"></param>
+        /// <returns></returns>
+        public static IDataTask<TOut> Bind<TPending, TOut>
+            (this IDataTask<TPending> bound, Func<TPending, IDataTask<TOut>> continuation)
+            => new BindTask<TPending, TOut>(bound, continuation);
+
+        /// <summary>
+        /// Alias for <see cref="Bind{TPending,TOut}"/> used in LINQ expression syntax.
+        /// </summary>
+        /// <example>
+        /// The following code is syntax sugar:
+        /// <code>
+        /// from x in taskX
+        /// from y in taskY(x)
+        /// select x + y
+        /// </code>
+        /// It desugars to:
+        /// <code>
+        /// taskX.SelectMany(x => taskY(x).Select(y => x + y))
+        /// </code>
+        /// </example>
+        /// <typeparam name="TPending"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="bound"></param>
+        /// <param name="continuation"></param>
+        /// <returns></returns>
         public static IDataTask<TOut> SelectMany<TPending, TOut>
             (this IDataTask<TPending> bound, Func<TPending, IDataTask<TOut>> continuation)
             => new BindTask<TPending, TOut>(bound, continuation);

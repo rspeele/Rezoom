@@ -37,7 +37,7 @@ namespace Data.Resumption.DataEnumerables
             public IDataTask<DataTaskYield<TElement>> MoveNext()
             {
                 if (_wrapped != null) return _wrapped.MoveNext();
-                return _bound.SelectMany(pending =>
+                return _bound.Bind(pending =>
                 {
                     _wrapped = _continuation(pending).GetEnumerator();
                     _bound = null;

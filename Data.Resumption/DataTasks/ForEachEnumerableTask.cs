@@ -23,7 +23,7 @@ namespace Data.Resumption.DataTasks
         {
             if (enumerator.MoveNext()) return DataTask.Return(default(TVoid));
             return _iteration(enumerator.Current)
-                .SelectMany(_ => Iterate(enumerator));
+                .Bind(_ => Iterate(enumerator));
         }
 
         public StepState<TVoid> Step()

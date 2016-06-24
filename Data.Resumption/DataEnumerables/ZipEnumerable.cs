@@ -46,7 +46,7 @@ namespace Data.Resumption.DataEnumerables
             public IDataTask<DataTaskYield<TOut>> MoveNext()
                 => _left.MoveNext()
                     .Zip(_right.MoveNext(), (ly, ry) => new { ly, ry })
-                    .SelectMany(pair =>
+                    .Bind(pair =>
                         pair.ly.HasValue && pair.ry.HasValue
                             ? _zipper(pair.ly.Value, pair.ry.Value).Select(o => new DataTaskYield<TOut>(o))
                             : DataTask.Return(new DataTaskYield<TOut>()));

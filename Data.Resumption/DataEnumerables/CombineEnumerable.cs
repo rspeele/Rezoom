@@ -39,7 +39,7 @@ namespace Data.Resumption.DataEnumerables
 
             public IDataTask<DataTaskYield<T>> MoveNext()
                 => _current.MoveNext()
-                    .SelectMany(y => y.HasValue ? DataTask.Return(y) : AdvanceEnumerators());
+                    .Bind(y => y.HasValue ? DataTask.Return(y) : AdvanceEnumerators());
 
             public void Dispose() => _current?.Dispose();
         }

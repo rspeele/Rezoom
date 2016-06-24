@@ -20,9 +20,9 @@ namespace Data.Resumption.DataTasks
         }
 
         private IDataTask<TVoid> Iterate(IDataEnumerator<TElement> enumerator)
-            => enumerator.MoveNext().SelectMany(yield =>
+            => enumerator.MoveNext().Bind(yield =>
                 yield.HasValue
-                ? _iteration(yield.Value).SelectMany(_ => Iterate(enumerator))
+                ? _iteration(yield.Value).Bind(_ => Iterate(enumerator))
                 : DataTask.Return(default(TVoid)));
 
         public StepState<TVoid> Step() 
