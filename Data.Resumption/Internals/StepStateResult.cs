@@ -2,11 +2,11 @@
 
 namespace Data.Resumption
 {
-    internal class ResultStepState<TResult> : StepState<TResult>
+    internal class StepStateResult<TResult> : StepState<TResult>
     {
         private readonly TResult _result;
 
-        public ResultStepState(TResult result)
+        public StepStateResult(TResult result)
         {
             _result = result;
         }

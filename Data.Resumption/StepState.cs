@@ -32,7 +32,7 @@ namespace Data.Resumption
         /// <param name="result"></param>
         /// <returns></returns>
         public static StepState<TResult> Result<TResult>(TResult result)
-            => new ResultStepState<TResult>(result);
+            => new StepStateResult<TResult>(result);
         /// <summary>
         /// Create a <see cref="StepState{TResult}"/> which represents pending data requests.
         /// </summary>
