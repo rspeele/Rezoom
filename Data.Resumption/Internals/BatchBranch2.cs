@@ -4,6 +4,10 @@ using System.Linq;
 
 namespace Data.Resumption
 {
+    /// <summary>
+    /// Represents a pair of <see cref="Batch{T}"/>s stuck together.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     internal sealed class BatchBranch2<T> : Batch<T>
     {
         public BatchBranch2(Batch<T> left, Batch<T> right)
@@ -19,7 +23,8 @@ namespace Data.Resumption
             => new BatchBranch2<TOut>(Left.Map(mapping), Right.Map(mapping));
 
         internal override BatchBranch2<T> AssumeBranch2() => this;
-        public override IEnumerator<T> GetEnumerator() => new[] { Left, Right }.SelectMany(c => c).GetEnumerator();
+        public override IEnumerator<T> GetEnumerator() =>
+            Left.Concat(Right).GetEnumerator();
 
         internal override BatchLeaf<T> AssumeLeaf()
         {

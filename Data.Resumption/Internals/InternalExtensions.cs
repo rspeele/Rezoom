@@ -7,6 +7,15 @@ namespace Data.Resumption
 {
     internal static class InternalExtensions
     {
+        /// <summary>
+        /// Abort all the tasks paused on <see cref="steps"/>, with <paramref name="causeOfAbortion"/> as the reason.
+        /// </summary>
+        /// <remarks>
+        /// This works by resuming the tasks with an invalid batch of results.
+        /// </remarks>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="steps"></param>
+        /// <param name="causeOfAbortion"></param>
         private static void AbortMany<T>(IEnumerable<Func<StepState<T>>> steps, Exception causeOfAbortion)
         {
             var subExceptions = new List<Exception>();
@@ -33,10 +42,34 @@ namespace Data.Resumption
             // should be impossible to get here, but if we did, the best thing to do is rethrow normally
             throw causeOfAbortion;
         }
+        /// <summary>
+        /// Abort all the tasks in <paramref name="taskToAbort"/>, with <paramref name="causeOfAbortion"/>
+        /// as the reason.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="taskToAbort"></param>
+        /// <param name="causeOfAbortion"></param>
         internal static void AbortMany<T>(this IEnumerable<IDataTask<T>> taskToAbort, Exception causeOfAbortion)
             => AbortMany(taskToAbort.Select(t => (Func<StepState<T>>)t.Step), causeOfAbortion);
+        /// <summary>
+        /// Abort all the tasks paused on <paramref name="stepToAbort"/>, with <paramref name="causeOfAbortion"/>
+        /// as the reason.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="stepToAbort"></param>
+        /// <param name="causeOfAbortion"></param>
         internal static void AbortMany<T>(this IEnumerable<StepState<T>> stepToAbort, Exception causeOfAbortion)
             => AbortMany(stepToAbort.Select(s => (Func<StepState<T>>)(() => s)), causeOfAbortion);
+
+        /// <summary>
+        /// Abort <see cref="step"/> with <paramref name="causeOfAbortion"/> as the reason.
+        /// </summary>
+        /// <remarks>
+        /// This works by resuming <see cref="step"/> with an invalid batch.
+        /// </remarks>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="step"></param>
+        /// <param name="causeOfAbortion"></param>
         private static void Abort<T>(Func<StepState<T>> step, Exception causeOfAbortion)
         {
             try

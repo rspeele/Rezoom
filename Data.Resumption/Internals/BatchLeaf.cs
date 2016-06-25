@@ -4,6 +4,10 @@ using System.Linq;
 
 namespace Data.Resumption
 {
+    /// <summary>
+    /// Represents a single element within a <see cref="Batch{T}"/>.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     internal sealed class BatchLeaf<T> : Batch<T>
     {
         public BatchLeaf(T element)

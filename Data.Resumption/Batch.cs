@@ -23,11 +23,23 @@ namespace Data.Resumption
         /// <param name="mapping"></param>
         /// <returns></returns>
         public abstract Batch<TOut> Map<TOut>(Func<T, TOut> mapping);
+        /// <summary>
+        /// Unsafely cast to a <see cref="BatchLeaf{T}"/>, throwing an exception if it is another type.
+        /// </summary>
+        /// <returns></returns>
         internal abstract BatchLeaf<T> AssumeLeaf();
+        /// <summary>
+        /// Unsafely cast to a <see cref="BatchBranchN{T}"/>, throwing an exception if it is another type.
+        /// </summary>
+        /// <returns></returns>
         internal abstract BatchBranchN<T> AssumeBranchN();
+        /// <summary>
+        /// Unsafely cast to a <see cref="BatchBranch2{T}"/>, throwing an exception if it is another type.
+        /// </summary>
+        /// <returns></returns>
         internal abstract BatchBranch2<T> AssumeBranch2();
-        public abstract IEnumerator<T> GetEnumerator();
 
+        public abstract IEnumerator<T> GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

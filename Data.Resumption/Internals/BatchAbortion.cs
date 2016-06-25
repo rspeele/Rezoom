@@ -4,6 +4,14 @@ using System.Linq;
 
 namespace Data.Resumption
 {
+    /// <summary>
+    /// Represents an invalid branch within a <see cref="Batch{T}"/>, used when aborting a <see cref="IDataTask{T}"/>.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="IDataTask{T}"/> will either complete or attempt to treat this branch as another, valid
+    /// type of <see cref="Batch{T}"/>, and receive a <see cref="DataTaskAbortException"/> for doing so.
+    /// </remarks>
+    /// <typeparam name="T"></typeparam>
     internal sealed class BatchAbortion<T> : Batch<T>
     {
         public override Batch<TOut> Map<TOut>(Func<T, TOut> mapping) => new BatchAbortion<TOut>();

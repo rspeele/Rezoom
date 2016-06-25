@@ -4,6 +4,10 @@ using System.Linq;
 
 namespace Data.Resumption
 {
+    /// <summary>
+    /// Represents an array of <see cref="Batch{T}"/>s stuck together.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     internal sealed class BatchBranchN<T> : Batch<T>
     {
         public BatchBranchN(IReadOnlyList<Batch<T>> children)
