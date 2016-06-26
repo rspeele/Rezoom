@@ -19,8 +19,10 @@ let datatuple2 taskA taskB = (fun a b -> (a, b)) <@> taskA <*> taskB
 /// Apply two DataTasks, combining their results into a tuple.
 let (<..>) taskA taskB = datatuple2 taskA taskB
 
+/// Apply three DataTasks, combining their results into a tuple.
 let datatuple3 taskA taskB taskC =
     (fun a b c -> (a, b, c)) <@> taskA <*> taskB <*> taskC
+/// Apply four DataTasks, combining their results into a tuple.
 let datatuple4 taskA taskB taskC taskD =
     (fun a b c d -> (a, b, c, d)) <@> taskA <*> taskB <*> taskC <*> taskD
 
@@ -30,7 +32,8 @@ let datatuple4 taskA taskB taskC taskD =
 type Batch<'a> = internal Batch of 'a
 
 /// Mark a datatask or sequence to be evaluated mixed together with following
-/// tasks if possible.
+/// tasks if possible. This is used in overload resolution within the `datatask`
+/// computation expression builder.
 let batch x = Batch x
 
 /// Convert a TPL task to a data task.
