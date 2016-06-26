@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Data.Resumption.Services;
+using Data.Resumption.Services.Factories;
 
 namespace Data.Resumption.Execution
 {
@@ -45,7 +46,7 @@ namespace Data.Resumption.Execution
 
         public ServiceContext(IServiceFactory factory)
         {
-            _factory = factory;
+            _factory = new AggregateServiceFactory(new DefaultServiceFactory(), factory);
         }
 
         public TService GetService<TService>()

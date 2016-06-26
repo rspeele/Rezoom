@@ -19,6 +19,8 @@ namespace Data.Resumption.Services.Factories
         {
             _factories.AddRange(factories);
         }
+        public AggregateServiceFactory(params IServiceFactory[] factories)
+            : this((IEnumerable<IServiceFactory>)factories) { }
 
         public LivingService<T>? CreateService<T>(IServiceContext context)
         {

@@ -84,10 +84,12 @@
     <Compile Include="IDataRequest.cs" />
     <Compile Include="IDataTask.cs" />
     <Compile Include="IDataEnumerable.cs" />
+    <Compile Include="Internals\DefaultServiceFactory.cs" />
     <Compile Include="Internals\InternalExtensions.cs" />
     <Compile Include="DataRequests\OpaqueAsyncDataRequest.cs" />
     <Compile Include="Internals\StepStatePending.cs" />
     <Compile Include="Internals\StepStateResult.cs" />
+    <Compile Include="Services\ExecutionLocal.cs" />
     <Compile Include="Services\Factories\AggregateServiceFactory.cs" />
     <Compile Include="Services\Factories\ZeroServiceFactory.cs" />
     <Compile Include="Services\IServiceContext.cs" />
@@ -96,6 +98,7 @@
     <Compile Include="RequestsPending.cs" />
     <Compile Include="Services\LivingService.cs" />
     <Compile Include="Services\ServiceLifetime.cs" />
+    <Compile Include="Services\StepLocal.cs" />
     <Compile Include="StepState.cs" />
     <Compile Include="SuccessOrException.cs" />
     <Compile Include="DataRequests\SynchronousDataRequest.cs" />
