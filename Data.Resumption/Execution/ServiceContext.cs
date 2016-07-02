@@ -34,8 +34,7 @@ namespace Data.Resumption.Execution
                         exceptions.Add(ex);
                     }
                 }
-                if (exceptions.Count == 1) throw exceptions[0];
-                if (exceptions.Count > 1) throw new AggregateException(exceptions);
+                if (exceptions.Count > 0) throw exceptions.Aggregate();
             }
         }
         private Cache _execution = new Cache();

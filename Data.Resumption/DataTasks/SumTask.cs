@@ -42,7 +42,7 @@ namespace Data.Resumption.DataTasks
             }
             if (failed.Count > 0)
             {
-                var cause = new AggregateException(failed);
+                var cause = failed.Aggregate();
                 stepped.AbortMany(cause);
                 throw cause;
             }
@@ -75,7 +75,7 @@ namespace Data.Resumption.DataTasks
                         }
                     }
                     if (subFailed.Count <= 0) return new SumTask<T, TSum>(subSucceeded, sum, _add);
-                    var cause = new AggregateException(subFailed);
+                    var cause = subFailed.Aggregate();
                     subSucceeded.AbortMany(cause);
                     throw cause;
                 });

@@ -108,3 +108,67 @@ type TestDataSeq() =
                 ]
             Result = Good (Set.ofList [0..3])
         } |> test
+
+    [<TestMethod>]
+    member __.TestDisposalWithoutException() =
+        let mutable early = false
+        let mutable disposed = false
+        let infinite =
+            dataseq {
+                use disp = { new IDisposable with member __.Dispose() = disposed <- true }
+                for i in Seq.initInfinite id do
+                    let! echo = send (string i)
+                    early <- disposed
+                    yield echo
+            }
+        {
+            Task = fun () ->
+                datatask {
+                    let! xs = infinite |> DataSeq.map int |> DataSeq.truncate 5 |> DataSeq.toList
+                    return Set.ofSeq xs
+                }
+            Batches =
+                [
+                    ["0"]
+                    ["1"]
+                    ["2"]
+                    ["3"]
+                    ["4"]
+                ]
+            Result = Good (Set.ofList [0..4])
+        } |> test
+        if not disposed then failwith "Never disposed!"
+        if early then failwith "Disposed early!"
+
+    [<TestMethod>]
+    member __.TestDisposalWithException() =
+        let mutable early = false
+        let mutable disposed = false
+        let infinite =
+            dataseq {
+                use disp = { new IDisposable with member __.Dispose() = disposed <- true }
+                for i in Seq.initInfinite id do
+                    let! echo = send (string i)
+                    early <- disposed
+                    if i > 2 then
+                        failwith "Oops"
+                    yield echo
+            }
+        {
+            Task = fun () ->
+                datatask {
+                    let! xs = infinite |> DataSeq.map int |> DataSeq.truncate 5 |> DataSeq.toList
+                    return Set.ofSeq xs
+                }
+            Batches =
+                [
+                    ["0"]
+                    ["1"]
+                    ["2"]
+                    ["3"]
+                ]
+            Result = Bad (fun ex ->
+                ex.InnerException.Message = "Oops")
+        } |> test
+        if not disposed then failwith "Never disposed!"
+        if early then failwith "Disposed early!"

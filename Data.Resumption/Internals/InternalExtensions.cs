@@ -7,6 +7,9 @@ namespace Data.Resumption
 {
     internal static class InternalExtensions
     {
+        public static Exception Aggregate(this ICollection<Exception> exceptions)
+            => exceptions.Count == 1 ? exceptions.First() : new AggregateException(exceptions);
+
         /// <summary>
         /// Abort all the tasks paused on <see cref="steps"/>, with <paramref name="causeOfAbortion"/> as the reason.
         /// </summary>
@@ -35,7 +38,7 @@ namespace Data.Resumption
             }
             if (subExceptions.Any())
             {
-                throw new AggregateException(causeOfAbortion, new AggregateException(subExceptions));
+                throw new AggregateException(causeOfAbortion, subExceptions.Aggregate());
             }
             // this should rethrow the exception with its original trace
             ExceptionDispatchInfo.Capture(causeOfAbortion).Throw();
