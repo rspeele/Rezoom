@@ -58,3 +58,28 @@ type TestDataSeq() =
                 ]
             Result = Good "xyz"
         } |> test
+
+    [<TestMethod>]
+    member __.TestInfiniteTakeN() =
+        let infinite =
+            dataseq {
+                for i in Seq.initInfinite id do
+                    let! echo = send (string i)
+                    yield echo
+            }
+        {
+            Task = fun () ->
+                datatask {
+                    let! xs = infinite |> DataSeq.map int |> DataSeq.truncate 5 |> DataSeq.toList
+                    return Set.ofSeq xs
+                }
+            Batches =
+                [
+                    ["0"]
+                    ["1"]
+                    ["2"]
+                    ["3"]
+                    ["4"]
+                ]
+            Result = Good (Set.ofList [0..4])
+        } |> test
