@@ -83,3 +83,28 @@ type TestDataSeq() =
                 ]
             Result = Good (Set.ofList [0..4])
         } |> test
+
+    [<TestMethod>]
+    member __.TestInfiniteTakeWhile() =
+        let infinite =
+            dataseq {
+                for i in Seq.initInfinite id do
+                    let! echo = send (string i)
+                    yield echo
+            }
+        {
+            Task = fun () ->
+                datatask {
+                    let! xs = infinite |> DataSeq.map int |> DataSeq.takeWhile (fun x -> x < 4) |> DataSeq.toList
+                    return Set.ofSeq xs
+                }
+            Batches =
+                [
+                    ["0"]
+                    ["1"]
+                    ["2"]
+                    ["3"]
+                    ["4"] // we have to load it to know that it ends the sequence
+                ]
+            Result = Good (Set.ofList [0..3])
+        } |> test
