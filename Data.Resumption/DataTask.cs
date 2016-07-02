@@ -320,6 +320,14 @@ namespace Data.Resumption
                 (enumerable, e => { list.Add(e); return Return(false); }).Select(_ => list);
         }
 
+        public static IDataTask<TAccum> Aggregate<TElement, TAccum>
+            (this IDataEnumerable<TElement> enumerable, TAccum initial, Func<TAccum, TElement, TAccum> aggregator)
+        {
+            var current = initial;
+            return new ForEachDataEnumerableTask<TElement, bool>
+                (enumerable, e => { current = aggregator(current, e); return Return(false); }).Select(_ => current);
+        }
+
         /// <summary>
         /// Use a <typeparamref name="TDisposable"/> in a <see cref="IDataTask{T}"/>, producing a task which will
         /// reliably dispose of the <typeparamref name="TDisposable"/> on completion regardless of exceptions.

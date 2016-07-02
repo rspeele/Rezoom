@@ -47,6 +47,7 @@
     <Compile Include="Aliases.fs" />
     <Compile Include="DataTaskMonad.fs" />
     <Compile Include="DataSeqMonad.fs" />
+    <Compile Include="DataSeq.fs" />
     <Compile Include="Operators.fs" />
     <Compile Include="DataTaskBuilder.fs" />
     <Compile Include="DataSeqBuilder.fs" />

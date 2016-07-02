@@ -49,6 +49,22 @@ namespace Data.Resumption
             => new BindEnumerable<TIn, TOut>(inputs, selector);
 
         /// <summary>
+        /// Concatenate subsequences generated from each element of an <see cref="IDataEnumerable{TIn}"/>
+        /// into an <see cref="IDataEnumerable{TOut}"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is conceptually the same as LINQ's <c>SelectMany</c> on regular <see cref="IEnumerable{T}"/>s.
+        /// </remarks>
+        /// <typeparam name="TIn"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="inputs"></param>
+        /// <param name="selector"></param>
+        /// <returns></returns>
+        public static IDataEnumerable<TOut> SelectMany<TIn, TOut>
+            (this IDataEnumerable<TIn> inputs, Func<TIn, IEnumerable<TOut>> selector)
+            => new BindEnumerable<TIn, TOut>(inputs, e => YieldMany(selector(e)));
+
+        /// <summary>
         /// Produce an <see cref="IDataEnumerable{TOut}"/> that depends on the execution of an
         /// <see cref="IDataTask{TIn>"/>.
         /// </summary>
