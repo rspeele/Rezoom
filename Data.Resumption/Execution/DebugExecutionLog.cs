@@ -3,6 +3,9 @@ using System.Diagnostics;
 
 namespace Data.Resumption.Execution
 {
+    /// <summary>
+    /// An <see cref="IExecutionLog"/> that writes events to the debug output window.
+    /// </summary>
     public class DebugExecutionLog : IExecutionLog
     {
         public void OnStepStart() => Debug.WriteLine("OnStepStart()");
