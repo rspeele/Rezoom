@@ -19,7 +19,6 @@ namespace Data.Resumption.ADO
         /// </summary>
         private const string CommandTerminator = ";--'*/;";
         private readonly IDbTypeRecognizer _typeRecognizer;
-        private readonly DbConnection _connection;
         private readonly DbCommand _command;
         private readonly StringBuilder _sqlCommands = new StringBuilder();
         private int _commandsCount = 0;
@@ -27,7 +26,6 @@ namespace Data.Resumption.ADO
 
         public CommandContext(DbConnection connection, IDbTypeRecognizer typeRecognizer)
         {
-            _connection = connection;
             _typeRecognizer = typeRecognizer;
             _command = connection.CreateCommand();
             _command.Connection = connection;
