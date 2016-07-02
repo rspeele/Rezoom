@@ -21,7 +21,7 @@ namespace Data.Resumption.ADO
         private readonly IDbTypeRecognizer _typeRecognizer;
         private readonly DbCommand _command;
         private readonly StringBuilder _sqlCommands = new StringBuilder();
-        private int _commandsCount = 0;
+        private int _queryCount = 0;
         private Task<List<CommandResponse>> _executing = null;
 
         public CommandContext(DbConnection connection, IDbTypeRecognizer typeRecognizer)
@@ -50,9 +50,9 @@ namespace Data.Resumption.ADO
             var sqlReferencingParams = string.Format(command.Text.Format, parameterNames);
             _sqlCommands.AppendLine(sqlReferencingParams);
             _sqlCommands.AppendLine(CommandTerminator);
-            var commandIndex = _commandsCount;
-            _commandsCount++;
-            return () => GetResultSet(commandIndex);
+            if (!command.IsQuery) return () => Task.FromResult(CommandResponse.Empty);
+            var resultSetIndex = _queryCount++;
+            return () => GetResultSet(resultSetIndex);
         }
 
         private async Task<List<CommandResponse>> GetResultSets()
@@ -63,7 +63,6 @@ namespace Data.Resumption.ADO
                 var results = new List<CommandResponse>();
                 do
                 {
-                    var rowsAffected = reader.RecordsAffected;
                     var fieldNames = Enumerable.Range(0, reader.FieldCount)
                         .Select(reader.GetName)
                         .ToArray();
@@ -74,7 +73,7 @@ namespace Data.Resumption.ADO
                         reader.GetValues(row);
                         rows.Add(row);
                     }
-                    results.Add(new CommandResponse(rowsAffected, fieldNames, rows));
+                    results.Add(new CommandResponse(fieldNames, rows));
                 } while (await reader.NextResultAsync());
                 return results;
             }

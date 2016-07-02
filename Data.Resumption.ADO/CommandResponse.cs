@@ -5,15 +5,16 @@ namespace Data.Resumption.ADO
     public class CommandResponse
     {
         public CommandResponse
-            (int rowsAffected, IReadOnlyList<string> columnNames, IReadOnlyList<IReadOnlyList<object>> rows)
+            (IReadOnlyList<string> columnNames, IReadOnlyList<IReadOnlyList<object>> rows)
         {
-            RowsAffected = rowsAffected;
             ColumnNames = columnNames;
             Rows = rows;
         }
 
-        public int RowsAffected { get; }
         public IReadOnlyList<string> ColumnNames { get; }
         public IReadOnlyList<IReadOnlyList<object>> Rows { get; }
+
+        public static readonly CommandResponse Empty
+            = new CommandResponse(new string[0], new IReadOnlyList<object>[0]);
     }
 }
