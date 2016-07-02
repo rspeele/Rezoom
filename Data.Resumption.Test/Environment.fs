@@ -3,6 +3,7 @@ module Data.Resumption.Test.Environment
 open Data.Resumption
 open Data.Resumption.DataRequests
 open Data.Resumption.Services
+open Data.Resumption.Services.Factories
 open Data.Resumption.Execution
 open System
 open System.Collections
@@ -26,16 +27,6 @@ type TestContext() =
         |> Seq.map List.ofSeq
         |> List.ofSeq
 
-type TestServiceFactory() =
-    interface IServiceFactory with
-        member __.CreateService<'a>(_) =
-            if typeof<'a> = typeof<TestContext> then
-                let service = new TestContext() :> obj
-                let living = new LivingService<'a>(unbox service, ServiceLifetime.ExecutionContext)
-                new Nullable<_>(living)
-            else 
-                new Nullable<_>()
-
 type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : string -> 'a) =
     inherit SynchronousDataRequest<'a>()
     new (query, pre, post) =
@@ -45,7 +36,7 @@ type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : str
     override __.DataSource = box typeof<TestContext>
     override __.Identity = box query
     override __.PrepareSynchronous(serviceContext) =
-        let db = serviceContext.GetService<TestContext>()
+        let db = serviceContext.GetService<ExecutionLocal<TestContext>>().Service
         pre()
         db.Prepare(query)
         Func<_>(fun () ->
@@ -82,13 +73,13 @@ type ExpectedResultTest<'a> =
     }
 
 let test expectedResult =
-    let execContext = new ExecutionContext(new TestServiceFactory())
+    let execContext = new ExecutionContext(new ZeroServiceFactory())
     let result =
         try
             execContext.Execute(expectedResult.Task()).Result |> Choice1Of2
         with
         | ex -> Choice2Of2 ex
-    let testContext = execContext.GetService<TestContext>()
+    let testContext = execContext.GetService<ExecutionLocal<TestContext>>().Service
     let batches = testContext.Batches()
 
     if batches <> expectedResult.Batches then
