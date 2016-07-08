@@ -35,7 +35,7 @@ namespace Data.Resumption.ADO
         {
             if (_executing != null)
                 throw new InvalidOperationException("Command is already executing");
-            var parameterValues = command.Text.Arguments;
+            var parameterValues = command.Text.GetArguments();
             var parameterNames = new object[parameterValues.Length];
             for (var i = 0; i < parameterValues.Length; i++)
             {
@@ -50,7 +50,6 @@ namespace Data.Resumption.ADO
             var sqlReferencingParams = string.Format(command.Text.Format, parameterNames);
             _sqlCommands.AppendLine(sqlReferencingParams);
             _sqlCommands.AppendLine(CommandTerminator);
-            if (!command.IsQuery) return () => Task.FromResult(CommandResponse.Empty);
             var resultSetIndex = _queryCount++;
             return () => GetResultSet(resultSetIndex);
         }

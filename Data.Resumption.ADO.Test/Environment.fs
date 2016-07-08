@@ -83,9 +83,12 @@ type TestDbServiceFactory() =
 let query query args =
     let args = Array.ofList args
     let command =
-        { new IFormattableString with
+        { new FormattableString() with
             member __.Format = query
-            member __.Arguments = args
+            member __.GetArguments() = args
+            member __.ArgumentCount = args.Length
+            member __.GetArgument(index) = args.[index]
+            member __.ToString(provider) = String.Format(provider, query, args)
         } |> Command.Query
     CommandRequest(command).ToDataTask()
     

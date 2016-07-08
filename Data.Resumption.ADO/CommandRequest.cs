@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Data.Resumption.DataRequests;
 using Data.Resumption.Services;
@@ -15,7 +14,7 @@ namespace Data.Resumption.ADO
             _command = command;
         }
 
-        public override object Identity => string.Format(_command.Text.Format, _command.Text.Arguments);
+        public override object Identity => FormattableString.Invariant(_command.Text);
         public override object DataSource => typeof(CommandContext);
         public override bool Mutation => _command.Mutation;
         public override bool Idempotent => _command.Idempotent;
