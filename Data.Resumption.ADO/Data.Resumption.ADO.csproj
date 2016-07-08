@@ -41,7 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Command.cs" />
-    <Compile Include="CommandContext.cs" />
+    <Compile Include="CommandBatch.cs" />
     <Compile Include="CommandRequest.cs" />
     <Compile Include="DbServiceFactory.cs" />
     <Compile Include="DbTypeRecognizer.cs" />

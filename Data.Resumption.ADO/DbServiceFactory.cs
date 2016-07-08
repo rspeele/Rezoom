@@ -20,11 +20,11 @@ namespace Data.Resumption.ADO
                 var recognizer = CreateDbTypeRecognizer();
                 return new LivingService<T>((T)recognizer, ServiceLifetime.ExecutionContext);
             }
-            if (typeof(T) == typeof(CommandContext))
+            if (typeof(T) == typeof(CommandBatch))
             {
                 var dbConnection = context.GetService<DbConnection>();
                 var dbTypeRecognizer = context.GetService<IDbTypeRecognizer>();
-                var cmdContext = new CommandContext(dbConnection, dbTypeRecognizer);
+                var cmdContext = new CommandBatch(dbConnection, dbTypeRecognizer);
                 return new LivingService<T>((T)(object)cmdContext, ServiceLifetime.ExecutionStep);
             }
             return null;
