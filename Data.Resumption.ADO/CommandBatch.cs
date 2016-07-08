@@ -24,8 +24,6 @@ namespace Data.Resumption.ADO
         private readonly DbCommand _command;
         private readonly List<string> _commands = new List<string>();
 
-        private static string GenerateSeparator() => $"DRSEP_{Guid.NewGuid():N}";
-
         private Task<List<List<CommandResponse>>> _executing;
 
         public CommandBatch(DbConnection connection, IDbTypeRecognizer typeRecognizer)
@@ -66,7 +64,7 @@ namespace Data.Resumption.ADO
             {
                 if (gluedText.Length > 0)
                 {
-                    var sep = GenerateSeparator();
+                    var sep = $"DRSEP_{Guid.NewGuid():N}";
                     gluedText.AppendLine(CommandTerminator);
                     gluedText.AppendLine($"SELECT NULL as {sep};");
                     separators.Add(sep);
