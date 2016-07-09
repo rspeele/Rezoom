@@ -32,7 +32,7 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
 
         public bool Singular => true;
 
-        public void InstallFields(TypeBuilder type)
+        public void InstallFields(TypeBuilder type, ILGenerator constructor)
         {
             _value = type.DefineField("_dr_" + _fieldName, _fieldType, FieldAttributes.Private);
             _seen = type.DefineField("_dr_seen_" + _fieldName, typeof(bool), FieldAttributes.Private);

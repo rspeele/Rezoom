@@ -21,7 +21,8 @@ namespace Data.Resumption.ADO.Materialization
         /// going to be an IBuilder.
         /// </summary>
         /// <param name="type"></param>
-        void InstallFields(TypeBuilder type);
+        /// <param name="constructor"></param>
+        void InstallFields(TypeBuilder type, ILGenerator constructor);
 
         /// <summary>
         /// Add the logic to process this property to the IBuilder's <c>ProcessRow()</c> method.
