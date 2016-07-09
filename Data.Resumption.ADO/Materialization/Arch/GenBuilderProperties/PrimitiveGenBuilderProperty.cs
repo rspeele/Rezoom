@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime;
 
 namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
 {
@@ -12,6 +11,7 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
     {
         private readonly string _fieldName;
         private readonly Type _fieldType;
+        private readonly bool _nonNull;
 
         /// <summary>
         /// The field that stores the value for this property.
@@ -26,29 +26,57 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
         {
             _fieldName = fieldName;
             _fieldType = fieldType;
+            _nonNull = fieldType.IsValueType &&
+                (!fieldType.IsGenericType || fieldType.GetGenericTypeDefinition() != typeof(Nullable<>));
         }
+
+        public bool Singular => true;
 
         public void InstallFields(TypeBuilder type)
         {
-            _value = type.DefineField(_fieldName, _fieldType, FieldAttributes.Private);
-            _seen = type.DefineField("__seen_" + _fieldName, typeof(bool), FieldAttributes.Private);
+            _value = type.DefineField("_dr_" + _fieldName, _fieldType, FieldAttributes.Private);
+            _seen = type.DefineField("_dr_seen_" + _fieldName, typeof(bool), FieldAttributes.Private);
         }
 
-        public void InstallProcessingLogic(GenInstanceMethodContext cxt)
+        public void InstallProcessingLogic(GenProcessRowContext cxt)
         {
             var il = cxt.IL;
-            var skip = il.DefineLabel();
+            var skipOnNull = _nonNull ? cxt.SkipSingularProperties : il.DefineLabel();
 
-            // First check if we can skip...
+            // First check if we can skip singular properties
             il.Emit(OpCodes.Dup);
             il.Emit(OpCodes.Ldfld, _seen);
-            il.Emit(OpCodes.Brtrue_S, skip);
+            il.Emit(OpCodes.Brtrue, cxt.SkipSingularProperties);
             {
                 // If not, attempt to load the value.
-                il.Emit
+                // Load the row array
+                il.Emit(OpCodes.Ldloc, cxt.Row);
+                // Get the column index
+                il.Emit(OpCodes.Ldloc, cxt.ColumnMap);
+                il.Emit(OpCodes.Ldstr, _fieldName);
+                il.Emit(OpCodes.Callvirt, typeof(IColumnMap).GetMethod(nameof(IColumnMap.ColumnIndex)));
+                // Load the value from the array
+                il.Emit(OpCodes.Ldelem_Ref);
+                var obj = il.DeclareLocal(typeof(object));
+                il.Emit(OpCodes.Dup);
+                il.Emit(OpCodes.Stloc, obj);
+                // If the value is null, we can skip this property
+                // ... in fact, if the value is null but we're non-nullable, we can skip all singulars
+                il.Emit(OpCodes.Brfalse, skipOnNull);
+                {
+                    // Convert and save the object
+                    il.Emit(OpCodes.Dup); // dup "this" instance
+                    il.Emit(OpCodes.Ldloc, obj);
+                    il.Emit(OpCodes.Call, Converter.ToType(_fieldType));
+                    il.Emit(OpCodes.Stfld, _value);
+                    // Set seen to true
+                    il.Emit(OpCodes.Dup); // dup "this" instance
+                    il.Emit(OpCodes.Ldc_I4_1); // 1 (true)
+                    il.Emit(OpCodes.Stfld, _seen);
+                }
             }
-            // Here's where we skip to if we already had a value.
-            il.MarkLabel(skip);
+            if (_nonNull) return;
+            il.MarkLabel(skipOnNull);
         }
 
         public void InstallPushValue(GenInstanceMethodContext cxt)
