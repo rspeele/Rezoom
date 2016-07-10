@@ -21,6 +21,10 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
         /// The boolean field that stores whether or not we've loaded the value for this property yet.
         /// </summary>
         private FieldBuilder _seen;
+        /// <summary>
+        /// The field that stores the column index for this property.
+        /// </summary>
+        private FieldBuilder _columnIndex;
 
         public PrimitiveGenBuilderProperty(string fieldName, Type fieldType)
         {
@@ -36,6 +40,17 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
         {
             _value = type.DefineField("_dr_" + _fieldName, _fieldType, FieldAttributes.Private);
             _seen = type.DefineField("_dr_seen_" + _fieldName, typeof(bool), FieldAttributes.Private);
+            _columnIndex = type.DefineField("_dr_col_" + _fieldName, typeof(int), FieldAttributes.Private);
+        }
+
+        public void InstallProcessingLogic(GenProcessColumnMapContext cxt)
+        {
+            var il = cxt.IL;
+            il.Emit(OpCodes.Dup); // dup this
+            il.Emit(OpCodes.Ldloc, cxt.ColumnMap);
+            il.Emit(OpCodes.Ldstr, _fieldName);
+            il.Emit(OpCodes.Callvirt, typeof(IColumnMap).GetMethod(nameof(IColumnMap.ColumnIndex)));
+            il.Emit(OpCodes.Stfld, _columnIndex);
         }
 
         public void InstallProcessingLogic(GenProcessRowContext cxt)
@@ -52,9 +67,8 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
                 // Load the row array
                 il.Emit(OpCodes.Ldloc, cxt.Row);
                 // Get the column index
-                il.Emit(OpCodes.Ldloc, cxt.ColumnMap);
-                il.Emit(OpCodes.Ldstr, _fieldName);
-                il.Emit(OpCodes.Callvirt, typeof(IColumnMap).GetMethod(nameof(IColumnMap.ColumnIndex)));
+                il.Emit(OpCodes.Ldloc, cxt.This);
+                il.Emit(OpCodes.Ldfld, _columnIndex);
                 // Load the value from the array
                 il.Emit(OpCodes.Ldelem_Ref);
                 var obj = il.DeclareLocal(typeof(object));

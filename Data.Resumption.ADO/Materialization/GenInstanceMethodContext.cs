@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Reflection.Emit;
+using Data.Resumption.ADO.Materialization;
 
 namespace Data.Resumption.ADO.Materialization
 {
@@ -14,15 +15,22 @@ namespace Data.Resumption.ADO.Materialization
         public ILGenerator IL { get; }
     }
 
+    internal class GenProcessColumnMapContext : GenInstanceMethodContext
+    {
+        public GenProcessColumnMapContext(ILGenerator il, LocalBuilder @this) : base(il, @this)
+        {
+            ColumnMap = il.DeclareLocal(typeof(IColumnMap));
+        }
+        public LocalBuilder ColumnMap { get; }
+    }
+
     internal class GenProcessRowContext : GenInstanceMethodContext
     {
         public GenProcessRowContext(ILGenerator il, LocalBuilder @this, Label skipSingularProperties) : base(il, @this)
         {
             SkipSingularProperties = skipSingularProperties;
-            ColumnMap = il.DeclareLocal(typeof(IColumnMap));
             Row = il.DeclareLocal(typeof(object[]));
         }
-        public LocalBuilder ColumnMap { get; }
         public LocalBuilder Row { get; }
         /// <summary>
         /// Label to skip to after all "singular" properties.

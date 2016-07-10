@@ -25,6 +25,13 @@ namespace Data.Resumption.ADO.Materialization
         void InstallFields(TypeBuilder type, ILGenerator constructor);
 
         /// <summary>
+        /// Add logic to process this proeprty to the IBuiler's <c>ProcessColumnMap()</c> method.
+        /// Assume "this" reference is on the stack (and leave it there).
+        /// </summary>
+        /// <param name="cxt"></param>
+        void InstallProcessingLogic(GenProcessColumnMapContext cxt);
+
+        /// <summary>
         /// Add the logic to process this property to the IBuilder's <c>ProcessRow()</c> method.
         /// Assume that a "this" reference to the IBuilder is currently on top of the stack.
         /// Leave it there when done.
