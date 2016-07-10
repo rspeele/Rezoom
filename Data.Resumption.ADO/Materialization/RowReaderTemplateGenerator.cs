@@ -12,9 +12,6 @@ namespace Data.Resumption.ADO.Materialization
         {
             // TODO different builder type depending on the target
             var gen = new PropertyAssignmentGenBuilder(targetType);
-            var consIL = builder.DefineConstructor
-                (MethodAttributes.Public, CallingConventions.HasThis, Type.EmptyTypes).GetILGenerator();
-            consIL.Emit(OpCodes.Ldarg_0);
             builder.AddInterfaceImplementation(typeof(IRowReader<>).MakeGenericType(targetType));
 
             GenInstanceMethodContext toEntityContext;
@@ -60,6 +57,10 @@ namespace Data.Resumption.ADO.Materialization
                 il.Emit(OpCodes.Stloc, rowContext.Row);
             }
 
+            var consIL = builder.DefineConstructor
+                (MethodAttributes.Public, CallingConventions.HasThis, Type.EmptyTypes).GetILGenerator();
+            consIL.Emit(OpCodes.Ldarg_0); // load this
+
             foreach (var prop in gen.Properties)
             {
                 prop.InstallFields(builder, consIL);
@@ -82,8 +83,11 @@ namespace Data.Resumption.ADO.Materialization
 
             gen.InstallConstructor(toEntityContext.IL);
             consIL.Emit(OpCodes.Pop); // pop this
+            consIL.Emit(OpCodes.Ret);
             columnContext.IL.Emit(OpCodes.Pop); // pop this
+            columnContext.IL.Emit(OpCodes.Ret);
             rowContext.IL.Emit(OpCodes.Pop); // pop this
+            rowContext.IL.Emit(OpCodes.Ret);
             toEntityContext.IL.Emit(OpCodes.Ret); // return constructed object
         }
 

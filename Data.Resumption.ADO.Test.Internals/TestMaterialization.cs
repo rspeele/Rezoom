@@ -13,6 +13,11 @@ namespace Data.Resumption.ADO.Test.Internals
         {
             var template = RowReaderTemplate<Point>.Template;
             var reader = template.CreateReader();
+            reader.ProcessColumnMap(ColumnMap.Parse(new[] { "X", "Y" }));
+            reader.ProcessRow(new object[] { 3, 5 });
+            var point = reader.ToEntity();
+            Assert.AreEqual(3, point.X);
+            Assert.AreEqual(5, point.Y);
         }
     }
 }

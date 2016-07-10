@@ -39,8 +39,9 @@ namespace Data.Resumption.ADO.Materialization.GenBuilders
             // object, prop
             var oloc = il.DeclareLocal(_targetType);
             il.Emit(OpCodes.Stloc, oloc); // pop object to local
-            foreach (var prop in _props)
+            for (var i = _props.Count - 1; i >= 0; i--)
             {
+                var prop = _props[i];
                 var ploc = il.DeclareLocal(prop.PropertyType);
                 il.Emit(OpCodes.Stloc, ploc); // pop property to local
                 il.Emit(OpCodes.Ldloc, oloc); // push object
@@ -58,6 +59,7 @@ namespace Data.Resumption.ADO.Materialization.GenBuilders
                     il.Emit(OpCodes.Call, setter);
                 }
             }
+            il.Emit(OpCodes.Ldloc, oloc); // push object
         }
     }
 }
