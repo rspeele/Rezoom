@@ -6,6 +6,7 @@ namespace Data.Resumption.ADO.Materialization
     {
         public static IGenBuilderProperty GetProperty(string name, Type propertyType)
         {
+            
             throw new NotImplementedException();
         }
     }

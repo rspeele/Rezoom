@@ -49,7 +49,7 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
             il.Emit(OpCodes.Dup); // dup this
             il.Emit(OpCodes.Ldloc, cxt.ColumnMap);
             il.Emit(OpCodes.Ldstr, _fieldName);
-            il.Emit(OpCodes.Callvirt, typeof(IColumnMap).GetMethod(nameof(IColumnMap.ColumnIndex)));
+            il.Emit(OpCodes.Callvirt, typeof(ColumnMap).GetMethod(nameof(ColumnMap.ColumnIndex)));
             il.Emit(OpCodes.Stfld, _columnIndex);
         }
 

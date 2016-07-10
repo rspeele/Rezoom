@@ -6,7 +6,7 @@
     }
     internal interface IRowReader<out T>
     {
-        void ProcessColumnMap(IColumnMap map);
+        void ProcessColumnMap(ColumnMap map);
         void ProcessRow(object[] row);
         T ToEntity();
     }

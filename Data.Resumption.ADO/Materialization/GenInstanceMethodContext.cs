@@ -19,7 +19,7 @@ namespace Data.Resumption.ADO.Materialization
     {
         public GenProcessColumnMapContext(ILGenerator il, LocalBuilder @this) : base(il, @this)
         {
-            ColumnMap = il.DeclareLocal(typeof(IColumnMap));
+            ColumnMap = il.DeclareLocal(typeof(ColumnMap));
         }
         public LocalBuilder ColumnMap { get; }
     }

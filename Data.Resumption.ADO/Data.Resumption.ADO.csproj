@@ -46,13 +46,13 @@
     <Compile Include="DbServiceFactory.cs" />
     <Compile Include="DbTypeRecognizer.cs" />
     <Compile Include="IDbTypeRecognizer.cs" />
+    <Compile Include="Materialization\ColumnMap.cs" />
     <Compile Include="Materialization\Converter.cs" />
     <Compile Include="Materialization\GenBuilderProperties\NavListGenBuilderProperty.cs" />
     <Compile Include="Materialization\GenBuilderProperties\PrimitiveGenBuilderProperty.cs" />
     <Compile Include="Materialization\GenBuilders\ConstructorGenBuilder.cs" />
     <Compile Include="Materialization\GenBuilderProperty.cs" />
     <Compile Include="Materialization\GenBuilders\PropertyAssignmentGenBuilder.cs" />
-    <Compile Include="Materialization\IColumnMap.cs" />
     <Compile Include="Materialization\IGenBuilder.cs" />
     <Compile Include="Materialization\IGenBuilderProperty.cs" />
     <Compile Include="Materialization\GenInstanceMethodContext.cs" />
