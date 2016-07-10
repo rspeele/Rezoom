@@ -26,9 +26,9 @@ namespace Data.Resumption.ADO.Materialization
 
     internal class GenProcessRowContext : GenInstanceMethodContext
     {
-        public GenProcessRowContext(ILGenerator il, LocalBuilder @this, Label skipSingularProperties) : base(il, @this)
+        public GenProcessRowContext(ILGenerator il, LocalBuilder @this) : base(il, @this)
         {
-            SkipSingularProperties = skipSingularProperties;
+            SkipSingularProperties = il.DefineLabel();
             Row = il.DeclareLocal(typeof(object[]));
         }
         public LocalBuilder Row { get; }

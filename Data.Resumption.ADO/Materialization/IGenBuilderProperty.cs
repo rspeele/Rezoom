@@ -18,7 +18,7 @@ namespace Data.Resumption.ADO.Materialization
 
         /// <summary>
         /// Add the fields this properties needs to keep track of to <paramref name="type"/>, which is
-        /// going to be an IBuilder.
+        /// going to be an IBuilder. Assume "this" is on the top of the stack and keep it there.
         /// </summary>
         /// <param name="type"></param>
         /// <param name="constructor"></param>

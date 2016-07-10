@@ -18,7 +18,7 @@
             DelayedRowReaderTemplate<T>.Commit();
             return DelayedRowReaderTemplate<T>.Template;
         }
-        public static readonly IRowReaderTemplate<T> Reader = GetReader();
+        public static readonly IRowReaderTemplate<T> Template = GetReader();
     }
     internal static class DelayedRowReaderTemplate<T>
     {

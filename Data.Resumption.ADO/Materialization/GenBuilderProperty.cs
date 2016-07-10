@@ -1,4 +1,5 @@
 ﻿using System;
+using Data.Resumption.ADO.Materialization.GenBuilderProperties;
 
 namespace Data.Resumption.ADO.Materialization
 {
@@ -6,8 +7,8 @@ namespace Data.Resumption.ADO.Materialization
     {
         public static IGenBuilderProperty GetProperty(string name, Type propertyType)
         {
-            
-            throw new NotImplementedException();
+            // TODO support non-primitive property types
+            return new PrimitiveGenBuilderProperty(name, propertyType);
         }
     }
 }

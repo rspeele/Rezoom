@@ -90,6 +90,7 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
                     var templateType = typeof(IRowReaderTemplate<>).MakeGenericType(_entityType);
                     il.Emit(OpCodes.Ldsfld, templateStaticType.GetField(nameof(DelayedRowReaderTemplate<object>.Template)));
                     il.Emit(OpCodes.Callvirt, templateType.GetMethod(nameof(IRowReaderTemplate<object>.CreateReader)));
+                    // TODO call ProcessColumnMap on the new reader
                     il.Emit(OpCodes.Stloc, entReader);
                     // save in dictionary
                     // stack clean (this at top)
