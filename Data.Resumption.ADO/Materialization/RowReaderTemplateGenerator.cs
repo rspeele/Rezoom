@@ -12,14 +12,15 @@ namespace Data.Resumption.ADO.Materialization
         {
             // TODO different builder type depending on the target
             var gen = new PropertyAssignmentGenBuilder(targetType);
-            var consIL = builder.DefineDefaultConstructor(MethodAttributes.Public).GetILGenerator();
+            var consIL = builder.DefineConstructor
+                (MethodAttributes.Public, CallingConventions.HasThis, Type.EmptyTypes).GetILGenerator();
             consIL.Emit(OpCodes.Ldarg_0);
             builder.AddInterfaceImplementation(typeof(IRowReader<>).MakeGenericType(targetType));
 
             GenInstanceMethodContext toEntityContext;
             {
                 var toEntity = builder.DefineMethod
-                    (nameof(IRowReader<object>.ToEntity), MethodAttributes.Public);
+                    (nameof(IRowReader<object>.ToEntity), MethodAttributes.Public | MethodAttributes.Virtual);
                 toEntity.SetParameters();
                 toEntity.SetReturnType(targetType);
                 var il = toEntity.GetILGenerator();
@@ -32,7 +33,7 @@ namespace Data.Resumption.ADO.Materialization
             GenProcessColumnMapContext columnContext;
             {
                 var processColumnMap = builder.DefineMethod
-                    (nameof(IRowReader<object>.ProcessColumnMap), MethodAttributes.Public);
+                    (nameof(IRowReader<object>.ProcessColumnMap), MethodAttributes.Public | MethodAttributes.Virtual);
                 processColumnMap.SetParameters(typeof(ColumnMap));
                 var il = processColumnMap.GetILGenerator();
                 var thisLocal = il.DeclareLocal(builder);
@@ -47,7 +48,7 @@ namespace Data.Resumption.ADO.Materialization
             GenProcessRowContext rowContext;
             {
                 var processRow = builder.DefineMethod
-                    (nameof(IRowReader<object>.ProcessRow), MethodAttributes.Public);
+                    (nameof(IRowReader<object>.ProcessRow), MethodAttributes.Public | MethodAttributes.Virtual);
                 processRow.SetParameters(typeof(object[]));
                 var il = processRow.GetILGenerator();
                 var thisLocal = il.DeclareLocal(builder);
@@ -65,11 +66,20 @@ namespace Data.Resumption.ADO.Materialization
                 prop.InstallProcessingLogic(columnContext);
                 prop.InstallPushValue(toEntityContext);
             }
-            foreach (var prop in gen.Properties.OrderByDescending(p => p.Singular))
             {
-                if (!prop.Singular) rowContext.IL.MarkLabel(rowContext.SkipSingularProperties);
-                prop.InstallProcessingLogic(rowContext);
+                var marked = false;
+                foreach (var prop in gen.Properties.OrderByDescending(p => p.Singular))
+                {
+                    if (!marked && !prop.Singular)
+                    {
+                        rowContext.IL.MarkLabel(rowContext.SkipSingularProperties);
+                        marked = true; 
+                    }
+                    prop.InstallProcessingLogic(rowContext);
+                }
+                if (!marked) rowContext.IL.MarkLabel(rowContext.SkipSingularProperties);
             }
+
             gen.InstallConstructor(toEntityContext.IL);
             consIL.Emit(OpCodes.Pop); // pop this
             columnContext.IL.Emit(OpCodes.Pop); // pop this
@@ -83,7 +93,8 @@ namespace Data.Resumption.ADO.Materialization
             if (cons == null) throw new Exception("No default constructor for reader");
             builder.DefineDefaultConstructor(MethodAttributes.Public);
             builder.AddInterfaceImplementation(typeof(IRowReaderTemplate<>).MakeGenericType(targetType));
-            var creator = builder.DefineMethod(nameof(IRowReaderTemplate<object>.CreateReader), MethodAttributes.Public);
+            var creator = builder.DefineMethod
+                (nameof(IRowReaderTemplate<object>.CreateReader), MethodAttributes.Public | MethodAttributes.Virtual);
             creator.SetParameters();
             creator.SetReturnType(typeof(IRowReader<>).MakeGenericType(targetType));
             var il = creator.GetILGenerator();

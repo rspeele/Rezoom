@@ -1,10 +1,10 @@
 ﻿namespace Data.Resumption.ADO.Materialization
 {
-    internal interface IRowReaderTemplate<out T>
+    public interface IRowReaderTemplate<out T>
     {
         IRowReader<T> CreateReader();
     }
-    internal interface IRowReader<out T>
+    public interface IRowReader<out T>
     {
         void ProcessColumnMap(ColumnMap map);
         void ProcessRow(object[] row);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Data.Resumption.ADO.Materialization
 {
-    internal class ColumnMap
+    public class ColumnMap
     {
         private readonly Dictionary<string, int> _columnIndices =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -53,7 +53,7 @@ namespace Data.Resumption.ADO.Materialization
             return _subMaps.TryGetValue(propertyName, out sub) ? sub : null;
         }
 
-        public static ColumnMap Parse(IReadOnlyList<string> columnNames)
+        internal static ColumnMap Parse(IReadOnlyList<string> columnNames)
         {
             var map = new ColumnMap();
             map.Load(columnNames);
