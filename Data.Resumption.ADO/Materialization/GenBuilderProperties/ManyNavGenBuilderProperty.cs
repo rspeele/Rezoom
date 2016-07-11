@@ -117,10 +117,10 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
                 {
                     // otherwise, make one
                     // stack clean (this at top)
-                    var templateStaticType = typeof(DelayedRowReaderTemplate<>).MakeGenericType(_entityType);
+                    var templateStaticType = typeof(RowReaderTemplate<>).MakeGenericType(_entityType);
                     var templateType = typeof(IRowReaderTemplate<>).MakeGenericType(_entityType);
                     il.Emit(OpCodes.Ldsfld, templateStaticType.GetField
-                        (nameof(DelayedRowReaderTemplate<object>.Template)));
+                        (nameof(RowReaderTemplate<object>.Template)));
                     // this, template
                     il.Emit(OpCodes.Callvirt, templateType.GetMethod
                         (nameof(IRowReaderTemplate<object>.CreateReader)));
