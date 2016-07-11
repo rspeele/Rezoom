@@ -81,7 +81,7 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
                     // Convert and save the object
                     il.Emit(OpCodes.Dup); // dup "this" instance
                     il.Emit(OpCodes.Ldloc, obj);
-                    il.Emit(OpCodes.Call, Converter.ToType(_fieldType));
+                    il.Emit(OpCodes.Call, PrimitiveConverter.ToType(_fieldType));
                     il.Emit(OpCodes.Stfld, _value);
                     // Set seen to true
                     il.Emit(OpCodes.Dup); // dup "this" instance

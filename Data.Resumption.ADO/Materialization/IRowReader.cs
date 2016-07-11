@@ -11,16 +11,12 @@
         T ToEntity();
     }
 
-    internal static class RowReaderTemplate<T>
+    public static class RowReaderTemplate<T>
     {
-        private static IRowReaderTemplate<T> GetReader()
-        {
-            DelayedRowReaderTemplate<T>.Commit();
-            return DelayedRowReaderTemplate<T>.Template;
-        }
+        private static IRowReaderTemplate<T> GetReader() => DelayedRowReaderTemplate<T>.Template;
         public static readonly IRowReaderTemplate<T> Template = GetReader();
     }
-    internal static class DelayedRowReaderTemplate<T>
+    public static class DelayedRowReaderTemplate<T>
     {
         private class DelayReaderTemplate : IRowReaderTemplate<T>
         {
@@ -29,7 +25,7 @@
         }
         public static IRowReaderTemplate<T> Template = new DelayReaderTemplate();
 
-        public static void Commit()
+        static DelayedRowReaderTemplate()
         {
             var delayed = (DelayReaderTemplate)Template;
             Template = delayed.Instance = (IRowReaderTemplate<T>)

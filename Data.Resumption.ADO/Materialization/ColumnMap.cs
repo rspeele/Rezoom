@@ -7,8 +7,8 @@ namespace Data.Resumption.ADO.Materialization
     {
         private readonly Dictionary<string, int> _columnIndices =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, ColumnMap> _subMaps
-            = new Dictionary<string, ColumnMap>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ColumnMap> _subMaps =
+            new Dictionary<string, ColumnMap>(StringComparer.OrdinalIgnoreCase);
 
         private ColumnMap GetOrCreateSubMap(string name)
         {
