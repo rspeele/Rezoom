@@ -692,7 +692,7 @@ namespace Data.Resumption.ADO.Materialization
         public static Guid ToGuid(object obj)
         {
             if (obj is Guid) return (Guid)obj;
-            return Guid.Parse(ToString(obj));
+            return Guid.Parse(obj.ToString());
         }
 
         public static Guid? ToNullableGuid(object obj) => obj == null ? (Guid?)null : ToGuid(obj);
@@ -700,11 +700,32 @@ namespace Data.Resumption.ADO.Materialization
         public static DateTime ToDateTime(object obj) => Convert.ToDateTime(obj);
         public static DateTime? ToNullableDateTime(object obj) => obj == null ? (DateTime?)null : ToDateTime(obj);
 
-        private static readonly Dictionary<Type, MethodInfo> Converters = typeof(PrimitiveConverter).GetMethods(BindingFlags.Public | BindingFlags.Static).Where(m =>
+        public static DateTimeOffset ToDateTimeOffset(object obj)
         {
-            var pars = m.GetParameters();
-            return pars.Length == 1 && pars[0].ParameterType == typeof(object);
-        }).ToDictionary(m => m.ReturnType);
+            if (obj is DateTimeOffset) return (DateTimeOffset)obj;
+            if (obj is DateTime) return (DateTime)obj; // this conversion is evil, but maybe better than nothing
+            return DateTimeOffset.Parse(obj.ToString());
+        }
+
+        public static DateTimeOffset? ToNullableDateTimeOffset(object obj) =>
+            obj == null ? (DateTimeOffset?)null : ToDateTimeOffset(obj);
+
+        public static TimeSpan ToTimeSpan(object obj)
+        {
+            if (obj is TimeSpan) return (TimeSpan)obj;
+            return TimeSpan.Parse(obj.ToString());
+        }
+
+        public static TimeSpan? ToNullableTimeSpan(object obj) => obj == null ? (TimeSpan?)null : ToTimeSpan(obj);
+
+        private static readonly Dictionary<Type, MethodInfo> Converters = 
+            typeof(PrimitiveConverter)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m =>
+                {
+                    var pars = m.GetParameters();
+                    return pars.Length == 1 && pars[0].ParameterType == typeof(object);
+                }).ToDictionary(m => m.ReturnType);
 
         public static bool IsPrimitive(Type targetType) => Converters.ContainsKey(targetType);
 
