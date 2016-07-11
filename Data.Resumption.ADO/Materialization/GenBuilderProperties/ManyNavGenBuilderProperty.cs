@@ -47,14 +47,19 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
         public void InstallProcessingLogic(GenProcessColumnMapContext cxt)
         {
             var il = cxt.IL;
+            var skip = il.DefineLabel();
             il.Emit(OpCodes.Dup); // this, this
             il.Emit(OpCodes.Dup); // this, this, this
             // Get submap for this nav property
             il.Emit(OpCodes.Dup); // this, this, this, this
             il.Emit(OpCodes.Ldloc, cxt.ColumnMap); // this, this, this, this, colmap
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Brfalse_S, skip);
             il.Emit(OpCodes.Ldstr, _fieldName); // this, this, this, this colmap, fieldname
             il.Emit(OpCodes.Callvirt, typeof(ColumnMap).GetMethod(nameof(ColumnMap.SubMap)));
-            // this, this, this, this submap
+            // this, this, this, this, submap
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Brfalse_S, skip);
             // Set column map field to submap
             il.Emit(OpCodes.Stfld, _columnMap); // this, this, this
             il.Emit(OpCodes.Ldfld, _columnMap); // this, this, submap
@@ -63,6 +68,15 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
             il.Emit(OpCodes.Callvirt, typeof(ColumnMap).GetMethod(nameof(ColumnMap.ColumnIndex)));
             // this, this, keyindex
             il.Emit(OpCodes.Stfld, _keyColumnIndex);
+            var done = il.DefineLabel();
+            il.Emit(OpCodes.Br_S, done);
+            il.MarkLabel(skip);
+            // this, this, this, this, submap
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Pop);
+            il.MarkLabel(done);
         }
 
         public void InstallProcessingLogic(GenProcessRowContext cxt)
@@ -73,6 +87,10 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
             var keyRaw = il.DeclareLocal(typeof(object));
             var key = il.DeclareLocal(_keyType);
             var entReader = il.DeclareLocal(_entityReaderType);
+            il.Emit(OpCodes.Dup); // this, this
+            il.Emit(OpCodes.Ldfld, _columnMap); // this, cmap
+            il.Emit(OpCodes.Brfalse, skip); // skip if we have no column map (for recursive case)
+
             // get the key value from the row
             il.Emit(OpCodes.Ldloc, cxt.Row); // this, row
             il.Emit(OpCodes.Ldloc, cxt.This); // this, row, this
