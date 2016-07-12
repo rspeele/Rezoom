@@ -42,6 +42,6 @@ namespace Data.Resumption
         /// </remarks>
         /// <returns></returns>
         internal static StepState<TResult> InternalStep(DataTask<TResult> task)
-            => task._step == null ? StepState.Result(task._earlyResult) : task._step();
+            => task._step != null ? task._step() : StepState.Result(task._earlyResult);
     }
 }

@@ -9,17 +9,17 @@ namespace Data.Resumption
     /// <typeparam name="TResult"></typeparam>
     public struct StepState<TResult>
     {
-        private readonly TResult _result;
-        private readonly RequestsPending<TResult> _pending;
+        internal readonly TResult Result;
+        internal readonly RequestsPending<TResult> Pending;
         internal StepState(TResult result)
         {
-            _result = result;
-            _pending = null;
+            Result = result;
+            Pending = null;
         }
         internal StepState(RequestsPending<TResult> pending)
         {
-            _pending = pending;
-            _result = default(TResult);
+            Pending = pending;
+            Result = default(TResult);
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Data.Resumption
             ( StepState<TResult> state
             , Func<RequestsPending<TResult>, T> onPending
             , Func<TResult, T> onResult
-            ) => state._pending != null ? onPending(state._pending) : onResult(state._result);
+            ) => state.Pending != null ? onPending(state.Pending) : onResult(state.Result);
     }
 
     internal static class StepState

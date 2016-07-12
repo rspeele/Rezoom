@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Data.Resumption.DataRequests;
 using Data.Resumption.DataTasks;
+using Microsoft.FSharp.Core;
 
 namespace Data.Resumption
 {
@@ -82,7 +83,22 @@ namespace Data.Resumption
             => BindTask<TPending, TOut>.Create(bound, continuation);
 
         /// <summary>
-        /// Alias for <see cref="Bind{TPending,TOut}"/> used in LINQ expression syntax.
+        /// Chain a dependent task onto an <see cref="DataTask{TResult}"/> to obtain an <see cref="DataTask{TResult}"/>.
+        /// <paramref name="continuation"/> uses the result of the <paramref name="bound"/> task to decide
+        /// what task to perform next.
+        /// </summary>
+        /// <typeparam name="TPending"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="bound"></param>
+        /// <param name="continuation"></param>
+        /// <returns></returns>
+        public static DataTask<TOut> BindF<TPending, TOut>
+            (this DataTask<TPending> bound, FSharpFunc<TPending, DataTask<TOut>> continuation)
+            => BindTask<TPending, TOut>.Create(bound, continuation);
+
+        /// <summary>
+        /// Alias for <see cref="Bind{TPending,TOut}(DataTask{TPending},Func{TPending,DataTask{TOut}})"/>
+        /// used in LINQ expression syntax.
         /// </summary>
         /// <example>
         /// The following code is syntax sugar:
