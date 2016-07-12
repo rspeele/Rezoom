@@ -30,7 +30,5 @@ namespace Data.Resumption
         {
             throw new DataTaskAbortException();
         }
-
-        public override IEnumerator<T> GetEnumerator() => Enumerable.Empty<T>().GetEnumerator();
     }
 }

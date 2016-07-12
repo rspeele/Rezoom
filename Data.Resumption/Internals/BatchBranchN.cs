@@ -10,15 +10,22 @@ namespace Data.Resumption
     /// <typeparam name="T"></typeparam>
     internal sealed class BatchBranchN<T> : Batch<T>
     {
-        public BatchBranchN(IReadOnlyList<Batch<T>> children)
+        public BatchBranchN(List<Batch<T>> children)
         {
             Children = children;
         }
 
-        public IReadOnlyList<Batch<T>> Children { get; }
+        public List<Batch<T>> Children { get; }
 
         public override Batch<TOut> Map<TOut>(Func<T, TOut> mapping)
-            => new BatchBranchN<TOut>(Children.Select(batch => batch.Map(mapping)).ToList());
+        {
+            var outputs = new List<Batch<TOut>>(Children.Count);
+            foreach (var child in Children)
+            {
+                outputs.Add(child.Map(mapping));
+            }
+            return new BatchBranchN<TOut>(outputs);
+        }
 
         internal override BatchBranchN<T> AssumeBranchN() => this;
 
@@ -31,7 +38,5 @@ namespace Data.Resumption
         {
             throw new InvalidOperationException("BranchN assumed to be a Branch2");
         }
-
-        public override IEnumerator<T> GetEnumerator() => Children.SelectMany(c => c).GetEnumerator();
     }
 }

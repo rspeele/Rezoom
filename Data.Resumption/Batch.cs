@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace Data.Resumption
@@ -13,7 +12,7 @@ namespace Data.Resumption
     /// without undue copying. It also can be easily mapped over to get a matching tree shape to correlate responses.
     /// </remarks>
     /// <typeparam name="T"></typeparam>
-    public abstract class Batch<T> : IEnumerable<T>
+    public abstract class Batch<T>
     {
         /// <summary>
         /// Map a function over this batch to get another batch with the mapped elements
@@ -38,8 +37,5 @@ namespace Data.Resumption
         /// </summary>
         /// <returns></returns>
         internal abstract BatchBranch2<T> AssumeBranch2();
-
-        public abstract IEnumerator<T> GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

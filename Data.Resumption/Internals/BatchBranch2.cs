@@ -23,8 +23,6 @@ namespace Data.Resumption
             => new BatchBranch2<TOut>(Left.Map(mapping), Right.Map(mapping));
 
         internal override BatchBranch2<T> AssumeBranch2() => this;
-        public override IEnumerator<T> GetEnumerator() =>
-            Left.Concat(Right).GetEnumerator();
 
         internal override BatchLeaf<T> AssumeLeaf()
         {

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Data.Resumption
 {
@@ -30,7 +28,5 @@ namespace Data.Resumption
         {
             throw new InvalidOperationException("Leaf assumed to be a Branch2");
         }
-
-        public override IEnumerator<T> GetEnumerator() => new[] { Element }.AsEnumerable().GetEnumerator();
     }
 }
