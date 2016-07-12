@@ -47,6 +47,7 @@
     <Compile Include="DbTypeRecognizer.cs" />
     <Compile Include="IDbTypeRecognizer.cs" />
     <Compile Include="Materialization\ColumnMap.cs" />
+    <Compile Include="Materialization\GenBuilderProperties\NavGenBuilderProperty.cs" />
     <Compile Include="Materialization\GenBuilderProperties\SingleNavGenBuilderProperty.cs" />
     <Compile Include="Materialization\NavConverter.cs" />
     <Compile Include="Materialization\PrimitiveConverter.cs" />

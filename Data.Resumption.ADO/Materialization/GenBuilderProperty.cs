@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Data.Resumption.ADO.Materialization.GenBuilderProperties;
 
 namespace Data.Resumption.ADO.Materialization
@@ -17,7 +16,7 @@ namespace Data.Resumption.ADO.Materialization
             {
                 return new ManyNavGenBuilderProperty(name, propertyType.GetElementType());
             }
-            throw new NotSupportedException($"Can't support property of type ${propertyType}");
+            return new SingleNavGenBuilderProperty(name, propertyType);
         }
     }
 }

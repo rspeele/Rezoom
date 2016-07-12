@@ -129,5 +129,47 @@ namespace Data.Resumption.ADO.Test.Internals
             Assert.AreEqual(5, folder.Children[1].Children[0].Id);
             Assert.AreEqual("f1.2.1", folder.Children[1].Children[0].Name);
         }
+
+        public class Zoo
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+        }
+        public class Animal
+        {
+            public Zoo Zoo { get; set; }
+            public int Id { get; set; }
+            public string Name { get; set; }
+        }
+
+        [TestMethod]
+        public void TestSingleNavProperty()
+        {
+            var template = RowReaderTemplate<Animal>.Template;
+            var reader = template.CreateReader();
+            var columnMap = ColumnMap.Parse(new[] { "Id", "Name", "Zoo$Id", "Name" });
+            reader.ProcessColumnMap(columnMap);
+            reader.ProcessRow(new object[] { 1, "zebra", 2, "NC zoo" });
+            var animal = reader.ToEntity();
+            Assert.AreEqual(1, animal.Id);
+            Assert.AreEqual("zebra", animal.Name);
+            Assert.IsNotNull(animal.Zoo);
+            Assert.AreEqual(2, animal.Zoo.Id);
+            Assert.AreEqual("NC zoo", animal.Zoo.Name);
+        }
+
+        [TestMethod]
+        public void TestSingleNullNavProperty()
+        {
+            var template = RowReaderTemplate<Animal>.Template;
+            var reader = template.CreateReader();
+            var columnMap = ColumnMap.Parse(new[] { "Id", "Name", "Zoo$Id", "Name" });
+            reader.ProcessColumnMap(columnMap);
+            reader.ProcessRow(new object[] { 1, "zebra", null, null });
+            var animal = reader.ToEntity();
+            Assert.AreEqual(1, animal.Id);
+            Assert.AreEqual("zebra", animal.Name);
+            Assert.IsNull(animal.Zoo);
+        }
     }
 }

@@ -2,46 +2,25 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using Data.Resumption.ADO.Materialization.TypeInfo;
 
 namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
 {
-    internal class ManyNavGenBuilderProperty : IGenBuilderProperty
+    internal class ManyNavGenBuilderProperty : NavGenBuilderProperty
     {
-        private readonly string _fieldName;
-
-        private readonly Type _entityType;
-        private readonly Type _entityReaderType;
-        private readonly Type _keyType;
-        private readonly string _keyFieldName;
         private readonly Type _dictionaryType;
 
-        public bool Singular => false;
-
         private FieldBuilder _dict;
-        private FieldBuilder _columnMap;
-        private FieldBuilder _keyColumnIndex;
 
         public ManyNavGenBuilderProperty(string fieldName, Type entityType)
+            : base(fieldName, entityType)
         {
-            _fieldName = fieldName;
-            _entityType = entityType;
-            _entityReaderType = typeof(IRowReader<>).MakeGenericType(entityType);
-            var key = typeof(TypeProfile<>).MakeGenericType(entityType)
-                .GetField(nameof(TypeProfile<object>.Profile))
-                .GetValue(null) as TypeProfile;
-            if (key == null) throw new NullReferenceException("Unexpected null type profile");
-            if (key.KeyColumn == null) throw new InvalidOperationException($"Type {entityType} has no key column");
-            _keyType = key.KeyColumn.Type;
-            _keyFieldName = key.KeyColumn.Name;
-            _dictionaryType = typeof(Dictionary<,>).MakeGenericType(_keyType, _entityReaderType);
+            _dictionaryType = typeof(Dictionary<,>).MakeGenericType(KeyColumn.Type, EntityReaderType);
         }
 
-        public void InstallFields(TypeBuilder type, ILGenerator constructor)
+        public override void InstallFields(TypeBuilder type, ILGenerator constructor)
         {
-            _columnMap = type.DefineField("_dr_cmap_" + _fieldName, typeof(ColumnMap), FieldAttributes.Private);
-            _keyColumnIndex = type.DefineField("_dr_kcol_" + _fieldName, typeof(int), FieldAttributes.Private);
-            _dict = type.DefineField("_dr_dict_" + _fieldName, _dictionaryType, FieldAttributes.Private);
+            base.InstallFields(type, constructor);
+            _dict = type.DefineField("_dr_dict_" + FieldName, _dictionaryType, FieldAttributes.Private);
             var cons = _dictionaryType.GetConstructor(Type.EmptyTypes);
             if (cons == null) throw new Exception("Unexpected lack of default constructor on dictionary type");
 
@@ -50,57 +29,22 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
             constructor.Emit(OpCodes.Stfld, _dict); // assign field
         }
 
-        public void InstallProcessingLogic(GenProcessColumnMapContext cxt)
-        {
-            var il = cxt.IL;
-            var skip = il.DefineLabel();
-            il.Emit(OpCodes.Dup); // this, this
-            il.Emit(OpCodes.Dup); // this, this, this
-            // Get submap for this nav property
-            il.Emit(OpCodes.Dup); // this, this, this, this
-            il.Emit(OpCodes.Ldloc, cxt.ColumnMap); // this, this, this, this, colmap
-            il.Emit(OpCodes.Dup);
-            il.Emit(OpCodes.Brfalse_S, skip);
-            il.Emit(OpCodes.Ldstr, _fieldName); // this, this, this, this colmap, fieldname
-            il.Emit(OpCodes.Callvirt, typeof(ColumnMap).GetMethod(nameof(ColumnMap.SubMap)));
-            // this, this, this, this, submap
-            il.Emit(OpCodes.Dup);
-            il.Emit(OpCodes.Brfalse_S, skip);
-            // Set column map field to submap
-            il.Emit(OpCodes.Stfld, _columnMap); // this, this, this
-            il.Emit(OpCodes.Ldfld, _columnMap); // this, this, submap
-            // Get key column index from submap
-            il.Emit(OpCodes.Ldstr, _keyFieldName); // this, this, submap, keyfield
-            il.Emit(OpCodes.Callvirt, typeof(ColumnMap).GetMethod(nameof(ColumnMap.ColumnIndex)));
-            // this, this, keyindex
-            il.Emit(OpCodes.Stfld, _keyColumnIndex);
-            var done = il.DefineLabel();
-            il.Emit(OpCodes.Br_S, done);
-            il.MarkLabel(skip);
-            // this, this, this, this, submap
-            il.Emit(OpCodes.Pop);
-            il.Emit(OpCodes.Pop);
-            il.Emit(OpCodes.Pop);
-            il.Emit(OpCodes.Pop);
-            il.MarkLabel(done);
-        }
-
-        public void InstallProcessingLogic(GenProcessRowContext cxt)
+        public override void InstallProcessingLogic(GenProcessRowContext cxt)
         {
             var il = cxt.IL;
             var skip = il.DefineLabel();
             var subProcess = il.DefineLabel();
             var keyRaw = il.DeclareLocal(typeof(object));
-            var key = il.DeclareLocal(_keyType);
-            var entReader = il.DeclareLocal(_entityReaderType);
+            var key = il.DeclareLocal(KeyColumn.Type);
+            var entReader = il.DeclareLocal(EntityReaderType);
             il.Emit(OpCodes.Dup); // this, this
-            il.Emit(OpCodes.Ldfld, _columnMap); // this, cmap
+            il.Emit(OpCodes.Ldfld, SubColumnMap); // this, cmap
             il.Emit(OpCodes.Brfalse, skip); // skip if we have no column map (for recursive case)
 
             // get the key value from the row
             il.Emit(OpCodes.Ldloc, cxt.Row); // this, row
             il.Emit(OpCodes.Ldloc, cxt.This); // this, row, this
-            il.Emit(OpCodes.Ldfld, _keyColumnIndex); // this, row, index
+            il.Emit(OpCodes.Ldfld, KeyColumnIndex); // this, row, index
             il.Emit(OpCodes.Ldelem_Ref); // this, rval
             // store it in a local
             il.Emit(OpCodes.Dup); // this, rval, rval
@@ -112,7 +56,7 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
                 il.Emit(OpCodes.Dup); // this, this
                 il.Emit(OpCodes.Ldfld, _dict); // this, dict
                 il.Emit(OpCodes.Ldloc, keyRaw); // this, dict, rval
-                il.Emit(OpCodes.Call, PrimitiveConverter.ToType(_keyType)); // this, dict, key
+                il.Emit(OpCodes.Call, PrimitiveConverter.ToType(KeyColumn.Type)); // this, dict, key
                 il.Emit(OpCodes.Dup); // this, dict, key, key
                 il.Emit(OpCodes.Stloc, key); // this, dict, key
                 il.Emit(OpCodes.Ldloca, entReader); // this, dict, key, &reader
@@ -123,12 +67,10 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
                 {
                     // otherwise, make one
                     // stack clean (this at top)
-                    var templateStaticType = typeof(RowReaderTemplate<>).MakeGenericType(_entityType);
-                    var templateType = typeof(IRowReaderTemplate<>).MakeGenericType(_entityType);
-                    il.Emit(OpCodes.Ldsfld, templateStaticType.GetField
+                    il.Emit(OpCodes.Ldsfld, EntityReaderStaticTemplateType.GetField
                         (nameof(RowReaderTemplate<object>.Template)));
                     // this, template
-                    il.Emit(OpCodes.Callvirt, templateType.GetMethod
+                    il.Emit(OpCodes.Callvirt, EntityReaderTemplateType.GetMethod
                         (nameof(IRowReaderTemplate<object>.CreateReader)));
                     // this, newreader
                     il.Emit(OpCodes.Dup);
@@ -138,8 +80,8 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
 
                     // process column map
                     il.Emit(OpCodes.Ldloc, cxt.This); // this, newreader, this
-                    il.Emit(OpCodes.Ldfld, _columnMap); // this, newreader, columnmap
-                    il.Emit(OpCodes.Callvirt, _entityReaderType.GetMethod
+                    il.Emit(OpCodes.Ldfld, SubColumnMap); // this, newreader, columnmap
+                    il.Emit(OpCodes.Callvirt, EntityReaderType.GetMethod
                         (nameof(IRowReader<object>.ProcessColumnMap)));
 
                     // save in dictionary
@@ -156,13 +98,13 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
                 // have the entity reader process the row
                 il.Emit(OpCodes.Ldloc, entReader); // this, reader
                 il.Emit(OpCodes.Ldloc, cxt.Row); // this, reader, row
-                il.Emit(OpCodes.Callvirt, _entityReaderType.GetMethod(nameof(IRowReader<object>.ProcessRow)));
+                il.Emit(OpCodes.Callvirt, EntityReaderType.GetMethod(nameof(IRowReader<object>.ProcessRow)));
                 // this
             }
             il.MarkLabel(skip);
         }
 
-        public void InstallPushValue(GenInstanceMethodContext cxt)
+        public override void InstallPushValue(GenInstanceMethodContext cxt)
         {
             var il = cxt.IL;
 
@@ -171,7 +113,7 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
             var values = _dictionaryType.GetProperty(nameof(Dictionary<object, object>.Values)).GetGetMethod();
             il.Emit(OpCodes.Callvirt, values); // values
 
-            var converter = typeof(NavConverter<>).MakeGenericType(_entityType);
+            var converter = typeof(NavConverter<>).MakeGenericType(EntityType);
             var toArray = converter.GetMethod(nameof(NavConverter<object>.ToArray));
             il.Emit(OpCodes.Call, toArray); // arr
         }

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Reflection.Emit;
-using Data.Resumption.ADO.Materialization;
+﻿using System.Reflection.Emit;
 
 namespace Data.Resumption.ADO.Materialization
 {
