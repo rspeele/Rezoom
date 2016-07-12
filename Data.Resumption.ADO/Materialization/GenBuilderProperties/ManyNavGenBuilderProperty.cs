@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using Data.Resumption.ADO.Materialization.TypeInfo;
 
 namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
 {
@@ -26,15 +27,20 @@ namespace Data.Resumption.ADO.Materialization.GenBuilderProperties
             _fieldName = fieldName;
             _entityType = entityType;
             _entityReaderType = typeof(IRowReader<>).MakeGenericType(entityType);
-            _keyType = typeof(int); // TODO figure out from entity type
-            _keyFieldName = "id"; // TODO figure out from entity type
+            var key = typeof(TypeProfile<>).MakeGenericType(entityType)
+                .GetField(nameof(TypeProfile<object>.Profile))
+                .GetValue(null) as TypeProfile;
+            if (key == null) throw new NullReferenceException("Unexpected null type profile");
+            if (key.KeyColumn == null) throw new InvalidOperationException($"Type {entityType} has no key column");
+            _keyType = key.KeyColumn.Type;
+            _keyFieldName = key.KeyColumn.Name;
             _dictionaryType = typeof(Dictionary<,>).MakeGenericType(_keyType, _entityReaderType);
         }
 
         public void InstallFields(TypeBuilder type, ILGenerator constructor)
         {
             _columnMap = type.DefineField("_dr_cmap_" + _fieldName, typeof(ColumnMap), FieldAttributes.Private);
-            _keyColumnIndex = type.DefineField("_dr_col_" + _fieldName, typeof(int), FieldAttributes.Private);
+            _keyColumnIndex = type.DefineField("_dr_kcol_" + _fieldName, typeof(int), FieldAttributes.Private);
             _dict = type.DefineField("_dr_dict_" + _fieldName, _dictionaryType, FieldAttributes.Private);
             var cons = _dictionaryType.GetConstructor(Type.EmptyTypes);
             if (cons == null) throw new Exception("Unexpected lack of default constructor on dictionary type");
