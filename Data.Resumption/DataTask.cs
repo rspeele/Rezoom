@@ -2,11 +2,6 @@
 
 namespace Data.Resumption
 {
-    public enum DataTaskTag : byte
-    {
-        StepState,
-        CsStep,
-    }
     /// <summary>
     /// Represents an asynchronous computation which will eventually produce a <typeparamref name="TResult"/>.
     /// 
@@ -18,23 +13,18 @@ namespace Data.Resumption
     /// <typeparam name="TResult"></typeparam>
     public struct DataTask<TResult>
     {
-        private readonly DataTaskTag _tag;
-        private readonly StepState<TResult> _stepState;
+        private readonly TResult _earlyResult;
         private readonly Func<StepState<TResult>> _csStep;
 
-        internal DataTask(StepState<TResult> stepState)
+        internal DataTask(TResult earlyResult)
         {
-            _tag = DataTaskTag.StepState;
             _csStep = null;
-            _stepState = stepState;
+            _earlyResult = earlyResult;
         }
 
-        internal DataTask(TResult result) : this(StepState.Result(result)) { }
-        internal DataTask(RequestsPending<TResult> pending) : this (StepState.Pending(pending)) { }
         internal DataTask(Func<StepState<TResult>> csStep)
         {
-            _tag = DataTaskTag.CsStep;
-            _stepState = default(StepState<TResult>);
+            _earlyResult = default(TResult);
             _csStep = csStep;
         }
 
@@ -52,14 +42,6 @@ namespace Data.Resumption
         /// </remarks>
         /// <returns></returns>
         internal static StepState<TResult> InternalStep(DataTask<TResult> task)
-        {
-            switch (task._tag)
-            {
-                case DataTaskTag.StepState: return task._stepState;
-                case DataTaskTag.CsStep: return task._csStep();
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(_tag));
-            }
-        }
+            => task._csStep == null ? StepState.Result(task._earlyResult) : task._csStep();
     }
 }

@@ -15,7 +15,7 @@
                     var success = (TResult)batch.AssumeLeaf().Element.Success;
                     return new DataTask<TResult>(success);
                 });
-            return new DataTask<TResult>(pending);
+            return new DataTask<TResult>(() => StepState.Pending(pending));
         }
     }
 }
