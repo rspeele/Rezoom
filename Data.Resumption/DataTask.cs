@@ -14,18 +14,18 @@ namespace Data.Resumption
     public struct DataTask<TResult>
     {
         private readonly TResult _earlyResult;
-        private readonly Func<StepState<TResult>> _csStep;
+        private readonly Func<StepState<TResult>> _step;
 
         internal DataTask(TResult earlyResult)
         {
-            _csStep = null;
+            _step = null;
             _earlyResult = earlyResult;
         }
 
-        internal DataTask(Func<StepState<TResult>> csStep)
+        internal DataTask(Func<StepState<TResult>> step)
         {
             _earlyResult = default(TResult);
-            _csStep = csStep;
+            _step = step;
         }
 
         /// <summary>
@@ -42,6 +42,6 @@ namespace Data.Resumption
         /// </remarks>
         /// <returns></returns>
         internal static StepState<TResult> InternalStep(DataTask<TResult> task)
-            => task._csStep == null ? StepState.Result(task._earlyResult) : task._csStep();
+            => task._step == null ? StepState.Result(task._earlyResult) : task._step();
     }
 }
