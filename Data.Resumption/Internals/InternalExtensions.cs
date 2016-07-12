@@ -7,6 +7,9 @@ namespace Data.Resumption
 {
     internal static class InternalExtensions
     {
+        public static StepState<TResult> Step<TResult>(this IDataTask<TResult> task)
+            => IDataTask<TResult>.InternalStep(task);
+
         public static Exception Aggregate(this ICollection<Exception> exceptions)
             => exceptions.Count == 1 ? exceptions.First() : new AggregateException(exceptions);
 
@@ -26,7 +29,9 @@ namespace Data.Resumption
             {
                 try
                 {
-                    step().Match(pending => pending.Resume(new BatchAbortion<SuccessOrException>()), _ => null);
+                    step().Match
+                        (pending => pending.Resume(new BatchAbortion<SuccessOrException>())
+                        , _ => default(IDataTask<T>));
                 }
                 catch (DataTaskAbortException) // it's normal for this to happen
                 {
@@ -53,7 +58,7 @@ namespace Data.Resumption
         /// <param name="taskToAbort"></param>
         /// <param name="causeOfAbortion"></param>
         internal static void AbortMany<T>(this IEnumerable<IDataTask<T>> taskToAbort, Exception causeOfAbortion)
-            => AbortMany(taskToAbort.Select(t => (Func<StepState<T>>)t.Step), causeOfAbortion);
+            => AbortMany(taskToAbort.Select(t => (Func<StepState<T>>)(() => t.Step())), causeOfAbortion);
         /// <summary>
         /// Abort all the tasks paused on <paramref name="stepToAbort"/>, with <paramref name="causeOfAbortion"/>
         /// as the reason.
@@ -77,7 +82,8 @@ namespace Data.Resumption
         {
             try
             {
-                step().Match(pending => pending.Resume(new BatchAbortion<SuccessOrException>()), _ => null);
+                step().Match(pending => pending.Resume
+                    (new BatchAbortion<SuccessOrException>()), _ => default(IDataTask<T>));
             }
             catch (DataTaskAbortException) // it's normal for this to happen
             {
@@ -92,7 +98,7 @@ namespace Data.Resumption
             throw causeOfAbortion;
         }
         internal static void Abort<T>(this IDataTask<T> taskToAbort, Exception causeOfAbortion)
-            => Abort(taskToAbort.Step, causeOfAbortion);
+            => Abort(() => taskToAbort.Step(), causeOfAbortion);
         internal static void Abort<T>(this StepState<T> stepToAbort, Exception causeOfAbortion)
             => Abort(() => stepToAbort, causeOfAbortion);
     }

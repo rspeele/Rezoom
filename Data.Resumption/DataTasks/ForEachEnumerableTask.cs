@@ -4,29 +4,26 @@ using System.Collections.Generic;
 namespace Data.Resumption.DataTasks
 {
     /// <summary>
-    /// Represents iteration over a lazily evaluated sequence.
+    /// Implements iteration over a lazily evaluated sequence.
     /// </summary>
     /// <typeparam name="TElement"></typeparam>
     /// <typeparam name="TVoid"></typeparam>
-    internal class ForEachEnumerableTask<TElement, TVoid> : IDataTask<TVoid>
+    internal static class ForEachEnumerableTask<TElement, TVoid>
     {
-        private readonly IEnumerable<TElement> _enumerable;
-        private readonly Func<TElement, IDataTask<TVoid>> _iteration;
+        public static IDataTask<TVoid> Create
+            (IEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
+            => new IDataTask<TVoid>(() => Step(enumerable, iteration));
 
-        public ForEachEnumerableTask(IEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
-        {
-            _enumerable = enumerable;
-            _iteration = iteration;
-        }
-
-        private IDataTask<TVoid> Iterate(IEnumerator<TElement> enumerator)
+        private static IDataTask<TVoid> Iterate
+            (IEnumerator<TElement> enumerator, Func<TElement, IDataTask<TVoid>> iteration)
         {
             if (enumerator.MoveNext()) return DataTask.Return(default(TVoid));
-            return _iteration(enumerator.Current)
-                .Bind(_ => Iterate(enumerator));
+            return iteration(enumerator.Current)
+                .Bind(_ => Iterate(enumerator, iteration));
         }
 
-        public StepState<TVoid> Step()
-            => DataTask.Using(() => _enumerable.GetEnumerator(), Iterate).Step();
+        public static StepState<TVoid> Step
+            (IEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
+            => DataTask.Using(enumerable.GetEnumerator, d => Iterate(d, iteration)).Step();
     }
 }

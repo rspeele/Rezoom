@@ -65,7 +65,7 @@ namespace Data.Resumption.Execution
                     {
                         executing = false;
                         end = result;
-                        return Task.FromResult<IDataTask<T>>(null);
+                        return Task.FromResult(default(IDataTask<T>));
                     });
             }
             return end;

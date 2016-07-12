@@ -30,6 +30,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FSharp.Core, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -73,7 +74,6 @@
     <Compile Include="DataTask.cs" />
     <Compile Include="DataTasks\MapTask.cs" />
     <Compile Include="DataTasks\RequestTask.cs" />
-    <Compile Include="DataTasks\ReturnTask.cs" />
     <Compile Include="DataTasks\TryCatchTask.cs" />
     <Compile Include="DataTasks\TryFinallyTask.cs" />
     <Compile Include="Execution\DataSourceCache.cs" />

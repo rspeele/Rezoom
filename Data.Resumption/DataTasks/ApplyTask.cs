@@ -3,33 +3,25 @@
 namespace Data.Resumption.DataTasks
 {
     /// <summary>
-    /// Represents a chain of tasks where the first task produces a function
+    /// Implements a chain of tasks where the first task produces a function
     /// to transform the output of the second task. This allows the two tasks
     /// to execute "interleaved", since they are not dependent on each other until
     /// the end.
     /// </summary>
     /// <typeparam name="TIn"></typeparam>
     /// <typeparam name="TOut"></typeparam>
-    public class ApplyTask<TIn, TOut> : IDataTask<TOut>
+    internal static class ApplyTask<TIn, TOut>
     {
-        private readonly IDataTask<Func<TIn, TOut>> _functionTask;
-        private readonly IDataTask<TIn> _inputTask;
-
-        public ApplyTask(IDataTask<Func<TIn, TOut>> functionTask, IDataTask<TIn> inputTask)
-        {
-            _functionTask = functionTask;
-            _inputTask = inputTask;
-        }
-
-        private static RequestsPending<TOut> BothPending(RequestsPending<Func<TIn, TOut>> functionPending, RequestsPending<TIn> inputPending)
+        private static RequestsPending<TOut> BothPending
+            (RequestsPending<Func<TIn, TOut>> functionPending, RequestsPending<TIn> inputPending)
             => new RequestsPending<TOut>
             (new BatchBranch2<IDataRequest>(functionPending.Requests, inputPending.Requests)
                 , responses =>
                 {
                     var branch = responses.AssumeBranch2();
                     Exception functionException = null, inputException = null;
-                    IDataTask<Func<TIn, TOut>> functionNext = null;
-                    IDataTask<TIn> inputNext = null;
+                    var functionNext = default(IDataTask<Func<TIn, TOut>>);
+                    var inputNext = default(IDataTask<TIn>);
                     try
                     {
                         functionNext = functionPending.Resume(branch.Left);
@@ -48,7 +40,7 @@ namespace Data.Resumption.DataTasks
                     }
                     if (functionException == null && inputException == null)
                     {
-                        return new ApplyTask<TIn, TOut>(functionNext, inputNext);
+                        return Create(functionNext, inputNext);
                     }
                     // We got exceptions in one or both tasks, which they failed to recover from.
                     // If they both failed, they'll have already run their `finally` code. We can safely bail.
@@ -66,14 +58,14 @@ namespace Data.Resumption.DataTasks
                     throw inputException;
                 });
 
-        public StepState<TOut> Step()
+        private static StepState<TOut> Step(IDataTask<Func<TIn, TOut>> functionTask, IDataTask<TIn> inputTask)
         {
             Exception functionException = null, inputException = null;
             StepState<Func<TIn, TOut>> functionStep = null;
             StepState<TIn> inputStep = null;
-            try { functionStep = _functionTask.Step(); }
+            try { functionStep = functionTask.Step(); }
             catch (Exception ex) { functionException = ex; }
-            try { inputStep = _inputTask.Step(); }
+            try { inputStep = inputTask.Step(); }
             catch (Exception ex) { inputException = ex; }
             if (functionException == null && inputException == null)
             {
@@ -101,5 +93,8 @@ namespace Data.Resumption.DataTasks
             functionStep.Abort(inputException);
             throw inputException;
         }
+
+        public static IDataTask<TOut> Create(IDataTask<Func<TIn, TOut>> functionTask, IDataTask<TIn> inputTask)
+            => new IDataTask<TOut>(() => Step(functionTask, inputTask));
     }
 }

@@ -40,7 +40,6 @@ namespace Data.Resumption.DataEnumerables
                 return _bound.Bind(pending =>
                 {
                     _wrapped = _continuation(pending).GetEnumerator();
-                    _bound = null;
                     _continuation = null;
                     return _wrapped.MoveNext();
                 });

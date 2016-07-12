@@ -52,7 +52,7 @@ namespace Data.Resumption
         /// <param name="dataRequest"></param>
         /// <returns></returns>
         public static IDataTask<T> ToDataTask<T>(this IDataRequest<T> dataRequest)
-            => new RequestTask<T>(dataRequest);
+            => RequestTask<T>.Create(dataRequest);
 
         /// <summary>
         /// Map a synchronous function <paramref name="mapping"/> over the result of an
@@ -65,7 +65,7 @@ namespace Data.Resumption
         /// <returns></returns>
         public static IDataTask<TOut> Select<TIn, TOut>
             (this IDataTask<TIn> bound, Func<TIn, TOut> mapping)
-            => new MapTask<TIn, TOut>(bound, mapping);
+            => MapTask<TIn, TOut>.Create(bound, mapping);
 
         /// <summary>
         /// Chain a dependent task onto an <see cref="IDataTask{TPending}"/> to obtain an <see cref="IDataTask{TOut}"/>.
@@ -79,7 +79,7 @@ namespace Data.Resumption
         /// <returns></returns>
         public static IDataTask<TOut> Bind<TPending, TOut>
             (this IDataTask<TPending> bound, Func<TPending, IDataTask<TOut>> continuation)
-            => new BindTask<TPending, TOut>(bound, continuation);
+            => BindTask<TPending, TOut>.Create(bound, continuation);
 
         /// <summary>
         /// Alias for <see cref="Bind{TPending,TOut}"/> used in LINQ expression syntax.
@@ -103,7 +103,7 @@ namespace Data.Resumption
         /// <returns></returns>
         public static IDataTask<TOut> SelectMany<TPending, TOut>
             (this IDataTask<TPending> bound, Func<TPending, IDataTask<TOut>> continuation)
-            => new BindTask<TPending, TOut>(bound, continuation);
+            => BindTask<TPending, TOut>.Create(bound, continuation);
 
         /// <summary>
         /// Create a finished <see cref="IDataTask{TResult}"/> whose result is <paramref name="value"/>.
@@ -111,7 +111,7 @@ namespace Data.Resumption
         /// <typeparam name="T"></typeparam>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static IDataTask<T> Return<T>(T value) => new ReturnTask<T>(value);
+        public static IDataTask<T> Return<T>(T value) => new IDataTask<T>(value);
 
         /// <summary>
         /// Compose two <see cref="IDataTask{T}"/>s into one, creating its result by by applying
@@ -134,7 +134,7 @@ namespace Data.Resumption
         /// <returns></returns>
         public static IDataTask<TOut> Apply<T, TOut>
             (this IDataTask<Func<T, TOut>> functionTask, IDataTask<T> inputTask)
-            => new ApplyTask<T, TOut>(functionTask, inputTask);
+            => ApplyTask<T, TOut>.Create(functionTask, inputTask);
 
         /// <summary>
         /// Combine an <see cref="IDataTask{TLeft}"/> and an <see cref="IDataTask{TRight}"/> into
@@ -178,7 +178,7 @@ namespace Data.Resumption
         /// <returns></returns>
         public static IDataTask<TSum> Sum<T, TSum>
             (this IEnumerable<IDataTask<T>> tasks, TSum initial, Func<TSum, T, TSum> add)
-            => new SumTask<T, TSum>(tasks, initial, add);
+            => SumTask<T, TSum>.Create(tasks, initial, add);
 
         /// <summary>
         /// Wrap an <see cref="IDataTask{T}"/> with an exception handler, which defines the task
@@ -197,7 +197,7 @@ namespace Data.Resumption
         /// <returns></returns>
         public static IDataTask<T> TryCatch<T>
             (this IDataTask<T> wrapped, Func<Exception, IDataTask<T>> exceptionHandler)
-            => new TryCatchTask<T>(wrapped, exceptionHandler);
+            => TryCatchTask<T>.Create(wrapped, exceptionHandler);
 
         /// <summary>
         /// Wrap an <see cref="IDataTask{T}"/> with an exception handler, which defines the task
@@ -237,7 +237,7 @@ namespace Data.Resumption
         /// <param name="onExit"></param>
         /// <returns></returns>
         public static IDataTask<T> TryFinally<T>(this IDataTask<T> wrapped, Action onExit)
-            => new TryFinallyTask<T>(wrapped, onExit);
+            => TryFinallyTask<T>.Create(wrapped, onExit);
 
         /// <summary>
         /// Wrap an <see cref="IDataTask{T}"/> with a completion action, which executes when <paramref name="wrapped"/>
@@ -280,7 +280,7 @@ namespace Data.Resumption
         /// <returns></returns>
         public static IDataTask<TVoid> ForEach<TElement, TVoid>
             (this IDataEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
-            => new ForEachDataEnumerableTask<TElement, TVoid>(enumerable, iteration);
+            => ForEachDataEnumerableTask<TElement, TVoid>.Create(enumerable, iteration);
 
         /// <summary>
         /// Create a data task which iterates over all elements of <paramref name="enumerable"/>,
@@ -300,7 +300,7 @@ namespace Data.Resumption
         /// <returns></returns>
         public static IDataTask<TVoid> ForEach<TElement, TVoid>
             (this IEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
-            => new ForEachEnumerableTask<TElement, TVoid>(enumerable, iteration);
+            => ForEachEnumerableTask<TElement, TVoid>.Create(enumerable, iteration);
 
         /// <summary>
         /// Create an <see cref="IDataTask{T}"/> which asynchronously iterates an <see cref="IDataEnumerable{T}"/>
@@ -316,7 +316,7 @@ namespace Data.Resumption
             (this IDataEnumerable<TElement> enumerable)
         {
             var list = new List<TElement>();
-            return new ForEachDataEnumerableTask<TElement, bool>
+            return ForEachDataEnumerableTask<TElement, bool>.Create
                 (enumerable, e => { list.Add(e); return Return(false); }).Select(_ => list);
         }
 
@@ -324,7 +324,7 @@ namespace Data.Resumption
             (this IDataEnumerable<TElement> enumerable, TAccum initial, Func<TAccum, TElement, TAccum> aggregator)
         {
             var current = initial;
-            return new ForEachDataEnumerableTask<TElement, bool>
+            return ForEachDataEnumerableTask<TElement, bool>.Create
                 (enumerable, e => { current = aggregator(current, e); return Return(false); }).Select(_ => current);
         }
 

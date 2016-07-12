@@ -10,26 +10,19 @@ namespace Data.Resumption.DataTasks
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <typeparam name="TSum"></typeparam>
-    internal class SumTask<T, TSum> : IDataTask<TSum>
+    internal static class SumTask<T, TSum>
     {
-        private readonly IEnumerable<IDataTask<T>> _tasks;
-        private readonly TSum _accumulator;
-        private readonly Func<TSum, T, TSum> _add;
+        public static IDataTask<TSum> Create
+            (IEnumerable<IDataTask<T>> tasks, TSum accumulator, Func<TSum, T, TSum> add)
+            => new IDataTask<TSum>(() => Step(tasks, accumulator, add));
 
-        public SumTask(IEnumerable<IDataTask<T>> tasks, TSum accumulator, Func<TSum, T, TSum> add)
+        internal static StepState<TSum> Step(IEnumerable<IDataTask<T>> tasks, TSum accumulator, Func<TSum, T, TSum> add)
         {
-            _tasks = tasks;
-            _accumulator = accumulator;
-            _add = add;
-        }
-
-        public StepState<TSum> Step()
-        {
-            var sum = _accumulator;
+            var sum = accumulator;
             var pendings = new List<RequestsPending<T>>();
             var stepped = new List<StepState<T>>();
             var failed = new List<Exception>();
-            foreach (var task in _tasks)
+            foreach (var task in tasks)
             {
                 try
                 {
@@ -52,7 +45,7 @@ namespace Data.Resumption.DataTasks
                 {
                     pendings.Add(pending);
                     return default(TSum);
-                }, result => sum = _add(sum, result));
+                }, result => sum = add(sum, result));
             }
             if (pendings.Count <= 0) return StepState.Result(sum);
             var sumPending = new RequestsPending<TSum>
@@ -74,7 +67,7 @@ namespace Data.Resumption.DataTasks
                             subFailed.Add(ex);
                         }
                     }
-                    if (subFailed.Count <= 0) return new SumTask<T, TSum>(subSucceeded, sum, _add);
+                    if (subFailed.Count <= 0) return Create(subSucceeded, sum, add);
                     var cause = subFailed.Aggregate();
                     subSucceeded.AbortMany(cause);
                     throw cause;

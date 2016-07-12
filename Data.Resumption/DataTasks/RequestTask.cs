@@ -4,21 +4,18 @@
     /// Wraps a single IDataRequest up as an IDataTask.
     /// </summary>
     /// <typeparam name="TResult"></typeparam>
-    internal class RequestTask<TResult> : IDataTask<TResult>
+    internal static class RequestTask<TResult>
     {
-        private readonly RequestsPending<TResult> _pending;
-
-        public RequestTask(IDataRequest<TResult> dataRequest)
+        public static IDataTask<TResult> Create(IDataRequest<TResult> dataRequest)
         {
-            _pending = new RequestsPending<TResult>
+            var pending = new RequestsPending<TResult>
                 ( new BatchLeaf<IDataRequest>(dataRequest)
                 , batch =>
                 {
                     var success = (TResult)batch.AssumeLeaf().Element.Success;
-                    return new ReturnTask<TResult>(success);
+                    return new IDataTask<TResult>(success);
                 });
+            return new IDataTask<TResult>(pending);
         }
-
-        public StepState<TResult> Step() => StepState.Pending(_pending);
     }
 }

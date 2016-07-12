@@ -6,28 +6,22 @@ namespace Data.Resumption.DataTasks
     /// Represents a data task with a "catch" block that attempts to handle exceptions encountered during the task's execution.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class TryCatchTask<T> : IDataTask<T>
+    public static class TryCatchTask<T>
     {
-        private readonly IDataTask<T> _wrapped;
-        private readonly Func<Exception, IDataTask<T>> _exceptionHandler; // may rethrow the exception
+        public static IDataTask<T> Create(IDataTask<T> wrapped, Func<Exception, IDataTask<T>> exceptionHandler)
+            => new IDataTask<T>(() => Step(wrapped, exceptionHandler));
 
-        public TryCatchTask(IDataTask<T> wrapped, Func<Exception, IDataTask<T>> exceptionHandler)
-        {
-            _wrapped = wrapped;
-            _exceptionHandler = exceptionHandler;
-        }
-
-        public StepState<T> Step()
+        internal static StepState<T> Step(IDataTask<T> wrapped, Func<Exception, IDataTask<T>> exceptionHandler)
         {
             try
             {
-                return _wrapped.Step().Match
+                return wrapped.Step().Match
                     ( pending =>
                         StepState.Pending(new RequestsPending<T>(pending.Requests, response =>
                         {
                             try
                             {
-                                return new TryCatchTask<T>(pending.Resume(response), _exceptionHandler);
+                                return Create(pending.Resume(response), exceptionHandler);
                             }
                             catch (DataTaskAbortException)
                             {
@@ -35,7 +29,7 @@ namespace Data.Resumption.DataTasks
                             }
                             catch (Exception ex)
                             {
-                                return _exceptionHandler(ex);
+                                return exceptionHandler(ex);
                             }
                         }))
                     , StepState.Result);
@@ -46,7 +40,7 @@ namespace Data.Resumption.DataTasks
             }
             catch (Exception ex)
             {
-                return _exceptionHandler(ex).Step();
+                return exceptionHandler(ex).Step();
             }
         }
     }
