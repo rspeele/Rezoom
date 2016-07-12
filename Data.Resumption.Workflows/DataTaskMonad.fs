@@ -12,10 +12,10 @@ let bind (task : datatask<'a>) (continuation : 'a -> datatask<'b>) =
     DataTask.BindF(task, continuation)
 
 let map (mapping : 'a -> 'b) (task : datatask<'a>) =
-    DataTask.Select(task, Func<_, _>(mapping))
+    DataTask.SelectF(task, mapping)
 
 let apply (functionTask : datatask<'a -> 'b>) (inputTask : datatask<'a>) =
-    DataTask.Apply(functionTask |> map (fun f -> Func<'a, 'b>(f)), inputTask)
+    DataTask.ApplyF(functionTask, inputTask)
 
 let sum (tasks : datatask<'a> seq) (initial : 's) (add : 's -> 'a -> 's) =
     DataTask.Sum(tasks, initial, fun sum extra -> add sum extra)

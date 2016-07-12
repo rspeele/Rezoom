@@ -69,6 +69,19 @@ namespace Data.Resumption
             => MapTask<TIn, TOut>.Create(bound, mapping);
 
         /// <summary>
+        /// Map a synchronous function <paramref name="mapping"/> over the result of an
+        /// <see cref="DataTask{TResult}"/> to obtain an <see cref="DataTask{TResult}"/>.
+        /// </summary>
+        /// <typeparam name="TIn"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="bound"></param>
+        /// <param name="mapping"></param>
+        /// <returns></returns>
+        public static DataTask<TOut> SelectF<TIn, TOut>
+            (this DataTask<TIn> bound, FSharpFunc<TIn, TOut> mapping)
+            => MapTask<TIn, TOut>.Create(bound, mapping);
+
+        /// <summary>
         /// Chain a dependent task onto an <see cref="DataTask{TResult}"/> to obtain an <see cref="DataTask{TResult}"/>.
         /// <paramref name="continuation"/> uses the result of the <paramref name="bound"/> task to decide
         /// what task to perform next.
@@ -150,6 +163,29 @@ namespace Data.Resumption
         /// <returns></returns>
         public static DataTask<TOut> Apply<T, TOut>
             (this DataTask<Func<T, TOut>> functionTask, DataTask<T> inputTask)
+            => ApplyTask<T, TOut>.Create(functionTask, inputTask);
+
+        /// <summary>
+        /// Compose two <see cref="DataTask{TResult}"/>s into one, creating its result by by applying
+        /// the function returned by the first to the input returned by the second.
+        /// </summary>
+        /// <remarks>
+        /// Because the two <see cref="DataTask{TResult}"/>s are independent, they will run concurrently.
+        /// If you would like them to run sequentially instead (perhaps to ensure that side effects
+        /// occur in the correct order), you should use <see cref="Bind{TPending,TOut}"/>.
+        /// 
+        /// If one of the two composed tasks throws an exception and does not catch it, and the other task
+        /// is still progressing normally, the surviving task will be canceled by resuming with a
+        /// <see cref="DataTaskAbortException"/>. This type of exception cannot be caught, but it will
+        /// cause pending <c>finally</c> blocks to run.
+        /// </remarks>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TOut"></typeparam>
+        /// <param name="functionTask"></param>
+        /// <param name="inputTask"></param>
+        /// <returns></returns>
+        public static DataTask<TOut> ApplyF<T, TOut>
+            (this DataTask<FSharpFunc<T, TOut>> functionTask, DataTask<T> inputTask)
             => ApplyTask<T, TOut>.Create(functionTask, inputTask);
 
         /// <summary>

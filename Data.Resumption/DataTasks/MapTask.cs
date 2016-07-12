@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.FSharp.Core;
 
 namespace Data.Resumption.DataTasks
 {
@@ -13,14 +14,23 @@ namespace Data.Resumption.DataTasks
         private static StepState<TOut> Step(DataTask<TIn> bound, Func<TIn, TOut> mapping)
         {
             var state = bound.Step();
-            return state.Match(pending =>
-            {
-                var mapped = pending.Map(next => Create(next, mapping));
-                return StepState.Pending(mapped);
-            }, result => StepState.Result(mapping(result)));
+            return state.Pending != null
+                ? StepState.Pending(state.Pending.Map(next => Create(next, mapping)))
+                : StepState.Result(mapping(state.Result));
         }
 
         public static DataTask<TOut> Create(DataTask<TIn> bound, Func<TIn, TOut> mapping)
+            => new DataTask<TOut>(() => Step(bound, mapping));
+
+        private static StepState<TOut> Step(DataTask<TIn> bound, FSharpFunc<TIn, TOut> mapping)
+        {
+            var state = bound.Step();
+            return state.Pending != null
+                ? StepState.Pending(state.Pending.Map(next => Create(next, mapping)))
+                : StepState.Result(mapping.Invoke(state.Result));
+        }
+
+        public static DataTask<TOut> Create(DataTask<TIn> bound, FSharpFunc<TIn, TOut> mapping)
             => new DataTask<TOut>(() => Step(bound, mapping));
     }
 }
