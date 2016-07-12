@@ -103,27 +103,48 @@ namespace Data.Resumption.Execution
             };
         }
 
-        private static async Task ExecuteSequentialGroup(IEnumerable<Func<Task>> tasks)
+        private static async Task ExecuteSequentialGroup(Task pending, IEnumerator<Func<Task>> rest)
         {
-            foreach (var task in tasks) await task();
+            await pending;
+            while (rest.MoveNext())
+            {
+                await rest.Current();
+            }
         }
 
-        public async Task Execute()
+        private static Task ExecuteSequentialGroup(IEnumerable<Func<Task>> tasks)
+        {
+            using (var enumerator = tasks.GetEnumerator())
+            {
+                while (enumerator.MoveNext())
+                {
+                    var task = enumerator.Current();
+                    if (task.IsCompleted) continue;
+                    return ExecuteSequentialGroup(task, enumerator);
+                }
+            }
+            return Task.CompletedTask;
+        }
+        private static async Task Execute(Task[] tasks) => await Task.WhenAll(tasks);
+
+        public Task Execute()
         {
             var tasks = new Task[_sequenceGroups.Values.Count + _unsequenced.Count];
             var i = 0;
+            var allDone = true;
             foreach (var sgroup in _sequenceGroups.Values)
             {
-                tasks[i++] = ExecuteSequentialGroup(sgroup);
+                var task = ExecuteSequentialGroup(sgroup);
+                tasks[i++] = task;
+                allDone &= task.IsCompleted;
             }
             foreach (var unseq in _unsequenced)
             {
-                tasks[i++] = unseq();
+                var task = unseq();
+                tasks[i++] = task;
+                allDone &= task.IsCompleted;
             }
-            if (tasks.Length == 1)
-                await tasks[0];
-            else
-                await Task.WhenAll(tasks);
+            return allDone ? Task.CompletedTask : Execute(tasks);
         }
     }
 }
