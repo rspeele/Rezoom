@@ -110,9 +110,20 @@ namespace Data.Resumption.Execution
 
         public async Task Execute()
         {
-            var sequenceGroupTasks = _sequenceGroups.Values.Select(ExecuteSequentialGroup);
-            var tasks = _unsequenced.Select(f => f()).Concat(sequenceGroupTasks);
-            await Task.WhenAll(tasks);
+            var tasks = new Task[_sequenceGroups.Values.Count + _unsequenced.Count];
+            var i = 0;
+            foreach (var sgroup in _sequenceGroups.Values)
+            {
+                tasks[i++] = ExecuteSequentialGroup(sgroup);
+            }
+            foreach (var unseq in _unsequenced)
+            {
+                tasks[i++] = unseq();
+            }
+            if (tasks.Length == 1)
+                await tasks[0];
+            else
+                await Task.WhenAll(tasks);
         }
     }
 }
