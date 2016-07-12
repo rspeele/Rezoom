@@ -70,17 +70,14 @@ namespace Data.Resumption.DataTasks
             catch (Exception ex) { inputException = ex; }
             if (functionException == null && inputException == null)
             {
-                return functionStep.Match
-                    ( functionPending => inputStep.Match(inputPending =>
-                        {
-                            var bothPending = BothPending(functionPending, inputPending);
-                            return StepState.Pending(bothPending);
-                        }
-                    , result => StepState.Pending
-                        ( functionPending.Map(dt => dt.Select(f => f(result)))))
-                        , function => inputStep.Match
-                            ( inputPending => StepState.Pending(inputPending.Map(dt => dt.Select(function)))
-                            , input => StepState.Result(function(input))));
+                if (functionStep.Pending == null)
+                    return inputStep.Pending != null
+                        ? StepState.Pending(inputStep.Pending.Map(dt => dt.Select(functionStep.Result)))
+                        : StepState.Result(functionStep.Result(inputStep.Result));
+                if (inputStep.Pending == null)
+                    return StepState.Pending(functionStep.Pending.Map(dt => dt.Select(f => f(inputStep.Result))));
+                var bothPending = BothPending(functionStep.Pending, inputStep.Pending);
+                return StepState.Pending(bothPending);
             }
             if (functionException != null && inputException != null)
             {
@@ -157,17 +154,15 @@ namespace Data.Resumption.DataTasks
             catch (Exception ex) { inputException = ex; }
             if (functionException == null && inputException == null)
             {
-                return functionStep.Match
-                    ( functionPending => inputStep.Match(inputPending =>
-                        {
-                            var bothPending = BothPending(functionPending, inputPending);
-                            return StepState.Pending(bothPending);
-                        }
-                    , result => StepState.Pending
-                        ( functionPending.Map(dt => dt.Select(f => f.Invoke(result)))))
-                        , function => inputStep.Match
-                            ( inputPending => StepState.Pending(inputPending.Map(dt => dt.SelectF(function)))
-                            , input => StepState.Result(function.Invoke(input))));
+                if (functionStep.Pending == null)
+                    return inputStep.Pending != null
+                        ? StepState.Pending(inputStep.Pending.Map(dt => dt.SelectF(functionStep.Result)))
+                        : StepState.Result(functionStep.Result.Invoke(inputStep.Result));
+                if (inputStep.Pending == null)
+                    return StepState.Pending(functionStep.Pending.Map
+                        (dt => dt.Select(f => f.Invoke(inputStep.Result))));
+                var bothPending = BothPending(functionStep.Pending, inputStep.Pending);
+                return StepState.Pending(bothPending);
             }
             if (functionException != null && inputException != null)
             {
