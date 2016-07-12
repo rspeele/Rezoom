@@ -10,7 +10,7 @@ namespace Data.Resumption
     /// </summary>
     /// <remarks>
     /// In some cases this may be the only type that correctly models how values are obtained.
-    /// In other cases, an <see cref="IEnumerable{T}"/> of <see cref="IDataTask{T}"/>s would be
+    /// In other cases, an <see cref="IEnumerable{T}"/> of <see cref="DataTask{TResult}"/>s would be
     /// more appropriate, since it can be executed more efficiently.
     /// 
     /// For example, suppose you were making calls to a web API
@@ -23,7 +23,7 @@ namespace Data.Resumption
     /// You couldn't possibly make the requests in parallel since each one depends on the previous one.
     /// 
     /// However, if you already had an array of IDs to obtain, it would be more efficient to simply
-    /// generate an <see cref="IEnumerable{T}"/> of <see cref="IDataTask{T}"/>s, which you could then execute
+    /// generate an <see cref="IEnumerable{T}"/> of <see cref="DataTask{TResult}"/>s, which you could then execute
     /// concurrently to efficiently obtain the results.
     /// </remarks>
     /// <typeparam name="T"></typeparam>

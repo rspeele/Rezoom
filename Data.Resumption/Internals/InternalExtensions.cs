@@ -7,8 +7,8 @@ namespace Data.Resumption
 {
     internal static class InternalExtensions
     {
-        public static StepState<TResult> Step<TResult>(this IDataTask<TResult> task)
-            => IDataTask<TResult>.InternalStep(task);
+        public static StepState<TResult> Step<TResult>(this DataTask<TResult> task)
+            => DataTask<TResult>.InternalStep(task);
 
         public static Exception Aggregate(this ICollection<Exception> exceptions)
             => exceptions.Count == 1 ? exceptions.First() : new AggregateException(exceptions);
@@ -31,7 +31,7 @@ namespace Data.Resumption
                 {
                     step().Match
                         (pending => pending.Resume(new BatchAbortion<SuccessOrException>())
-                        , _ => default(IDataTask<T>));
+                        , _ => default(DataTask<T>));
                 }
                 catch (DataTaskAbortException) // it's normal for this to happen
                 {
@@ -57,7 +57,7 @@ namespace Data.Resumption
         /// <typeparam name="T"></typeparam>
         /// <param name="taskToAbort"></param>
         /// <param name="causeOfAbortion"></param>
-        internal static void AbortMany<T>(this IEnumerable<IDataTask<T>> taskToAbort, Exception causeOfAbortion)
+        internal static void AbortMany<T>(this IEnumerable<DataTask<T>> taskToAbort, Exception causeOfAbortion)
             => AbortMany(taskToAbort.Select(t => (Func<StepState<T>>)(() => t.Step())), causeOfAbortion);
         /// <summary>
         /// Abort all the tasks paused on <paramref name="stepToAbort"/>, with <paramref name="causeOfAbortion"/>
@@ -83,7 +83,7 @@ namespace Data.Resumption
             try
             {
                 step().Match(pending => pending.Resume
-                    (new BatchAbortion<SuccessOrException>()), _ => default(IDataTask<T>));
+                    (new BatchAbortion<SuccessOrException>()), _ => default(DataTask<T>));
             }
             catch (DataTaskAbortException) // it's normal for this to happen
             {
@@ -97,7 +97,7 @@ namespace Data.Resumption
             // should be impossible to get here, but if we did, the best thing to do is rethrow normally
             throw causeOfAbortion;
         }
-        internal static void Abort<T>(this IDataTask<T> taskToAbort, Exception causeOfAbortion)
+        internal static void Abort<T>(this DataTask<T> taskToAbort, Exception causeOfAbortion)
             => Abort(() => taskToAbort.Step(), causeOfAbortion);
         internal static void Abort<T>(this StepState<T> stepToAbort, Exception causeOfAbortion)
             => Abort(() => stepToAbort, causeOfAbortion);

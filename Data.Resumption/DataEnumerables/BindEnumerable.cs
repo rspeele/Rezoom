@@ -30,7 +30,7 @@ namespace Data.Resumption.DataEnumerables
                 _selector = selector;
             }
             
-            private IDataTask<DataTaskYield<TOut>> MoveNextInside(IDataEnumerator<TOut> subSelect)
+            private DataTask<DataTaskYield<TOut>> MoveNextInside(IDataEnumerator<TOut> subSelect)
                 => subSelect.MoveNext()
                     .Bind(yielded =>
                     {
@@ -40,7 +40,7 @@ namespace Data.Resumption.DataEnumerables
                         return MoveNextOutside();
                     });
 
-            private IDataTask<DataTaskYield<TOut>> MoveNextOutside()
+            private DataTask<DataTaskYield<TOut>> MoveNextOutside()
                 => _inputs.MoveNext()
                     .Bind(yielded =>
                     {
@@ -53,7 +53,7 @@ namespace Data.Resumption.DataEnumerables
                         return MoveNextInside(_currentSubSelect);
                     });
 
-            public IDataTask<DataTaskYield<TOut>> MoveNext()
+            public DataTask<DataTaskYield<TOut>> MoveNext()
                 => _currentSubSelect == null
                     ? MoveNextOutside()
                     : MoveNextInside(_currentSubSelect);

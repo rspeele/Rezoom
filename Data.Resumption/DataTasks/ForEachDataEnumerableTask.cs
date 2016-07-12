@@ -10,19 +10,19 @@ namespace Data.Resumption.DataTasks
     /// <typeparam name="TVoid"></typeparam>
     internal static class ForEachDataEnumerableTask<TElement, TVoid>
     {
-        public static IDataTask<TVoid> Create
-            (IDataEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
-            => new IDataTask<TVoid>(() => Step(enumerable, iteration));
+        public static DataTask<TVoid> Create
+            (IDataEnumerable<TElement> enumerable, Func<TElement, DataTask<TVoid>> iteration)
+            => new DataTask<TVoid>(() => Step(enumerable, iteration));
 
-        private static IDataTask<TVoid> Iterate
-            (IDataEnumerator<TElement> enumerator, Func<TElement, IDataTask<TVoid>> iteration)
+        private static DataTask<TVoid> Iterate
+            (IDataEnumerator<TElement> enumerator, Func<TElement, DataTask<TVoid>> iteration)
             => enumerator.MoveNext().Bind(yield =>
                 yield.HasValue
                 ? iteration(yield.Value).Bind(_ => Iterate(enumerator, iteration))
                 : DataTask.Return(default(TVoid)));
 
         public static StepState<TVoid> Step
-            (IDataEnumerable<TElement> enumerable, Func<TElement, IDataTask<TVoid>> iteration)
+            (IDataEnumerable<TElement> enumerable, Func<TElement, DataTask<TVoid>> iteration)
             => DataTask.Using(enumerable.GetEnumerator, d => Iterate(d, iteration)).Step();
     }
 }

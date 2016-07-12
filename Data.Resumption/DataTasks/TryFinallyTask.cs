@@ -8,10 +8,10 @@ namespace Data.Resumption.DataTasks
     /// <typeparam name="T"></typeparam>
     internal static class TryFinallyTask<T>
     {
-        public static IDataTask<T> Create(IDataTask<T> wrapped, Action onExit)
-            => new IDataTask<T>(() => Step(wrapped, onExit));
+        public static DataTask<T> Create(DataTask<T> wrapped, Action onExit)
+            => new DataTask<T>(() => Step(wrapped, onExit));
 
-        internal static StepState<T> Step(IDataTask<T> wrapped, Action onExit)
+        internal static StepState<T> Step(DataTask<T> wrapped, Action onExit)
         {
             try
             {

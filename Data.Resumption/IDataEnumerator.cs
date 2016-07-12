@@ -15,6 +15,6 @@ namespace Data.Resumption
         /// Callers should not call MoveNext() twice without awaiting the returned data task in between.
         /// </remarks>
         /// <returns></returns>
-        IDataTask<DataTaskYield<T>> MoveNext();
+        DataTask<DataTaskYield<T>> MoveNext();
     }
 }

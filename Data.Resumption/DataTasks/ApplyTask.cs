@@ -20,8 +20,8 @@ namespace Data.Resumption.DataTasks
                 {
                     var branch = responses.AssumeBranch2();
                     Exception functionException = null, inputException = null;
-                    var functionNext = default(IDataTask<Func<TIn, TOut>>);
-                    var inputNext = default(IDataTask<TIn>);
+                    var functionNext = default(DataTask<Func<TIn, TOut>>);
+                    var inputNext = default(DataTask<TIn>);
                     try
                     {
                         functionNext = functionPending.Resume(branch.Left);
@@ -58,11 +58,11 @@ namespace Data.Resumption.DataTasks
                     throw inputException;
                 });
 
-        private static StepState<TOut> Step(IDataTask<Func<TIn, TOut>> functionTask, IDataTask<TIn> inputTask)
+        private static StepState<TOut> Step(DataTask<Func<TIn, TOut>> functionTask, DataTask<TIn> inputTask)
         {
             Exception functionException = null, inputException = null;
-            StepState<Func<TIn, TOut>> functionStep = null;
-            StepState<TIn> inputStep = null;
+            var functionStep = default(StepState<Func<TIn, TOut>>);
+            var inputStep = default(StepState<TIn>);
             try { functionStep = functionTask.Step(); }
             catch (Exception ex) { functionException = ex; }
             try { inputStep = inputTask.Step(); }
@@ -94,7 +94,7 @@ namespace Data.Resumption.DataTasks
             throw inputException;
         }
 
-        public static IDataTask<TOut> Create(IDataTask<Func<TIn, TOut>> functionTask, IDataTask<TIn> inputTask)
-            => new IDataTask<TOut>(() => Step(functionTask, inputTask));
+        public static DataTask<TOut> Create(DataTask<Func<TIn, TOut>> functionTask, DataTask<TIn> inputTask)
+            => new DataTask<TOut>(() => Step(functionTask, inputTask));
     }
 }

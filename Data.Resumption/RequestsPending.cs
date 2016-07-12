@@ -4,14 +4,14 @@ namespace Data.Resumption
 {
     /// <summary>
     /// Represents a batch of pending <see cref="IDataRequest"/>s paired with a function to resume execution with an
-    /// <see cref="IDataTask{TResult}"/> based on the results of those requests.
+    /// <see cref="DataTask{TResult}"/> based on the results of those requests.
     /// </summary>
     /// <typeparam name="TResult"></typeparam>
-    public struct RequestsPending<TResult>
+    public class RequestsPending<TResult>
     {
         public RequestsPending
             ( Batch<IDataRequest> requests
-            , Func<Batch<SuccessOrException>, IDataTask<TResult>> resume
+            , Func<Batch<SuccessOrException>, DataTask<TResult>> resume
             )
         {
             Requests = requests;
@@ -23,10 +23,10 @@ namespace Data.Resumption
         /// </summary>
         public Batch<IDataRequest> Requests { get; }
         /// <summary>
-        /// A function to get the continuation <see cref="IDataTask{TResult}"/> based on
+        /// A function to get the continuation <see cref="DataTask{TResult}"/> based on
         /// a batch of <see cref="SuccessOrException"/>s representing the results of <see cref="Requests"/>.
         /// </summary>
-        public Func<Batch<SuccessOrException>, IDataTask<TResult>> Resume { get; }
+        public Func<Batch<SuccessOrException>, DataTask<TResult>> Resume { get; }
 
         /// <summary>
         /// Transform the continuation of this pending state.
@@ -39,7 +39,7 @@ namespace Data.Resumption
         /// <param name="mapping"></param>
         /// <returns></returns>
         public RequestsPending<TOutResult> Map<TOutResult>
-            (Func<IDataTask<TResult>, IDataTask<TOutResult>> mapping)
+            (Func<DataTask<TResult>, DataTask<TOutResult>> mapping)
         {
             var res = Resume;
             return new RequestsPending<TOutResult>

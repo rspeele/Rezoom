@@ -28,7 +28,7 @@ namespace Data.Resumption.DataEnumerables
                 _next = next;
             }
 
-            private IDataTask<DataTaskYield<T>> AdvanceEnumerators()
+            private DataTask<DataTaskYield<T>> AdvanceEnumerators()
             {
                 if (_next == null) return DataTask.Return(new DataTaskYield<T>());
                 _current.Dispose();
@@ -37,7 +37,7 @@ namespace Data.Resumption.DataEnumerables
                 return _current.MoveNext();
             }
 
-            public IDataTask<DataTaskYield<T>> MoveNext()
+            public DataTask<DataTaskYield<T>> MoveNext()
                 => _current.MoveNext()
                     .Bind(y => y.HasValue ? DataTask.Return(y) : AdvanceEnumerators());
 

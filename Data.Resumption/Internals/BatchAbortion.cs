@@ -5,10 +5,10 @@ using System.Linq;
 namespace Data.Resumption
 {
     /// <summary>
-    /// Represents an invalid branch within a <see cref="Batch{T}"/>, used when aborting a <see cref="IDataTask{T}"/>.
+    /// Represents an invalid branch within a <see cref="Batch{T}"/>, used when aborting a <see cref="DataTask{TResult}"/>.
     /// </summary>
     /// <remarks>
-    /// The <see cref="IDataTask{T}"/> will either complete or attempt to treat this branch as another, valid
+    /// The <see cref="DataTask{TResult}"/> will either complete or attempt to treat this branch as another, valid
     /// type of <see cref="Batch{T}"/>, and receive a <see cref="DataTaskAbortException"/> for doing so.
     /// </remarks>
     /// <typeparam name="T"></typeparam>

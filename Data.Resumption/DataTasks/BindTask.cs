@@ -11,7 +11,7 @@ namespace Data.Resumption.DataTasks
     internal static class BindTask<TPending, TResult>
     {
         private static StepState<TResult> Step
-            (IDataTask<TPending> bound, Func<TPending, IDataTask<TResult>> continuation)
+            (DataTask<TPending> bound, Func<TPending, DataTask<TResult>> continuation)
         {
             var state = bound.Step();
             return state.Match(pending =>
@@ -21,8 +21,8 @@ namespace Data.Resumption.DataTasks
             }, result => continuation(result).Step());
         }
 
-        public static IDataTask<TResult> Create
-            (IDataTask<TPending> bound, Func<TPending, IDataTask<TResult>> continuation)
-            => new IDataTask<TResult>(() => Step(bound, continuation));
+        public static DataTask<TResult> Create
+            (DataTask<TPending> bound, Func<TPending, DataTask<TResult>> continuation)
+            => new DataTask<TResult>(() => Step(bound, continuation));
     }
 }

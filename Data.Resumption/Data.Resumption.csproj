@@ -71,7 +71,7 @@
     <Compile Include="DataTasks\ApplyTask.cs" />
     <Compile Include="DataTasks\BindTask.cs" />
     <Compile Include="DataTasks\SumTask.cs" />
-    <Compile Include="DataTask.cs" />
+    <Compile Include="DataTaskExtensions.cs" />
     <Compile Include="DataTasks\MapTask.cs" />
     <Compile Include="DataTasks\RequestTask.cs" />
     <Compile Include="DataTasks\TryCatchTask.cs" />
@@ -82,13 +82,11 @@
     <Compile Include="Execution\ServiceContext.cs" />
     <Compile Include="Execution\StepContext.cs" />
     <Compile Include="IDataRequest.cs" />
-    <Compile Include="IDataTask.cs" />
+    <Compile Include="DataTask.cs" />
     <Compile Include="IDataEnumerable.cs" />
     <Compile Include="Internals\DefaultServiceFactory.cs" />
     <Compile Include="Internals\InternalExtensions.cs" />
     <Compile Include="DataRequests\OpaqueAsyncDataRequest.cs" />
-    <Compile Include="Internals\StepStatePending.cs" />
-    <Compile Include="Internals\StepStateResult.cs" />
     <Compile Include="Services\ExecutionLocal.cs" />
     <Compile Include="Services\Factories\AggregateServiceFactory.cs" />
     <Compile Include="Services\Factories\ZeroServiceFactory.cs" />

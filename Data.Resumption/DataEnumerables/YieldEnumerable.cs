@@ -23,7 +23,7 @@
                 _value = value;
             }
 
-            public IDataTask<DataTaskYield<T>> MoveNext()
+            public DataTask<DataTaskYield<T>> MoveNext()
             {
                 if (_moved) return DataTask.Return(new DataTaskYield<T>());
                 _moved = true;

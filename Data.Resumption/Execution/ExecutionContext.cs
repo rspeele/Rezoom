@@ -4,7 +4,7 @@ using Data.Resumption.Services;
 namespace Data.Resumption.Execution
 {
     /// <summary>
-    /// Handles execution of an <see cref="IDataTask{TResult}"/> by stepping through it and running its pending
+    /// Handles execution of an <see cref="DataTask{TResult}"/> by stepping through it and running its pending
     /// <see cref="IDataRequest"/>s with caching and deduplication.
     /// </summary>
     public class ExecutionContext : IServiceContext
@@ -25,7 +25,7 @@ namespace Data.Resumption.Execution
             _log = log;
         }
 
-        private async Task<IDataTask<T>> ExecutePending<T>(RequestsPending<T> pending)
+        private async Task<DataTask<T>> ExecutePending<T>(RequestsPending<T> pending)
         {
             _log?.OnStepStart();
             _serviceContext.BeginStep();
@@ -47,12 +47,12 @@ namespace Data.Resumption.Execution
         }
 
         /// <summary>
-        /// Asynchronously run the given <see cref="IDataTask{TResult}"/> to completion.
+        /// Asynchronously run the given <see cref="DataTask{TResult}"/> to completion.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="task"></param>
         /// <returns></returns>
-        public async Task<T> Execute<T>(IDataTask<T> task)
+        public async Task<T> Execute<T>(DataTask<T> task)
         {
             var executing = true;
             var end = default(T);
@@ -65,7 +65,7 @@ namespace Data.Resumption.Execution
                     {
                         executing = false;
                         end = result;
-                        return Task.FromResult(default(IDataTask<T>));
+                        return Task.FromResult(default(DataTask<T>));
                     });
             }
             return end;

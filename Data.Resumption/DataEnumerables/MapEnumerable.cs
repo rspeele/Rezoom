@@ -32,7 +32,7 @@ namespace Data.Resumption.DataEnumerables
                 _mapping = mapping;
             }
 
-            public IDataTask<DataTaskYield<TOut>> MoveNext()
+            public DataTask<DataTaskYield<TOut>> MoveNext()
                 => _inputs.MoveNext().Select(y =>
                     y.HasValue
                         ? new DataTaskYield<TOut>(_mapping(y.Value))

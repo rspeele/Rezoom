@@ -9,9 +9,9 @@ namespace Data.Resumption.DataEnumerables
     internal class TakeWhileEnumerable<T> : IDataEnumerable<T>
     {
         private readonly IDataEnumerable<T> _inputs;
-        private readonly Func<T, IDataTask<bool>> _predicate;
+        private readonly Func<T, DataTask<bool>> _predicate;
 
-        public TakeWhileEnumerable(IDataEnumerable<T> inputs, Func<T, IDataTask<bool>> predicate)
+        public TakeWhileEnumerable(IDataEnumerable<T> inputs, Func<T, DataTask<bool>> predicate)
         {
             _inputs = inputs;
             _predicate = predicate;
@@ -20,15 +20,15 @@ namespace Data.Resumption.DataEnumerables
         private class TakeWhileEnumerator : IDataEnumerator<T>
         {
             private readonly IDataEnumerator<T> _inputs;
-            private readonly Func<T, IDataTask<bool>> _predicate;
+            private readonly Func<T, DataTask<bool>> _predicate;
 
-            public TakeWhileEnumerator(IDataEnumerator<T> inputs, Func<T, IDataTask<bool>> predicate)
+            public TakeWhileEnumerator(IDataEnumerator<T> inputs, Func<T, DataTask<bool>> predicate)
             {
                 _inputs = inputs;
                 _predicate = predicate;
             }
 
-            public IDataTask<DataTaskYield<T>> MoveNext()
+            public DataTask<DataTaskYield<T>> MoveNext()
                 => _inputs.MoveNext()
                     .Bind(yield => !yield.HasValue ? DataTask.Return(yield)
                         : _predicate(yield.Value).Bind(shouldContinue =>

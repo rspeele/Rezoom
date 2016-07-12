@@ -28,7 +28,7 @@ namespace Data.Resumption.DataEnumerables
                 _enumerator = enumerator;
             }
 
-            public IDataTask<DataTaskYield<T>> MoveNext()
+            public DataTask<DataTaskYield<T>> MoveNext()
                 => DataTask.Return(_enumerator.MoveNext()
                     ? new DataTaskYield<T>(_enumerator.Current)
                     : new DataTaskYield<T>());

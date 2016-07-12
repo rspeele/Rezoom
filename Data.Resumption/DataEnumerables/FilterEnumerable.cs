@@ -31,7 +31,7 @@ namespace Data.Resumption.DataEnumerables
                 _predicate = predicate;
             }
 
-            public IDataTask<DataTaskYield<T>> MoveNext()
+            public DataTask<DataTaskYield<T>> MoveNext()
                 => _inputs.MoveNext()
                     .Bind(yield =>
                         yield.HasValue && !_predicate(yield.Value)

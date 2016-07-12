@@ -10,11 +10,11 @@ namespace Data.Resumption.DataEnumerables
     /// <typeparam name="TElement"></typeparam>
     internal class BindTaskEnumerable<TPending, TElement> : IDataEnumerable<TElement>
     {
-        private readonly IDataTask<TPending> _bound;
+        private readonly DataTask<TPending> _bound;
         private readonly Func<TPending, IDataEnumerable<TElement>> _continuation;
 
         public BindTaskEnumerable
-            ( IDataTask<TPending> bound
+            ( DataTask<TPending> bound
             , Func<TPending, IDataEnumerable<TElement>> continuation
             )
         {
@@ -24,17 +24,17 @@ namespace Data.Resumption.DataEnumerables
 
         private class BindTaskEnumerator : IDataEnumerator<TElement>
         {
-            private IDataTask<TPending> _bound;
+            private DataTask<TPending> _bound;
             private Func<TPending, IDataEnumerable<TElement>> _continuation;
             private IDataEnumerator<TElement> _wrapped;
 
-            public BindTaskEnumerator(IDataTask<TPending> bound, Func<TPending, IDataEnumerable<TElement>> continuation)
+            public BindTaskEnumerator(DataTask<TPending> bound, Func<TPending, IDataEnumerable<TElement>> continuation)
             {
                 _bound = bound;
                 _continuation = continuation;
             }
 
-            public IDataTask<DataTaskYield<TElement>> MoveNext()
+            public DataTask<DataTaskYield<TElement>> MoveNext()
             {
                 if (_wrapped != null) return _wrapped.MoveNext();
                 return _bound.Bind(pending =>

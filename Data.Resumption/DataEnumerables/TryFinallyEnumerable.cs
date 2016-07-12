@@ -28,7 +28,7 @@ namespace Data.Resumption.DataEnumerables
                 _onExit = onExit;
             }
 
-            public IDataTask<DataTaskYield<T>> MoveNext() => _wrapped.MoveNext();
+            public DataTask<DataTaskYield<T>> MoveNext() => _wrapped.MoveNext();
             public void Dispose()
             {
                 try

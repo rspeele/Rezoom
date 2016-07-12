@@ -30,14 +30,14 @@ namespace Data.Resumption.DataEnumerables
                 _exceptionHandler = exceptionHandler;
             }
 
-            private IDataTask<DataTaskYield<T>> HandleException(Exception ex)
+            private DataTask<DataTaskYield<T>> HandleException(Exception ex)
             {
                 _wrapped = _exceptionHandler(ex).GetEnumerator();
                 _exceptionHandler = null;
                 return MoveNext();
             }
 
-            public IDataTask<DataTaskYield<T>> MoveNext()
+            public DataTask<DataTaskYield<T>> MoveNext()
             {
                 if (_exceptionHandler == null) return _wrapped.MoveNext();
                 try

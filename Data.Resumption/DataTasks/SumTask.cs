@@ -12,11 +12,11 @@ namespace Data.Resumption.DataTasks
     /// <typeparam name="TSum"></typeparam>
     internal static class SumTask<T, TSum>
     {
-        public static IDataTask<TSum> Create
-            (IEnumerable<IDataTask<T>> tasks, TSum accumulator, Func<TSum, T, TSum> add)
-            => new IDataTask<TSum>(() => Step(tasks, accumulator, add));
+        public static DataTask<TSum> Create
+            (IEnumerable<DataTask<T>> tasks, TSum accumulator, Func<TSum, T, TSum> add)
+            => new DataTask<TSum>(() => Step(tasks, accumulator, add));
 
-        internal static StepState<TSum> Step(IEnumerable<IDataTask<T>> tasks, TSum accumulator, Func<TSum, T, TSum> add)
+        internal static StepState<TSum> Step(IEnumerable<DataTask<T>> tasks, TSum accumulator, Func<TSum, T, TSum> add)
         {
             var sum = accumulator;
             var pendings = new List<RequestsPending<T>>();
@@ -53,7 +53,7 @@ namespace Data.Resumption.DataTasks
                 , response =>
                 {
                     var branchN = response.AssumeBranchN();
-                    var subSucceeded = new List<IDataTask<T>>();
+                    var subSucceeded = new List<DataTask<T>>();
                     var subFailed = new List<Exception>();
                     for (var i = 0; i < pendings.Count; i++)
                     {

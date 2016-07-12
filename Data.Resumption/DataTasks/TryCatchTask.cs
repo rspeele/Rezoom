@@ -8,10 +8,10 @@ namespace Data.Resumption.DataTasks
     /// <typeparam name="T"></typeparam>
     public static class TryCatchTask<T>
     {
-        public static IDataTask<T> Create(IDataTask<T> wrapped, Func<Exception, IDataTask<T>> exceptionHandler)
-            => new IDataTask<T>(() => Step(wrapped, exceptionHandler));
+        public static DataTask<T> Create(DataTask<T> wrapped, Func<Exception, DataTask<T>> exceptionHandler)
+            => new DataTask<T>(() => Step(wrapped, exceptionHandler));
 
-        internal static StepState<T> Step(IDataTask<T> wrapped, Func<Exception, IDataTask<T>> exceptionHandler)
+        internal static StepState<T> Step(DataTask<T> wrapped, Func<Exception, DataTask<T>> exceptionHandler)
         {
             try
             {

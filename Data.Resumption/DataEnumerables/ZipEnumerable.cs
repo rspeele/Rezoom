@@ -13,12 +13,12 @@ namespace Data.Resumption.DataEnumerables
     {
         private readonly IDataEnumerable<TLeft> _left;
         private readonly IDataEnumerable<TRight> _right;
-        private readonly Func<TLeft, TRight, IDataTask<TOut>> _zipper;
+        private readonly Func<TLeft, TRight, DataTask<TOut>> _zipper;
 
         public ZipEnumerable
             ( IDataEnumerable<TLeft> left
             , IDataEnumerable<TRight> right
-            , Func<TLeft, TRight, IDataTask<TOut>> zipper
+            , Func<TLeft, TRight, DataTask<TOut>> zipper
             )
         {
             _left = left;
@@ -30,12 +30,12 @@ namespace Data.Resumption.DataEnumerables
         {
             private readonly IDataEnumerator<TLeft> _left;
             private readonly IDataEnumerator<TRight> _right;
-            private readonly Func<TLeft, TRight, IDataTask<TOut>> _zipper;
+            private readonly Func<TLeft, TRight, DataTask<TOut>> _zipper;
 
             public ZipEnumerator
                 ( IDataEnumerator<TLeft> left
                 , IDataEnumerator<TRight> right
-                , Func<TLeft, TRight, IDataTask<TOut>> zipper
+                , Func<TLeft, TRight, DataTask<TOut>> zipper
                 )
             {
                 _left = left;
@@ -43,7 +43,7 @@ namespace Data.Resumption.DataEnumerables
                 _zipper = zipper;
             }
 
-            public IDataTask<DataTaskYield<TOut>> MoveNext()
+            public DataTask<DataTaskYield<TOut>> MoveNext()
                 => _left.MoveNext()
                     .Zip(_right.MoveNext(), (ly, ry) => new { ly, ry })
                     .Bind(pair =>

@@ -8,7 +8,7 @@
     {
         private class ZeroEnumerator : IDataEnumerator<T>
         {
-            public IDataTask<DataTaskYield<T>> MoveNext() => DataTask.Return(new DataTaskYield<T>());
+            public DataTask<DataTaskYield<T>> MoveNext() => DataTask.Return(new DataTaskYield<T>());
 
             public void Dispose()
             {

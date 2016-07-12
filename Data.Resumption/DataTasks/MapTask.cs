@@ -10,7 +10,7 @@ namespace Data.Resumption.DataTasks
     /// <typeparam name="TOut"></typeparam>
     internal static class MapTask<TIn, TOut>
     {
-        private static StepState<TOut> Step(IDataTask<TIn> bound, Func<TIn, TOut> mapping)
+        private static StepState<TOut> Step(DataTask<TIn> bound, Func<TIn, TOut> mapping)
         {
             var state = bound.Step();
             return state.Match(pending =>
@@ -20,7 +20,7 @@ namespace Data.Resumption.DataTasks
             }, result => StepState.Result(mapping(result)));
         }
 
-        public static IDataTask<TOut> Create(IDataTask<TIn> bound, Func<TIn, TOut> mapping)
-            => new IDataTask<TOut>(() => Step(bound, mapping));
+        public static DataTask<TOut> Create(DataTask<TIn> bound, Func<TIn, TOut> mapping)
+            => new DataTask<TOut>(() => Step(bound, mapping));
     }
 }

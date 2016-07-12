@@ -66,7 +66,7 @@ namespace Data.Resumption
 
         /// <summary>
         /// Produce an <see cref="IDataEnumerable{TOut}"/> that depends on the execution of an
-        /// <see cref="IDataTask{TIn>"/>.
+        /// <see cref="DataTask{TResult}"/>.
         /// </summary>
         /// <typeparam name="TIn"></typeparam>
         /// <typeparam name="TOut"></typeparam>
@@ -74,7 +74,7 @@ namespace Data.Resumption
         /// <param name="selector"></param>
         /// <returns></returns>
         public static IDataEnumerable<TOut> SelectMany<TIn, TOut>
-            (this IDataTask<TIn> input, Func<TIn, IDataEnumerable<TOut>> selector)
+            (this DataTask<TIn> input, Func<TIn, IDataEnumerable<TOut>> selector)
             => new BindTaskEnumerable<TIn, TOut>(input, selector);
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace Data.Resumption
         /// <param name="predicate"></param>
         /// <returns></returns>
         public static IDataEnumerable<T> Where<T>
-            (this IDataEnumerable<T> inputs, Func<T, IDataTask<bool>> predicate)
+            (this IDataEnumerable<T> inputs, Func<T, DataTask<bool>> predicate)
             => inputs.SelectMany(e => predicate(e).SelectMany(t => t ? Yield(e) : Zero<T>()));
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace Data.Resumption
         /// <param name="predicate"></param>
         /// <returns></returns>
         public static IDataEnumerable<T> TakeWhile<T>
-            (this IDataEnumerable<T> inputs, Func<T, IDataTask<bool>> predicate)
+            (this IDataEnumerable<T> inputs, Func<T, DataTask<bool>> predicate)
             => new TakeWhileEnumerable<T>(inputs, predicate);
 
         /// <summary>
@@ -169,7 +169,7 @@ namespace Data.Resumption
         public static IDataEnumerable<TOut> Zip<TLeft, TRight, TOut>
             ( IDataEnumerable<TLeft> left
             , IDataEnumerable<TRight> right
-            , Func<TLeft, TRight, IDataTask<TOut>> zipper
+            , Func<TLeft, TRight, DataTask<TOut>> zipper
             ) => new ZipEnumerable<TLeft, TRight, TOut>(left, right, zipper);
 
         /// <summary>

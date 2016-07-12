@@ -26,7 +26,7 @@
                 _counter = counter;
             }
 
-            public IDataTask<DataTaskYield<T>> MoveNext()
+            public DataTask<DataTaskYield<T>> MoveNext()
             {
                 if (_counter <= 0) return DataTask.Return(new DataTaskYield<T>());
                 _counter--;
