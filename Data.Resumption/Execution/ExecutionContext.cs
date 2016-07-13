@@ -18,7 +18,7 @@ namespace Data.Resumption.Execution
         /// </summary>
         /// <param name="serviceFactory"></param>
         /// <param name="log"></param>
-        public ExecutionContext(IServiceFactory serviceFactory, IExecutionLog log = null)
+        public ExecutionContext(ServiceFactory serviceFactory, IExecutionLog log = null)
         {
             _serviceContext = new ServiceContext(serviceFactory);
             _log = log;

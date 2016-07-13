@@ -12,8 +12,9 @@ type LivingService<'svc> =
         new (life, svc) = { Lifetime = life; Service = svc }
     end
 
-type IServiceFactory =
-    abstract member CreateService : unit -> LivingService<'svc> 
+[<AbstractClass>]
+type ServiceFactory() =
+    abstract member CreateService : unit -> LivingService<'svc>
 
 type StepLocal<'a when 'a : (new : unit -> 'a)>() =
     let a = new 'a()

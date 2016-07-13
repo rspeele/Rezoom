@@ -46,7 +46,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ExceptionTypes.fs" />
     <Compile Include="InternalUtilities.fs" />
-    <Compile Include="IServiceFactory.fs" />
+    <Compile Include="ServiceFactory.fs" />
     <Compile Include="ServiceFactories.fs" />
     <Compile Include="ServiceContext.fs" />
     <Compile Include="DataRequest.fs" />

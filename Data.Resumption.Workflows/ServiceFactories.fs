@@ -4,19 +4,17 @@ open System.Reflection
 open System.Reflection.Emit
 
 type ZeroServiceFactory() =
-    interface IServiceFactory with
-        member this.CreateService() = null
+    inherit ServiceFactory()
+    override __.CreateService() = null
 
 type CoalescingServiceFactory
-    (main : IServiceFactory, fallback : IServiceFactory) =
-    member __.CreateService<'svc>() =
+    (main : ServiceFactory, fallback : ServiceFactory) =
+    inherit ServiceFactory()
+    override __.CreateService<'svc>() =
         let main = main.CreateService<'svc>()
         if isNull main then
             fallback.CreateService<'svc>()
         else main
-    interface IServiceFactory with
-        member this.CreateService<'svc>() =
-            this.CreateService<'svc>()
 
 type private DefaultServiceConstructor =
     static member GetConstructor(ty : Type) =
@@ -44,8 +42,9 @@ type private DefaultServiceConstructor<'a>() =
         : Func<LivingService<'a>>
     static member Constructor = constr
         
-type private DefaultServiceFactory() =
-    interface IServiceFactory with
-        member __.CreateService<'svc>() =
-            let cons = DefaultServiceConstructor<'svc>.Constructor
-            if isNull cons then null else cons.Invoke()
+type private DefaultServiceFactory(userFactory : ServiceFactory) =
+    inherit ServiceFactory()
+    override __.CreateService<'svc>() =
+        let cons = DefaultServiceConstructor<'svc>.Constructor
+        if isNull cons then userFactory.CreateService<'svc>()
+        else cons.Invoke()

@@ -29,8 +29,8 @@ type private ServiceContextCache() =
         member this.Dispose() = this.Dispose()
 
 
-type ServiceContext(factory : IServiceFactory) =
-    let factory = new CoalescingServiceFactory(new DefaultServiceFactory(), factory)
+type ServiceContext(factory : ServiceFactory) =
+    let factory = new DefaultServiceFactory(factory)
     let execution = new ServiceContextCache()
     let sync = new obj()
     let mutable step : ServiceContextCache = null
