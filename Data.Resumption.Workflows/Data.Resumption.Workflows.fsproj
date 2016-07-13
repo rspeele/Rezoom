@@ -51,13 +51,14 @@
     <Compile Include="ServiceContext.fs" />
     <Compile Include="DataRequest.fs" />
     <Compile Include="DataTask.fs" />
+    <Compile Include="ResponseCache.fs" />
     <Compile Include="DataTaskInternals.fs" />
     <Compile Include="MapInternals.fs" />
     <Compile Include="BindInternals.fs" />
     <Compile Include="ApplyInternals.fs" />
     <Compile Include="ExceptionInternals.fs" />
-    <Compile Include="Operators.fs" />
     <Compile Include="DataTaskBuilder.fs" />
+    <Compile Include="CSExtensions.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

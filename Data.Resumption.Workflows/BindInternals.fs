@@ -3,9 +3,6 @@ open Data.Resumption
 open Data.Resumption.DataTaskInternals
 open System
 
-let inline retI result = Immediate(result)
-let zero = retI ()
-
 let rec bindST (task : 'a Step) (cont : 'a -> 'b DataTask) : 'b Step =
     let res = task.Resume
     let onResponses (responses : Responses) =

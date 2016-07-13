@@ -15,20 +15,27 @@ type DataRequest() =
     default __.Mutation = true
     abstract member Prepare : ServiceContext -> (unit -> obj Task)
 
+[<AbstractClass>]
 type DataRequest<'a>() =
     inherit DataRequest()
+    static member private BoxResult(task : 'a Task) =
+        box task.Result
     abstract member Prepare : ServiceContext -> (unit -> 'a Task)
     override this.Prepare(cxt) : unit -> obj Task =
         let typed = this.Prepare(cxt)
         fun () ->
             let t = typed()
-            t.ContinueWith()
+            t.ContinueWith(DataRequest<'a>.BoxResult)
 
 [<AbstractClass>]
-type SynchronousDataRequest() =
-    inherit DataRequest()
-    abstract member Prepare : ServiceContext -> (unit -> obj)
-    override __.Prepare(cxt) =
+type SynchronousDataRequest<'a>() =
+    inherit DataRequest<'a>()
+    abstract member Prepare : ServiceContext -> (unit -> 'a)
+    override this.Prepare(cxt) : unit -> 'a Task =
+        let sync = this.Prepare(cxt)
+        fun () ->
+            Task.FromResult(sync())
+        
         
     
 

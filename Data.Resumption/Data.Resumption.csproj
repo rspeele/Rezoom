@@ -41,67 +41,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataEnumerable.cs" />
-    <Compile Include="DataEnumerables\BindEnumerable.cs" />
-    <Compile Include="DataEnumerables\BindTaskEnumerable.cs" />
-    <Compile Include="DataEnumerables\CombineEnumerable.cs" />
-    <Compile Include="DataEnumerables\FilterEnumerable.cs" />
-    <Compile Include="DataEnumerables\MapEnumerable.cs" />
-    <Compile Include="DataEnumerables\TakeEnumerable.cs" />
-    <Compile Include="DataEnumerables\TakeWhileEnumerable.cs" />
-    <Compile Include="DataEnumerables\TryCatchEnumerable.cs" />
-    <Compile Include="DataEnumerables\TryFinallyEnumerable.cs" />
-    <Compile Include="DataEnumerables\YieldEnumerable.cs" />
-    <Compile Include="DataEnumerables\YieldManyEnumerable.cs" />
-    <Compile Include="DataEnumerables\ZeroEnumerable.cs" />
-    <Compile Include="DataEnumerables\ZipEnumerable.cs" />
-    <Compile Include="DataTasks\ForEachDataEnumerableTask.cs" />
-    <Compile Include="DataTasks\ForEachEnumerableTask.cs" />
-    <Compile Include="DataTaskYield.cs" />
     <Compile Include="Execution\DebugExecutionLog.cs" />
     <Compile Include="Execution\IExecutionLog.cs" />
-    <Compile Include="IDataEnumerator.cs" />
-    <Compile Include="Internals\BatchAbortion.cs" />
-    <Compile Include="Internals\BatchBranch2.cs" />
-    <Compile Include="Internals\BatchBranchN.cs" />
-    <Compile Include="Internals\BatchLeaf.cs" />
-    <Compile Include="DataRequests\DataRequest.cs" />
-    <Compile Include="Batch.cs" />
-    <Compile Include="Exceptions\DataTaskAbortException.cs" />
-    <Compile Include="DataTasks\ApplyTask.cs" />
-    <Compile Include="DataTasks\BindTask.cs" />
-    <Compile Include="DataTasks\SumTask.cs" />
-    <Compile Include="DataTaskExtensions.cs" />
-    <Compile Include="DataTasks\MapTask.cs" />
-    <Compile Include="DataTasks\RequestTask.cs" />
-    <Compile Include="DataTasks\TryCatchTask.cs" />
-    <Compile Include="DataTasks\TryFinallyTask.cs" />
-    <Compile Include="Execution\DataSourceCache.cs" />
     <Compile Include="Execution\ExecutionContext.cs" />
-    <Compile Include="Execution\ResponseCache.cs" />
-    <Compile Include="Execution\ServiceContext.cs" />
     <Compile Include="Execution\StepContext.cs" />
-    <Compile Include="IDataRequest.cs" />
-    <Compile Include="DataTask.cs" />
-    <Compile Include="IDataEnumerable.cs" />
-    <Compile Include="Internals\DefaultServiceFactory.cs" />
-    <Compile Include="Internals\InternalExtensions.cs" />
-    <Compile Include="DataRequests\OpaqueAsyncDataRequest.cs" />
-    <Compile Include="Services\ExecutionLocal.cs" />
-    <Compile Include="Services\Factories\AggregateServiceFactory.cs" />
-    <Compile Include="Services\Factories\ZeroServiceFactory.cs" />
-    <Compile Include="Services\IServiceContext.cs" />
-    <Compile Include="Services\IServiceFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RequestsPending.cs" />
-    <Compile Include="Services\LivingService.cs" />
-    <Compile Include="Services\ServiceLifetime.cs" />
-    <Compile Include="Services\StepLocal.cs" />
-    <Compile Include="StepState.cs" />
-    <Compile Include="SuccessOrException.cs" />
-    <Compile Include="DataRequests\SynchronousDataRequest.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\Data.Resumption.Workflows\Data.Resumption.Workflows.fsproj">
+      <Project>{d98acbeb-a039-4340-a7c5-6ed2b677268b}</Project>
+      <Name>Data.Resumption.Workflows</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

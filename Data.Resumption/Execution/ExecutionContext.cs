@@ -1,13 +1,12 @@
 ﻿using System.Threading.Tasks;
-using Data.Resumption.Services;
 
 namespace Data.Resumption.Execution
 {
     /// <summary>
     /// Handles execution of an <see cref="DataTask{TResult}"/> by stepping through it and running its pending
-    /// <see cref="IDataRequest"/>s with caching and deduplication.
+    /// <see cref="DataRequest"/>s with caching and deduplication.
     /// </summary>
-    public class ExecutionContext : IServiceContext
+    public class ExecutionContext
     {
         private readonly IExecutionLog _log;
         private readonly ServiceContext _serviceContext;
@@ -15,7 +14,7 @@ namespace Data.Resumption.Execution
 
         /// <summary>
         /// Create an execution context by giving it an <see cref="IServiceFactory"/> to provide
-        /// services required by the <see cref="IDataRequest"/>s that it'll be responsible for executing.
+        /// services required by the <see cref="DataRequest"/>s that it'll be responsible for executing.
         /// </summary>
         /// <param name="serviceFactory"></param>
         /// <param name="log"></param>
@@ -25,25 +24,25 @@ namespace Data.Resumption.Execution
             _log = log;
         }
 
-        private async Task<DataTask<T>> ExecutePending<T>(RequestsPending<T> pending)
+        private async Task<DataTask<T>> ExecutePending<T>(Step<T> step)
         {
             _log?.OnStepStart();
             _serviceContext.BeginStep();
-            Batch<SuccessOrException> responses;
+            Batch<DataResponse> responses;
             try
             {
                 var stepContext = new StepContext(_serviceContext, _log, _responseCache);
-                var retrievals = pending.Requests.Map
+                var retrievals = step.Pending.MapCS
                     (request => stepContext.AddRequest(request));
                 await stepContext.Execute();
-                responses = retrievals.Map(retrieve => retrieve());
+                responses = retrievals.MapCS(retrieve => retrieve());
             }
             finally
             {
                 _serviceContext.EndStep();
                 _log?.OnStepFinish();
             }
-            return pending.Resume(responses);
+            return step.Resume.Invoke(responses);
         }
 
         /// <summary>
@@ -54,21 +53,15 @@ namespace Data.Resumption.Execution
         /// <returns></returns>
         public async Task<T> Execute<T>(DataTask<T> task)
         {
-            var executing = true;
-            var end = default(T);
-            while (executing)
+            while (true)
             {
-                var step = task.Step();
-                task = await step.Match
-                    ( ExecutePending
-                    , result =>
-                    {
-                        executing = false;
-                        end = result;
-                        return Task.FromResult(default(DataTask<T>));
-                    });
+                var step = task.Step;
+                if (step == null)
+                {
+                    return task.Immediate;
+                }
+                task = await ExecutePending(step);
             }
-            return end;
         }
 
         public TService GetService<TService>() => _serviceContext.GetService<TService>();

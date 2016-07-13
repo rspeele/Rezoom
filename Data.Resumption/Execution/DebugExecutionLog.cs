@@ -12,13 +12,13 @@ namespace Data.Resumption.Execution
 
         public void OnStepFinish() => Debug.WriteLine("OnStepFinish()");
 
-        public void OnPrepare(IDataRequest request)
+        public void OnPrepare(DataRequest request)
             => Debug.WriteLine($"OnPrepare({request.Identity})");
 
         public void OnPrepareFailure(Exception exception)
             => Debug.WriteLine($"OnException({exception.Message})");
 
-        public void OnComplete(IDataRequest request, SuccessOrException response)
+        public void OnComplete(DataRequest request, DataResponse response)
             => Debug.WriteLine($"OnComplete({request.Identity},{response})");
     }
 }

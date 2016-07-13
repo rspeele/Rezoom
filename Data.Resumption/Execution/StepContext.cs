@@ -2,22 +2,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Data.Resumption.Services;
+using Microsoft.FSharp.Core;
 
 namespace Data.Resumption.Execution
 {
     internal class StepContext
     {
-        private readonly IServiceContext _serviceContext;
+        private readonly ServiceContext _serviceContext;
         private readonly IExecutionLog _executionLog;
         private readonly ResponseCache _cache;
         private readonly List<Func<Task>> _unsequenced = new List<Func<Task>>();
         private readonly Dictionary<object, List<Func<Task>>> _sequenceGroups
             = new Dictionary<object, List<Func<Task>>>();
-        private readonly Dictionary<object, Func<SuccessOrException>> _deduped
-            = new Dictionary<object, Func<SuccessOrException>>();
+        private readonly Dictionary<object, Func<DataResponse>> _deduped
+            = new Dictionary<object, Func<DataResponse>>();
 
-        public StepContext(IServiceContext serviceContext, IExecutionLog executionLog, ResponseCache cache)
+        public StepContext(ServiceContext serviceContext, IExecutionLog executionLog, ResponseCache cache)
         {
             _serviceContext = serviceContext;
             _executionLog = executionLog;
@@ -26,30 +26,30 @@ namespace Data.Resumption.Execution
 
         private class PendingResult
         {
-            private SuccessOrException _result;
-            public SuccessOrException Get() => _result;
-            public async Task Run(IDataRequest request, IExecutionLog log, Func<Task<object>> prepared)
+            private DataResponse _result;
+            public DataResponse Get() => _result;
+            public async Task Run(DataRequest request, IExecutionLog log, FSharpFunc<Unit, Task<object>> prepared)
             {
                 try
                 {
-                    _result = new SuccessOrException(await prepared());
+                    _result = DataResponse.NewRetrievalSuccess(await prepared.Invoke(null));
                 }
                 catch (Exception ex)
                 {
-                    _result = new SuccessOrException(ex);
+                    _result = DataResponse.NewRetrievalException(ex);
                 }
                 log?.OnComplete(request, _result);
             }
         }
 
-        private Func<SuccessOrException> AddRequestToRun(IDataRequest request)
+        private Func<DataResponse> AddRequestToRun(DataRequest request)
         {
             if (request.Mutation)
             {
                 _cache.Invalidate(request.DataSource);
             }
             var eventual = new PendingResult();
-            Func<Task<object>> prepared;
+            FSharpFunc<Unit, Task<object>> prepared;
             try
             {
                 prepared = request.Prepare(_serviceContext);
@@ -58,7 +58,7 @@ namespace Data.Resumption.Execution
             catch (Exception ex)
             {
                 _executionLog?.OnPrepareFailure(ex);
-                return () => new SuccessOrException(ex);
+                return () => DataResponse.NewRetrievalException(ex);
             }
             Func<Task> run = async () => await eventual.Run(request, _executionLog, prepared);
             var sequenceGroupId = request.SequenceGroup;
@@ -79,7 +79,7 @@ namespace Data.Resumption.Execution
             return eventual.Get;
         }
 
-        public Func<SuccessOrException> AddRequest(IDataRequest request)
+        public Func<DataResponse> AddRequest(DataRequest request)
         {
             var identity = request.Identity;
             // If this request is not cachable, we have to run it.
@@ -87,10 +87,13 @@ namespace Data.Resumption.Execution
             // Otherwise...
             var dataSource = request.DataSource;
             // Check for a cached result.
-            var cached = _cache.CheckCache(dataSource, identity);
-            if (cached != null) return () => cached.Value;
+            object value = null;
+            if (_cache.TryGetValue(dataSource, identity, ref value))
+            {
+                return () => DataResponse.NewRetrievalSuccess(value);
+            }
             // Check for de-duplication of this request within this step.
-            Func<SuccessOrException> existing;
+            Func<DataResponse> existing;
             if (_deduped.TryGetValue(identity, out existing)) return existing;
             // Otherwise, we really need to run this request.
             var toRun = AddRequestToRun(request);
@@ -98,7 +101,10 @@ namespace Data.Resumption.Execution
             return () =>
             {
                 var result = toRun();
-                _cache.Store(dataSource, identity, result);
+                if (result.IsRetrievalSuccess)
+                {
+                    _cache.Store(dataSource, identity, ((DataResponse.RetrievalSuccess)result).Item);
+                }
                 return result;
             };
         }

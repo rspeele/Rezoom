@@ -24,7 +24,7 @@ namespace Data.Resumption.Execution
         /// Called when a data request is prepared for execution.
         /// </summary>
         /// <param name="request"></param>
-        void OnPrepare(IDataRequest request);
+        void OnPrepare(DataRequest request);
         /// <summary>
         /// Called when a data request's prepare method throws an exception.
         /// </summary>
@@ -35,6 +35,6 @@ namespace Data.Resumption.Execution
         /// </summary>
         /// <param name="request"></param>
         /// <param name="response"></param>
-        void OnComplete(IDataRequest request, SuccessOrException response);
+        void OnComplete(DataRequest request, DataResponse response);
     }
 }

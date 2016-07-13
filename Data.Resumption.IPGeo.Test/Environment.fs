@@ -1,10 +1,6 @@
 ﻿[<AutoOpen>]
 module Data.Resumption.IPGeo.Test.Environment
 open Data.Resumption
-open Data.Resumption.DataRequests
-open Data.Resumption.Services
-open Data.Resumption.Services.Factories
-open Data.Resumption.Execution
 open System
 open System.Collections
 open System.Collections.Generic

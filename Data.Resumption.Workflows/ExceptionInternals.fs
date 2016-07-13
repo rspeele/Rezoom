@@ -24,6 +24,16 @@ let inline catchIT (wrapped : unit -> 'a Immediate) (catcher : exn -> 'a DataTas
     catchTT (fun () -> %%wrapped()) catcher
 let inline catchIS (wrapped : unit -> 'a Immediate) (catcher : exn -> 'a Step) =
     catchTT (fun () -> %%wrapped()) (fun ex -> %%catcher ex)
+let inline catchSI (wrapped : unit -> 'a Step) (catcher : exn -> 'a Immediate) =
+    catchTT (fun () -> %%wrapped()) (fun ex -> %%catcher ex)
+let inline catchSS (wrapped : unit -> 'a Step) (catcher : exn -> 'a Step) =
+    catchTT (fun () -> %%wrapped()) (fun ex -> %%catcher ex)
+let inline catchII (wrapped : unit -> 'a Immediate) (catcher : exn -> 'a Immediate) =
+    try
+        wrapped()
+    with
+    | ex -> catcher(ex)
+
 
 let rec finallyTT (wrapped : unit -> 'a DataTask) (onExit : unit -> unit) =
     let mutable cleanExit = false

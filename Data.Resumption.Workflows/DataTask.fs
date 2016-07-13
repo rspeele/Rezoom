@@ -9,6 +9,18 @@ type Batch<'a> =
     | BatchPair of ('a Batch * 'a Batch)
     | BatchList of ('a Batch array)
     | BatchAbort
+    member this.MapCS(f : System.Func<'a, 'b>) =
+        match this with
+        | BatchLeaf x -> BatchLeaf (f.Invoke(x))
+        | BatchPair (l, r) -> BatchPair (l.MapCS(f), r.MapCS(f))
+        | BatchList arr -> BatchList (arr |> Array.map (fun b -> b.MapCS(f)))
+        | BatchAbort -> BatchAbort
+    member this.Map(f : 'a -> 'b) =
+        match this with
+        | BatchLeaf x -> BatchLeaf (f x)
+        | BatchPair (l, r) -> BatchPair (l.Map(f), r.Map(f))
+        | BatchList arr -> BatchList (arr |> Array.map (fun b -> b.Map(f)))
+        | BatchAbort -> BatchAbort
 
 type Requests = DataRequest Batch
 type Responses = DataResponse Batch
@@ -31,6 +43,7 @@ and DataTask<'result> =
         val public Step : Step<'result>
         new(result : 'result) = { Immediate = result; Step = Unchecked.defaultof<_> }
         new(step : 'result Step) = { Immediate = Unchecked.defaultof<'result>; Step = step }
+        member inline this.ToDataTask() = this
     end
 
 type Immediate<'result> =

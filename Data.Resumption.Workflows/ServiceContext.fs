@@ -35,11 +35,11 @@ type ServiceContext(factory : IServiceFactory) =
     let sync = new obj()
     let mutable step : ServiceContextCache = null
 
-    member internal __.BeginStep() =
+    member __.BeginStep() =
         lock sync <| fun () ->
             if not (isNull step) then step.Dispose()
             step <- new ServiceContextCache()
-    member internal __.EndStep() =
+    member __.EndStep() =
         lock sync <| fun () ->
             if not (isNull step) then step.Dispose()
             step <- null

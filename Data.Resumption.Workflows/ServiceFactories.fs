@@ -1,6 +1,10 @@
 ﻿namespace Data.Resumption
 open System
 
+type ZeroServiceFactory() =
+    interface IServiceFactory with
+        member this.CreateService() = null
+
 type CoalescingServiceFactory
     (main : IServiceFactory, fallback : IServiceFactory) =
     member __.CreateService<'svc>() =

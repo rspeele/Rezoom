@@ -1,6 +1,7 @@
 ﻿[<AutoOpen>]
 module Data.Resumption.Test.Environment
 open Data.Resumption
+open Data.Resumption.Execution
 open System
 open System.Collections
 open System.Collections.Generic
@@ -31,13 +32,13 @@ type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : str
     override __.Idempotent = idem
     override __.DataSource = box typeof<TestContext>
     override __.Identity = box query
-    override __.PrepareSynchronous(serviceContext) =
+    override __.Prepare(serviceContext : ServiceContext) =
         let db = serviceContext.GetService<ExecutionLocal<TestContext>>().Service
         pre()
         db.Prepare(query)
-        Func<_>(fun () ->
+        fun () ->
             db.Execute()
-            post query)
+            post query
 
 exception PrepareFailure of string
 exception RetrieveFailure of string
@@ -63,7 +64,7 @@ type ExpectedResult<'a> =
 
 type ExpectedResultTest<'a> =
     {
-        Task : unit -> 'a datatask
+        Task : unit -> 'a DataTask
         Batches : string list list
         Result : ExpectedResult<'a>
     }

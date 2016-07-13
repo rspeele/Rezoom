@@ -97,39 +97,39 @@ type TestExceptionCatching() =
             Result = Good "badbadz"
         } |> test
 
-    [<TestMethod>]
-    member __.TestConcurrentLoopCatching() =
-        let catching query =
-            datatask {
-                let guid = Guid.NewGuid().ToString()
-                try
-                    let! x = failingRetrieve guid query
-                    return ()
-                with
-                | RetrieveFailure msg when msg = guid -> return ()
-
-            }
-        let good query =
-            datatask {
-                let! result = send query
-                return ()
-            }
-        {
-            Task = fun () ->
-                datatask {
-                    for q in batch ["x"; "y"; "z"] do
-                        if q = "y" then
-                            do! good q
-                        else
-                            do! catching q
-                    return ()
-                }
-            Batches =
-                [
-                    [ "x"; "y"; "z" ]
-                ]
-            Result = Good ()
-        } |> test
+//    [<TestMethod>]
+//    member __.TestConcurrentLoopCatching() =
+//        let catching query =
+//            datatask {
+//                let guid = Guid.NewGuid().ToString()
+//                try
+//                    let! x = failingRetrieve guid query
+//                    return ()
+//                with
+//                | RetrieveFailure msg when msg = guid -> return ()
+//
+//            }
+//        let good query =
+//            datatask {
+//                let! result = send query
+//                return ()
+//            }
+//        {
+//            Task = fun () ->
+//                datatask {
+//                    for q in batch ["x"; "y"; "z"] do
+//                        if q = "y" then
+//                            do! good q
+//                        else
+//                            do! catching q
+//                    return ()
+//                }
+//            Batches =
+//                [
+//                    [ "x"; "y"; "z" ]
+//                ]
+//            Result = Good ()
+//        } |> test
 
     [<TestMethod>]
     member __.TestConcurrentNonCatching() =

@@ -50,13 +50,17 @@
     <Compile Include="TestCaching.fs" />
     <Compile Include="TestExceptionCatching.fs" />
     <Compile Include="TestExceptionFinally.fs" />
-    <Compile Include="TestDataSeq.fs" />
     <Compile Include="TestPerformance.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Data.Resumption.Workflows\Data.Resumption.Workflows.fsproj">
       <Name>Data.Resumption.Workflows</Name>
       <Project>{d98acbeb-a039-4340-a7c5-6ed2b677268b}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Data.Resumption\Data.Resumption.csproj">
+      <Name>Data.Resumption</Name>
+      <Project>{9db721d3-da97-4be3-b60b-9b7a682e803e}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

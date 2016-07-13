@@ -42,3 +42,28 @@ let rec applyTT (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'
             | _ -> logicFault "Incorrect response shape for applied pair"
         DataTask<'b>(Step(pending, onResponses))
 
+let tuple2 (taskA : 'a DataTask) (taskB : 'b DataTask) : ('a * 'b) DataTask =
+    applyTT
+        (mapT (fun a b -> a, b) taskA)
+        taskB
+
+let tuple3 (taskA : 'a DataTask) (taskB : 'b DataTask) (taskC : 'c DataTask) : ('a * 'b * 'c) DataTask =
+    applyTT
+        (applyTT
+            (mapT (fun a b c -> a, b, c) taskA)
+            taskB)
+        taskC
+
+let tuple4
+    (taskA : 'a DataTask)
+    (taskB : 'b DataTask)
+    (taskC : 'c DataTask)
+    (taskD : 'd DataTask)
+    : ('a * 'b * 'c * 'd) DataTask =
+    applyTT
+        (applyTT
+            (applyTT
+                (mapT (fun a b c d -> a, b, c, d) taskA)
+                taskB)
+            taskC)
+        taskD
