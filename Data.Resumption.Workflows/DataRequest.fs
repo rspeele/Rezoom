@@ -20,6 +20,10 @@ type DataRequest() =
 [<AbstractClass>]
 type DataRequest<'a>() =
     inherit DataRequest()
+
+[<AbstractClass>]
+type AsynchronousDataRequest<'a>() =
+    inherit DataRequest<'a>()
     static member private BoxResult(task : 'a Task) =
         box task.Result
     abstract member Prepare : ServiceContext -> (unit -> 'a Task)
@@ -27,16 +31,16 @@ type DataRequest<'a>() =
         let typed = this.Prepare(cxt)
         fun () ->
             let t = typed()
-            t.ContinueWith(DataRequest<'a>.BoxResult)
+            t.ContinueWith(AsynchronousDataRequest<'a>.BoxResult, TaskContinuationOptions.ExecuteSynchronously)
 
 [<AbstractClass>]
 type SynchronousDataRequest<'a>() =
     inherit DataRequest<'a>()
     abstract member Prepare : ServiceContext -> (unit -> 'a)
-    override this.Prepare(cxt) : unit -> 'a Task =
+    override this.Prepare(cxt) : unit -> obj Task =
         let sync = this.Prepare(cxt)
         fun () ->
-            Task.FromResult(sync())
+            Task.FromResult(box (sync()))
         
         
     
