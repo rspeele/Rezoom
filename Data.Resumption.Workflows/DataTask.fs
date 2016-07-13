@@ -25,9 +25,6 @@ type Batch<'a> =
 type Requests = DataRequest Batch
 type Responses = DataResponse Batch
 
-type RequestsPending<'result>() =
-    class end
-
 [<AllowNullLiteral>]
 type Step<'result> =
     class

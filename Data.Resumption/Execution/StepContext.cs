@@ -60,21 +60,28 @@ namespace Data.Resumption.Execution
                 _executionLog?.OnPrepareFailure(ex);
                 return () => DataResponse.NewRetrievalException(ex);
             }
-            Func<Task> run = async () => await eventual.Run(request, _executionLog, prepared);
-            var sequenceGroupId = request.SequenceGroup;
-            if (sequenceGroupId == null)
+            Func<Task> run = () => eventual.Run(request, _executionLog, prepared);
+            if (!request.Parallelizable)
             {
                 _unsequenced.Add(run);
             }
             else
             {
-                List<Func<Task>> sequenceGroup;
-                if (!_sequenceGroups.TryGetValue(sequenceGroupId, out sequenceGroup))
+                var sequenceGroupId = request.SequenceGroup;
+                if (sequenceGroupId == null)
                 {
-                    sequenceGroup = new List<Func<Task>>();
-                    _sequenceGroups[sequenceGroupId] = sequenceGroup;
+                    _unsequenced.Add(run);
                 }
-                sequenceGroup.Add(run);
+                else
+                {
+                    List<Func<Task>> sequenceGroup;
+                    if (!_sequenceGroups.TryGetValue(sequenceGroupId, out sequenceGroup))
+                    {
+                        sequenceGroup = new List<Func<Task>>();
+                        _sequenceGroups[sequenceGroupId] = sequenceGroup;
+                    }
+                    sequenceGroup.Add(run);
+                }
             }
             return eventual.Get;
         }

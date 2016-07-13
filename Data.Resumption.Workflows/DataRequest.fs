@@ -13,6 +13,8 @@ type DataRequest() =
     default __.Idempotent = false
     abstract member Mutation : bool
     default __.Mutation = true
+    abstract member Parallelizable : bool
+    default __.Parallelizable = false
     abstract member Prepare : ServiceContext -> (unit -> obj Task)
 
 [<AbstractClass>]
