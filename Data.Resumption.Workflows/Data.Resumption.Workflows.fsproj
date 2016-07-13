@@ -44,20 +44,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Aliases.fs" />
-    <Compile Include="DataTaskMonad.fs" />
-    <Compile Include="DataSeqMonad.fs" />
-    <Compile Include="DataSeq.fs" />
+    <Compile Include="ExceptionTypes.fs" />
+    <Compile Include="InternalUtilities.fs" />
+    <Compile Include="IServiceFactory.fs" />
+    <Compile Include="ServiceFactories.fs" />
+    <Compile Include="ServiceContext.fs" />
+    <Compile Include="DataRequest.fs" />
+    <Compile Include="DataTask.fs" />
+    <Compile Include="DataTaskInternals.fs" />
+    <Compile Include="MapInternals.fs" />
+    <Compile Include="BindInternals.fs" />
+    <Compile Include="ApplyInternals.fs" />
+    <Compile Include="ExceptionInternals.fs" />
     <Compile Include="Operators.fs" />
     <Compile Include="DataTaskBuilder.fs" />
-    <Compile Include="DataSeqBuilder.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Data.Resumption\Data.Resumption.csproj">
-      <Name>Data.Resumption</Name>
-      <Project>{9db721d3-da97-4be3-b60b-9b7a682e803e}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
