@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Data.Entity;
 using System.Threading.Tasks;
-using Data.Resumption.DataRequests;
-using Data.Resumption.Services;
 
 namespace Data.Resumption.EF
 {

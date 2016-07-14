@@ -52,7 +52,7 @@ namespace Data.Resumption.Execution
             FSharpFunc<Unit, Task<object>> prepared;
             try
             {
-                prepared = request.Prepare(_serviceContext);
+                prepared = request.InternalPrepare(_serviceContext);
                 _executionLog?.OnPrepare(request);
             }
             catch (Exception ex)

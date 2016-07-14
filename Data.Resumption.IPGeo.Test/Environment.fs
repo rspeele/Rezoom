@@ -1,6 +1,7 @@
 ﻿[<AutoOpen>]
 module Data.Resumption.IPGeo.Test.Environment
 open Data.Resumption
+open Data.Resumption.Execution
 open System
 open System.Collections
 open System.Collections.Generic
@@ -11,7 +12,7 @@ type 'a ExpectedResult =
 
 type 'a TestTask =
     {
-        Task : 'a datatask
+        Task : 'a DataTask
         Batches : string list list
         ExpectedResult : 'a ExpectedResult
     }

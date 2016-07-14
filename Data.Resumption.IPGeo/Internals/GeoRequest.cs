@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Data.Resumption.DataRequests;
-using Data.Resumption.Services;
+using Data.Resumption.CS;
 
 namespace Data.Resumption.IPGeo
 {
     /// <summary>
-    /// Implements <see cref="IDataRequest"/> for looking up <see cref="GeoInfo"/> for an IP address.
+    /// Implements <see cref="DataRequest"/> for looking up <see cref="GeoInfo"/> for an IP address.
     /// </summary>
     internal class GeoRequest : DataRequest<GeoInfo>
     {
@@ -29,7 +28,7 @@ namespace Data.Resumption.IPGeo
         // Looking up an IP doesn't change anything, so it shouldn't invalidate any caches.
         public override bool Mutation => false;
 
-        public override Func<Task<GeoInfo>> Prepare(IServiceContext context)
+        public override Func<Task<GeoInfo>> Prepare(ServiceContext context)
         {
             var batch = context.GetService<StepLocal<GeoBatch>>().Service;
             return batch.Prepare(new GeoQuery { Query = _ip });

@@ -56,6 +56,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Data.Resumption.Workflows\Data.Resumption.Workflows.fsproj">
+      <Project>{d98acbeb-a039-4340-a7c5-6ed2b677268b}</Project>
+      <Name>Data.Resumption.Workflows</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Data.Resumption\Data.Resumption.csproj">
       <Project>{9db721d3-da97-4be3-b60b-9b7a682e803e}</Project>
       <Name>Data.Resumption</Name>

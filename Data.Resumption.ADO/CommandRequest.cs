@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Data.Resumption.DataRequests;
-using Data.Resumption.Services;
 
 namespace Data.Resumption.ADO
 {
-    public class CommandRequest : DataRequest<IReadOnlyList<CommandResponse>>
+    public class CommandRequest : CS.AsynchronousDataRequest<IReadOnlyList<CommandResponse>>
     {
         private readonly Command _command;
 
@@ -21,7 +19,7 @@ namespace Data.Resumption.ADO
         public override bool Idempotent => _command.Idempotent;
         public override object SequenceGroup => typeof(CommandBatch);
 
-        public override Func<Task<IReadOnlyList<CommandResponse>>> Prepare(IServiceContext context)
+        public override Func<Task<IReadOnlyList<CommandResponse>>> Prepare(ServiceContext context)
             => context.GetService<CommandBatch>().Prepare(_command);
     }
 }

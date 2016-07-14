@@ -9,7 +9,7 @@ namespace Data.Resumption.Execution
     public class ExecutionContext
     {
         private readonly IExecutionLog _log;
-        private readonly ServiceContext _serviceContext;
+        private readonly DefaultServiceContext _serviceContext;
         private readonly ResponseCache _responseCache = new ResponseCache();
 
         /// <summary>
@@ -20,7 +20,7 @@ namespace Data.Resumption.Execution
         /// <param name="log"></param>
         public ExecutionContext(ServiceFactory serviceFactory, IExecutionLog log = null)
         {
-            _serviceContext = new ServiceContext(serviceFactory);
+            _serviceContext = new DefaultServiceContext(serviceFactory);
             _log = log;
         }
 

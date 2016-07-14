@@ -58,6 +58,7 @@
     <Compile Include="ApplyInternals.fs" />
     <Compile Include="ExceptionInternals.fs" />
     <Compile Include="DataTaskBuilder.fs" />
+    <Compile Include="CS.fs" />
     <Compile Include="CSExtensions.fs" />
   </ItemGroup>
   <PropertyGroup>

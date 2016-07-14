@@ -13,6 +13,10 @@ type LivingService<'svc> =
     end
 
 [<AbstractClass>]
+type ServiceContext() =
+    abstract member GetService<'svc> : unit -> 'svc
+
+[<AbstractClass>]
 type ServiceFactory() =
     abstract member CreateService : unit -> LivingService<'svc>
 

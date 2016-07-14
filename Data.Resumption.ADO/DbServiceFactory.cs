@@ -1,31 +1,31 @@
 ﻿using System.Data.Common;
-using Data.Resumption.Services;
+using Data.Resumption;
 
 namespace Data.Resumption.ADO
 {
-    public abstract class DbServiceFactory : IServiceFactory
+    public abstract class DbServiceFactory : ServiceFactory
     {
         protected abstract DbConnection CreateConnection();
         protected virtual IDbTypeRecognizer CreateDbTypeRecognizer() => new DbTypeRecognizer();
 
-        public LivingService<T>? CreateService<T>(IServiceContext context)
+        public LivingService<T> CreateService<T>(ServiceContext context)
         {
             if (typeof(T) == typeof(DbConnection))
             {
                 var conn = CreateConnection();
-                return new LivingService<T>((T)(object)conn, ServiceLifetime.ExecutionContext);
+                return new LivingService<T>(ServiceLifetime.ExecutionLocal, (T)(object)conn);
             }
             if (typeof(T) == typeof(IDbTypeRecognizer))
             {
                 var recognizer = CreateDbTypeRecognizer();
-                return new LivingService<T>((T)recognizer, ServiceLifetime.ExecutionContext);
+                return new LivingService<T>(ServiceLifetime.ExecutionLocal, (T)recognizer);
             }
             if (typeof(T) == typeof(CommandBatch))
             {
                 var dbConnection = context.GetService<DbConnection>();
                 var dbTypeRecognizer = context.GetService<IDbTypeRecognizer>();
                 var cmdContext = new CommandBatch(dbConnection, dbTypeRecognizer);
-                return new LivingService<T>((T)(object)cmdContext, ServiceLifetime.ExecutionStep);
+                return new LivingService<T>(ServiceLifetime.StepLocal, (T)(object)cmdContext);
             }
             return null;
         }

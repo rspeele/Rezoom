@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Data.Entity;
 using System.Threading.Tasks;
-using Data.Resumption.DataRequests;
-using Data.Resumption.Services;
 
 namespace Data.Resumption.EF
 {
-    public abstract class ContextRequest<TContext, T> : DataRequest<T>
+    public abstract class ContextRequest<TContext, T> : CS.AsynchronousDataRequest<T>
         where TContext : DbContext
     {
         public override object DataSource => typeof(TContext);
@@ -14,7 +12,7 @@ namespace Data.Resumption.EF
 
         protected abstract Func<Task<T>> Prepare(TContext db);
 
-        public sealed override Func<Task<T>> Prepare(IServiceContext context)
+        public sealed override Func<Task<T>> Prepare(ServiceContext context)
         {
             var db = context.GetService<TContext>();
             return Prepare(db);

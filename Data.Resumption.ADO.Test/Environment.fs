@@ -2,8 +2,6 @@
 module Data.Resumption.ADO.Test.Environment
 open Data.Resumption
 open Data.Resumption.ADO
-open Data.Resumption.DataRequests
-open Data.Resumption.Services
 open Data.Resumption.Execution
 open System
 open System.Collections
@@ -98,7 +96,7 @@ type 'a ExpectedResult =
 
 type 'a TestTask =
     {
-        Task : 'a datatask
+        Task : 'a DataTask
         ExpectedResult : 'a ExpectedResult
     }
 

@@ -15,7 +15,7 @@ type DataRequest() =
     default __.Mutation = true
     abstract member Parallelizable : bool
     default __.Parallelizable = false
-    abstract member Prepare : ServiceContext -> (unit -> obj Task)
+    abstract member InternalPrepare : ServiceContext -> (unit -> obj Task)
 
 [<AbstractClass>]
 type DataRequest<'a>() =
@@ -27,7 +27,7 @@ type AsynchronousDataRequest<'a>() =
     static member private BoxResult(task : 'a Task) =
         box task.Result
     abstract member Prepare : ServiceContext -> (unit -> 'a Task)
-    override this.Prepare(cxt) : unit -> obj Task =
+    override this.InternalPrepare(cxt) : unit -> obj Task =
         let typed = this.Prepare(cxt)
         fun () ->
             let t = typed()
@@ -37,7 +37,7 @@ type AsynchronousDataRequest<'a>() =
 type SynchronousDataRequest<'a>() =
     inherit DataRequest<'a>()
     abstract member Prepare : ServiceContext -> (unit -> 'a)
-    override this.Prepare(cxt) : unit -> obj Task =
+    override this.InternalPrepare(cxt) : unit -> obj Task =
         let sync = this.Prepare(cxt)
         fun () ->
             Task.FromResult(box (sync()))

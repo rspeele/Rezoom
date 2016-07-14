@@ -1,7 +1,6 @@
 ﻿namespace Data.Resumption
 open System
 open System.Collections.Generic
-    
 
 [<AllowNullLiteral>]
 type private ServiceContextCache() =
@@ -28,8 +27,8 @@ type private ServiceContextCache() =
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
-
-type ServiceContext(factory : ServiceFactory) =
+type DefaultServiceContext(factory : ServiceFactory) =
+    inherit ServiceContext()
     let factory = new DefaultServiceFactory(factory)
     let execution = new ServiceContextCache()
     let sync = new obj()
@@ -49,7 +48,7 @@ type ServiceContext(factory : ServiceFactory) =
             this.EndStep()
             execution.Dispose()
 
-    member public __.GetService<'svc>() : 'svc =
+    override __.GetService<'svc>() : 'svc =
         lock sync <| fun () ->
             let ty = typeof<'svc>
             let mutable cached : obj = null
