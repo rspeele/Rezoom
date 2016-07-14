@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Data.Resumption.CS;
 
 namespace Data.Resumption.IPGeo
 {
     /// <summary>
     /// Implements <see cref="DataRequest"/> for looking up <see cref="GeoInfo"/> for an IP address.
     /// </summary>
-    internal class GeoRequest : DataRequest<GeoInfo>
+    internal class GeoRequest : CS.AsynchronousDataRequest<GeoInfo>
     {
         private readonly string _ip;
 
