@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Data.Resumption.Execution
 {
@@ -6,7 +7,7 @@ namespace Data.Resumption.Execution
     /// Handles execution of an <see cref="DataTask{TResult}"/> by stepping through it and running its pending
     /// <see cref="DataRequest"/>s with caching and deduplication.
     /// </summary>
-    public class ExecutionContext
+    public class ExecutionContext : IDisposable
     {
         private readonly IExecutionLog _log;
         private readonly DefaultServiceContext _serviceContext;
@@ -65,5 +66,6 @@ namespace Data.Resumption.Execution
         }
 
         public TService GetService<TService>() => _serviceContext.GetService<TService>();
+        public void Dispose() => _serviceContext.Dispose();
     }
 }

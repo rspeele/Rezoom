@@ -31,7 +31,7 @@ type TestExecutionLog() =
 
 let test (task : 'a TestTask) =
     let log = new TestExecutionLog()
-    let context =
+    use context =
         new ExecutionContext(new ZeroServiceFactory(), log)
     let answer =
         try

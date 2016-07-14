@@ -104,7 +104,7 @@ type 'a TestTask =
     }
 
 let test (task : 'a TestTask) =
-    let context =
+    use context =
         new ExecutionContext(new TestDbServiceFactory(), new DebugExecutionLog())
     let answer =
         try

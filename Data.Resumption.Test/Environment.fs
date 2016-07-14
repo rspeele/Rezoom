@@ -70,14 +70,14 @@ type ExpectedResultTest<'a> =
     }
 
 let testSpeed expectedResult =
-    let execContext = new ExecutionContext(new ZeroServiceFactory())
+    use execContext = new ExecutionContext(new ZeroServiceFactory())
     let result = execContext.Execute(expectedResult.Task()).Result
     match expectedResult.Result with
     | Good x when x = result -> ()
     | _ -> failwith "Invalid result for speed test (try running this as a regular test)"
 
 let test expectedResult =
-    let execContext = new ExecutionContext(new ZeroServiceFactory())
+    use execContext = new ExecutionContext(new ZeroServiceFactory())
     let result =
         try
             execContext.Execute(expectedResult.Task()).Result |> Choice1Of2
