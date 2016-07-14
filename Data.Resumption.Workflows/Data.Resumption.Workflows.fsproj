@@ -48,7 +48,7 @@
     <Compile Include="InternalUtilities.fs" />
     <Compile Include="ServiceFactory.fs" />
     <Compile Include="ServiceFactories.fs" />
-    <Compile Include="ServiceContext.fs" />
+    <Compile Include="DefaultServiceContext.fs" />
     <Compile Include="DataRequest.fs" />
     <Compile Include="DataTask.fs" />
     <Compile Include="ResponseCache.fs" />
@@ -57,6 +57,7 @@
     <Compile Include="BindInternals.fs" />
     <Compile Include="ApplyInternals.fs" />
     <Compile Include="ExceptionInternals.fs" />
+    <Compile Include="LoopInternals.fs" />
     <Compile Include="DataTaskBuilder.fs" />
     <Compile Include="CS.fs" />
     <Compile Include="CSExtensions.fs" />

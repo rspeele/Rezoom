@@ -18,7 +18,7 @@ type ServiceContext() =
 
 [<AbstractClass>]
 type ServiceFactory() =
-    abstract member CreateService : unit -> LivingService<'svc>
+    abstract member CreateService : ServiceContext -> LivingService<'svc>
 
 type StepLocal<'a when 'a : (new : unit -> 'a)>() =
     let a = new 'a()

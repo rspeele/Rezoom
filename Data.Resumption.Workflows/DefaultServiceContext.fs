@@ -48,13 +48,13 @@ type DefaultServiceContext(factory : ServiceFactory) =
             this.EndStep()
             execution.Dispose()
 
-    override __.GetService<'svc>() : 'svc =
+    override this.GetService<'svc>() : 'svc =
         lock sync <| fun () ->
             let ty = typeof<'svc>
             let mutable cached : obj = null
             if (not (isNull step) && step.TryGetService(ty, &cached)
                 || execution.TryGetService(ty, &cached)) then Unchecked.unbox cached else
-            let living = factory.CreateService<'svc>()
+            let living = factory.CreateService<'svc>(this)
             if isNull living then
                 notSupported (sprintf "The service type %O is not supported by the service factory" ty)
             else

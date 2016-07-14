@@ -88,7 +88,10 @@ let query query args =
             member __.GetArgument(index) = args.[index]
             member __.ToString(provider) = String.Format(provider, query, args)
         } |> Command.Query
-    CommandRequest(command).ToDataTask().Select(fun rs -> rs.[0])
+    datatask {
+        let! rs = CommandRequest(command).ToDataTask()
+        return rs.[0]
+    }
     
 type 'a ExpectedResult =
     | Exception of (exn -> bool)

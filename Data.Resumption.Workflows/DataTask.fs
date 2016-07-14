@@ -51,4 +51,8 @@ type Immediate<'result> =
     end
 
 /// Hint that it is OK to batch the given sequence or task
-type BatchHint<'a> = | BatchHint of 'a
+type BatchHint<'a> = internal | BatchHint of 'a
+
+[<AutoOpen>]
+module BatchHints =
+    let batch x = BatchHint x

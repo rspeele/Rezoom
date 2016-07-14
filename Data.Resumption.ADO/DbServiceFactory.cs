@@ -8,7 +8,7 @@ namespace Data.Resumption.ADO
         protected abstract DbConnection CreateConnection();
         protected virtual IDbTypeRecognizer CreateDbTypeRecognizer() => new DbTypeRecognizer();
 
-        public LivingService<T> CreateService<T>(ServiceContext context)
+        public override LivingService<T> CreateService<T>(ServiceContext context)
         {
             if (typeof(T) == typeof(DbConnection))
             {
