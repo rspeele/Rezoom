@@ -43,13 +43,6 @@ and DataTask<'result> =
         member inline this.ToDataTask() = this
     end
 
-type Immediate<'result> =
-    struct
-        val public Immediate : 'result
-        new (result) = { Immediate = result }
-        member inline this.ToDataTask() = new DataTask<'result>(this.Immediate)
-    end
-
 /// Hint that it is OK to batch the given sequence or task
 type BatchHint<'a> = internal | BatchHint of 'a
 

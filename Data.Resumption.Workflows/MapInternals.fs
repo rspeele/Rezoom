@@ -9,5 +9,3 @@ let rec mapS (f : 'a -> 'b) (task : 'a Step) : 'b Step =
 and mapT (f : 'a -> 'b) (task : 'a DataTask): 'b DataTask =
     if isNull task.Step then DataTask<'b>(f task.Immediate) else
     DataTask<'b>(mapS f task.Step)
-let inline mapI (f : 'a -> 'b) (task : 'a Immediate) : 'b Immediate =
-    Immediate(f task.Immediate)

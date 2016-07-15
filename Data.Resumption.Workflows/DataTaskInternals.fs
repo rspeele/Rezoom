@@ -1,7 +1,7 @@
 ﻿module Data.Resumption.DataTaskInternals
 open System
 
-let inline retI result = Immediate(result)
+let inline retI (result : 'a) = DataTask<'a>(result)
 let zero = retI ()
 
 let inline (~%%) (a : ^a when ^a : (member ToDataTask : unit -> DataTask< ^b >)) =
