@@ -25,23 +25,10 @@ type Batch<'a> =
 type Requests = DataRequest Batch
 type Responses = DataResponse Batch
 
-[<AllowNullLiteral>]
-type Step<'result> =
-    class
-        val public Pending : Requests
-        val public Resume : Responses -> DataTask<'result>
-        new (pending, resume) = { Pending = pending ; Resume = resume }
-        member inline this.ToDataTask() = new DataTask<'result>(this)
-    end
-
+type Step<'result> = Requests * (Responses -> DataTask<'result>)
 and DataTask<'result> =
-    struct 
-        val public Immediate : 'result
-        val public Step : Step<'result>
-        new(result : 'result) = { Immediate = result; Step = Unchecked.defaultof<_> }
-        new(step : 'result Step) = { Immediate = Unchecked.defaultof<'result>; Step = step }
-        member inline this.ToDataTask() = this
-    end
+    | Result of 'result
+    | Step of Step<'result>
 
 /// Hint that it is OK to batch the given sequence or task
 type BatchHint<'a> = internal | BatchHint of 'a

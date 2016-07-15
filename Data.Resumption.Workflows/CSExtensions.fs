@@ -8,4 +8,4 @@ type CSExtensions =
         DataTaskInternals.fromDataRequest request
     [<Extension>]
     static member ToDataTask(request : DataRequest<'a>) =
-        (DataTaskInternals.fromDataRequest request).ToDataTask()
+        Step (DataTaskInternals.fromDataRequest request)

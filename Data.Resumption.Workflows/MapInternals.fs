@@ -3,9 +3,12 @@ open Data.Resumption
 open Data.Resumption.DataTaskInternals
 open System
 
-let rec mapS (f : 'a -> 'b) (task : 'a Step) : 'b Step =
-    let res = task.Resume
-    Step(task.Pending, fun responses -> mapT f (res responses))
-and mapT (f : 'a -> 'b) (task : 'a DataTask): 'b DataTask =
-    if isNull task.Step then DataTask<'b>(f task.Immediate) else
-    DataTask<'b>(mapS f task.Step)
+let inline mapTI mapS f task =
+    match task with
+    | Result r -> Result (f r)
+    | Step s -> Step (mapS f s)
+
+let rec mapS (f : 'a -> 'b) ((pending, resume) : 'a Step) : 'b Step =
+    pending, fun responses -> mapTI mapS f (resume responses)
+and inline mapT (f : 'a -> 'b) (task : 'a DataTask): 'b DataTask =
+    mapTI mapS f task

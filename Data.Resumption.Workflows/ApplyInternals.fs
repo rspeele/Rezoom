@@ -5,16 +5,15 @@ open Data.Resumption.MapInternals
 open System
 
 let rec applyTT (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'b> =
-    if isNull taskF.Step then
-        let f = taskF.Immediate
-        mapT (fun a -> f a) taskA
-    else if isNull taskA.Step then
-        let a = taskA.Immediate
-        mapT (fun f -> f a) taskF
-    else
-        let stepF = taskF.Step
-        let stepA = taskA.Step
-        let pending = BatchPair (stepF.Pending, stepA.Pending)
+    match taskF, taskA with
+    | Result f, Result a ->
+        Result (f a)
+    | Result f, step ->
+        mapT (fun a -> f a) step
+    | step, Result a ->
+        mapT (fun f -> f a) step
+    | Step (pendingF, resumeF), Step (pendingA, resumeA) ->
+        let pending = BatchPair (pendingF, pendingA)
         let onResponses =
             function
             | BatchPair (rspF, rspA) ->
@@ -23,12 +22,12 @@ let rec applyTT (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'
                 let mutable resF : DataTask<'a -> 'b> = Unchecked.defaultof<_>
                 let mutable resA : DataTask<'a> = Unchecked.defaultof<_>
                 try
-                    resF <- stepF.Resume rspF
+                    resF <- resumeF rspF
                 with
                 | exn ->
                     exnF <- exn
                 try
-                    resA <- stepA.Resume rspA
+                    resA <- resumeA rspA
                 with
                 | exn -> exnA <- exn
                 if isNull exnF && isNull exnA then
@@ -40,7 +39,7 @@ let rec applyTT (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'
                 else
                     abortTask resA exnF
             | _ -> logicFault "Incorrect response shape for applied pair"
-        DataTask<'b>(Step(pending, onResponses))
+        Step (pending, onResponses)
 
 let tuple2 (taskA : 'a DataTask) (taskB : 'b DataTask) : ('a * 'b) DataTask =
     applyTT

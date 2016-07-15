@@ -32,7 +32,7 @@ type DataTaskBuilder() =
             match disposable with
             | null -> ()
             | d -> d.Dispose()
-        ExceptionInternals.finallyTT (fun () -> %%body disposable) dispose
+        ExceptionInternals.finallyTT (fun () -> body disposable) dispose
 
     member inline __.TryFinally(task, onExit) = ExceptionInternals.finallyTT task onExit
     member inline __.TryWith(task, onExit) = ExceptionInternals.catchTT task onExit

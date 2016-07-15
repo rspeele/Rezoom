@@ -5,12 +5,12 @@ open System
 
 let rec catchTT (wrapped : unit -> 'a DataTask) (catcher : exn -> 'a DataTask) =
     try
-        let wrapped = wrapped()
-        let step = wrapped.Step
-        if isNull step then wrapped else
-        let onResponses (responses : Responses) =
-            catchTT (fun () -> step.Resume responses) catcher
-        DataTask<'a>(Step(step.Pending, onResponses))
+        match wrapped() with
+        | Result _ as result -> result
+        | Step (pending, resume) ->
+            let onResponses (responses : Responses) =
+                catchTT (fun () -> resume responses) catcher
+            Step (pending, onResponses)
     with
     | DataTaskAbortException _ -> reraise() // don't let them catch these
     | ex -> catcher(ex)
@@ -19,15 +19,14 @@ let rec finallyTT (wrapped : unit -> 'a DataTask) (onExit : unit -> unit) =
     let mutable cleanExit = false
     let task =
         try
-            let wrapped = wrapped()
-            let step = wrapped.Step
-            if isNull step then
+            match wrapped() with
+            | Result _ as result ->
                 cleanExit <- true
-                wrapped
-            else
+                result
+            | Step (pending, resume) ->
                 let onResponses (responses : Responses) =
-                    finallyTT (fun () -> step.Resume responses) onExit
-                DataTask<'a>(Step(step.Pending, onResponses))
+                    finallyTT (fun () -> resume responses) onExit
+                Step (pending, onResponses)
         with
         | DataTaskAbortException _ -> reraise()
         | ex ->

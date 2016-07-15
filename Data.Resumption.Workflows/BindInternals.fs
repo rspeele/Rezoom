@@ -3,12 +3,14 @@ open Data.Resumption
 open Data.Resumption.DataTaskInternals
 open System
 
-let rec bindTT (task : 'a DataTask) (cont : 'a -> 'b DataTask) : 'b DataTask =
-    let step = task.Step
-    if isNull step then cont task.Immediate else
-    let res = step.Resume
-    let onResponses (responses : Responses) =
-        bindTT (res responses) cont
-    DataTask<'b>(Step(step.Pending, onResponses))
+let inline bindTI bindTI task cont =
+    match task with
+    | Result r -> cont r
+    | Step (pending, resume) ->
+        Step (pending, fun responses -> bindTI (resume responses) cont)
 
-    
+let rec bindTF task cont =
+    bindTI bindTF task cont
+        
+let inline bindTT (task : 'a DataTask) (cont : 'a -> 'b DataTask) : 'b DataTask =
+    bindTI (bindTI bindTF) task cont

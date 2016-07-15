@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Microsoft.FSharp.Core;
 
 namespace Data.Resumption.Execution
 {
@@ -25,7 +26,10 @@ namespace Data.Resumption.Execution
             _log = log;
         }
 
-        private async Task<DataTask<T>> ExecutePending<T>(Step<T> step)
+        private async Task<DataTask<T>> ExecutePending<T>
+            ( Batch<DataRequest> pending
+            , FSharpFunc<Batch<DataResponse>, DataTask<T>> resume
+            )
         {
             _log?.OnStepStart();
             _serviceContext.BeginStep();
@@ -33,7 +37,7 @@ namespace Data.Resumption.Execution
             try
             {
                 var stepContext = new StepContext(_serviceContext, _log, _responseCache);
-                var retrievals = step.Pending.MapCS
+                var retrievals = pending.MapCS
                     (request => stepContext.AddRequest(request));
                 await stepContext.Execute();
                 responses = retrievals.MapCS(retrieve => retrieve());
@@ -43,7 +47,7 @@ namespace Data.Resumption.Execution
                 _serviceContext.EndStep();
                 _log?.OnStepFinish();
             }
-            return step.Resume.Invoke(responses);
+            return resume.Invoke(responses);
         }
 
         /// <summary>
@@ -56,12 +60,15 @@ namespace Data.Resumption.Execution
         {
             while (true)
             {
-                var step = task.Step;
-                if (step == null)
+                if (task.IsStep)
                 {
-                    return task.Immediate;
+                    var step = (DataTask<T>.Step)task;
+                    task = await ExecutePending(step.Item.Item1, step.Item.Item2);
                 }
-                task = await ExecutePending(step);
+                else
+                {
+                    return ((DataTask<T>.Result)task).Item;
+                }
             }
         }
 
