@@ -4,7 +4,7 @@ open Data.Resumption.DataTaskInternals
 open Data.Resumption.MapInternals
 open System
 
-let rec applyTT (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'b> =
+let rec apply (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'b> =
     match taskF, taskA with
     | Result f, Result a ->
         Result (f a)
@@ -31,24 +31,26 @@ let rec applyTT (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'
                 with
                 | exn -> exnA <- exn
                 if isNull exnF && isNull exnA then
-                    applyTT resF resA
+                    apply resF resA
                 else if not (isNull exnF) && not (isNull exnA) then
                     raise (new AggregateException(exnF, exnA))
                 else if isNull exnF then
                     abortTask resF exnA
                 else
                     abortTask resA exnF
-            | _ -> logicFault "Incorrect response shape for applied pair"
+            | BatchAbort -> abort()
+            | BatchLeaf _
+            | BatchMany _ -> logicFault "Incorrect response shape for applied pair"
         Step (pending, onResponses)
 
 let tuple2 (taskA : 'a DataTask) (taskB : 'b DataTask) : ('a * 'b) DataTask =
-    applyTT
+    apply
         (mapT (fun a b -> a, b) taskA)
         taskB
 
 let tuple3 (taskA : 'a DataTask) (taskB : 'b DataTask) (taskC : 'c DataTask) : ('a * 'b * 'c) DataTask =
-    applyTT
-        (applyTT
+    apply
+        (apply
             (mapT (fun a b c -> a, b, c) taskA)
             taskB)
         taskC
@@ -59,9 +61,9 @@ let tuple4
     (taskC : 'c DataTask)
     (taskD : 'd DataTask)
     : ('a * 'b * 'c * 'd) DataTask =
-    applyTT
-        (applyTT
-            (applyTT
+    apply
+        (apply
+            (apply
                 (mapT (fun a b c d -> a, b, c, d) taskA)
                 taskB)
             taskC)

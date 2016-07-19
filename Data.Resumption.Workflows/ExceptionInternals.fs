@@ -28,7 +28,6 @@ let rec finallyTT (wrapped : unit -> 'a DataTask) (onExit : unit -> unit) =
                     finallyTT (fun () -> resume responses) onExit
                 Step (pending, onResponses)
         with
-        | DataTaskAbortException _ -> reraise()
         | ex ->
             onExit()
             reraise()

@@ -207,6 +207,7 @@ type TestExceptionFinally() =
                 [
                     [ "x"; "y"; "z" ]
                 ]
-            Result = Bad (fun ex -> ranFinally)
+            Result = Bad (fun _ ->
+                ranFinally)
         } |> test
         

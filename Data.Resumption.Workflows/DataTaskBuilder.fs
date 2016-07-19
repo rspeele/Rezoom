@@ -23,9 +23,10 @@ type DataTaskBuilder() =
 
     member inline __.Run(task : unit -> _ DataTask) = task()
 
-    member inline __.For(sequence : #seq<'a>, iteration : 'a -> unit DataTask) = LoopInternals.forTT sequence iteration
+    member inline __.For(sequence : #seq<'a>, iteration : 'a -> unit DataTask) =
+        LoopInternals.forM sequence iteration
     member __.For(BatchHint (sequence : #seq<'a>), iteration : 'a -> unit DataTask) =
-        failwith "Not implemented" : unit DataTask // TODO
+        LoopInternals.forA sequence iteration
 
     member inline __.Using(disposable : #IDisposable, body) =
         let dispose () =

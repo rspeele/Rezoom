@@ -7,19 +7,19 @@ type DataResponse =
 type Batch<'a> =
     | BatchLeaf of 'a
     | BatchPair of ('a Batch * 'a Batch)
-    | BatchList of ('a Batch array)
+    | BatchMany of ('a Batch array)
     | BatchAbort
     member this.MapCS(f : System.Func<'a, 'b>) =
         match this with
         | BatchLeaf x -> BatchLeaf (f.Invoke(x))
         | BatchPair (l, r) -> BatchPair (l.MapCS(f), r.MapCS(f))
-        | BatchList arr -> BatchList (arr |> Array.map (fun b -> b.MapCS(f)))
+        | BatchMany arr -> BatchMany (arr |> Array.map (fun b -> b.MapCS(f)))
         | BatchAbort -> BatchAbort
     member this.Map(f : 'a -> 'b) =
         match this with
         | BatchLeaf x -> BatchLeaf (f x)
         | BatchPair (l, r) -> BatchPair (l.Map(f), r.Map(f))
-        | BatchList arr -> BatchList (arr |> Array.map (fun b -> b.Map(f)))
+        | BatchMany arr -> BatchMany (arr |> Array.map (fun b -> b.Map(f)))
         | BatchAbort -> BatchAbort
 
 type Requests = DataRequest Batch
