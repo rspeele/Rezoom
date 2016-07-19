@@ -28,7 +28,7 @@ type private DefaultServiceConstructor =
             else ServiceLifetime.ExecutionLocal
         let svcTy = typedefof<LivingService<_>>.MakeGenericType(ty)
         let funcTy = typedefof<Func<_>>.MakeGenericType(svcTy)
-        let cons = new DynamicMethod("DynamicConstructor", svcTy, Type.EmptyTypes)
+        let cons = new DynamicMethod("DynamicConstructor", svcTy, Type.EmptyTypes, true)
         let il = cons.GetILGenerator()
         il.Emit(OpCodes.Ldc_I4, int tag)
         il.Emit(OpCodes.Newobj, ty.GetConstructor(Type.EmptyTypes))
