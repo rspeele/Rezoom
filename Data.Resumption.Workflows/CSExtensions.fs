@@ -5,7 +5,7 @@ open System.Runtime.CompilerServices
 type CSExtensions =
     [<Extension>]
     static member ToStep(request : DataRequest<'a>) =
-        DataTaskInternals.fromDataRequest request
+        DataTask.fromDataRequest request
     [<Extension>]
     static member ToDataTask(request : DataRequest<'a>) =
-        Step (DataTaskInternals.fromDataRequest request)
+        Step (DataTask.fromDataRequest request)
