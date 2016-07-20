@@ -48,10 +48,11 @@
     <Compile Include="InternalUtilities.fs" />
     <Compile Include="ServiceFactory.fs" />
     <Compile Include="ServiceFactories.fs" />
+    <Compile Include="DefaultServiceFactory.fs" />
     <Compile Include="DefaultServiceContext.fs" />
+    <Compile Include="ResponseCache.fs" />
     <Compile Include="DataRequest.fs" />
     <Compile Include="DataTask.fs" />
-    <Compile Include="ResponseCache.fs" />
     <Compile Include="DataTaskInternals.fs" />
     <Compile Include="MapInternals.fs" />
     <Compile Include="BindInternals.fs" />
