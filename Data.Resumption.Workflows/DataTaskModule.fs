@@ -110,9 +110,9 @@ let rec apply (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'b>
     | Result f, Result a ->
         Result (f a)
     | Result f, step ->
-        map (fun a -> f a) step
+        map ((<|) f) step
     | step, Result a ->
-        map (fun f -> f a) step
+        map ((|>) a) step
     | Step (pendingF, resumeF), Step (pendingA, resumeA) ->
         let pending = BatchPair (pendingF, pendingA)
         let onResponses =
