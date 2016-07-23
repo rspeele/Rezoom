@@ -46,7 +46,7 @@ let inline ret (result : 'a) = Result result
 /// Equivalent to `ret ()`.
 let zero = ret ()
 
-/// Convert a `DataRequest<'a>` to a `Plan<'a>`.
+/// Convert an `Errand<'a>` to a `Plan<'a>`.
 let ofErrand (request : Errand<'a>) : Plan<'a> =
     let onResponse =
         function
