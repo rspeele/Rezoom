@@ -7,6 +7,16 @@ type ZeroServiceFactory() =
     inherit ServiceFactory()
     override __.CreateService(_) = null
 
+[<AbstractClass>]
+type SingleServiceFactory<'a>() =
+    inherit ServiceFactory()
+    abstract Create : ServiceContext -> 'a LivingService
+    override this.CreateService<'svc>(cxt) =
+        if obj.ReferenceEquals(typeof<'a>, typeof<'svc>) then
+            this.Create(cxt) |> box |> Unchecked.unbox
+            : 'svc LivingService
+        else null
+
 type CoalescingServiceFactory
     (main : ServiceFactory, fallback : ServiceFactory) =
     inherit ServiceFactory()
