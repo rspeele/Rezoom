@@ -7,6 +7,6 @@
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        public static DataTask<GeoInfo> Locate(string ip) => new GeoRequest(ip).ToDataTask();
+        public static Plan<GeoInfo> Locate(string ip) => new GeoErrand(ip).ToPlan();
     }
 }

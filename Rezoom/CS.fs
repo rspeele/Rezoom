@@ -4,7 +4,7 @@ open System
 open System.Threading.Tasks
 
 [<AbstractClass>]
-type AsynchronousDataRequest<'a>() =
+type AsynchronousErrand<'a>() =
     inherit Errand<'a>()
     static member private BoxResult(task : 'a Task) =
         box task.Result
@@ -13,10 +13,10 @@ type AsynchronousDataRequest<'a>() =
         let typed = this.Prepare(cxt)
         fun () ->
             let t = typed.Invoke()
-            t.ContinueWith(AsynchronousDataRequest<'a>.BoxResult, TaskContinuationOptions.ExecuteSynchronously)
+            t.ContinueWith(AsynchronousErrand<'a>.BoxResult, TaskContinuationOptions.ExecuteSynchronously)
 
 [<AbstractClass>]
-type SynchronousDataRequest<'a>() =
+type SynchronousErrand<'a>() =
     inherit Errand<'a>()
     abstract member Prepare : ServiceContext -> 'a Func
     override this.InternalPrepare(cxt) : unit -> obj Task =

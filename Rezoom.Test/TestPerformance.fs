@@ -7,7 +7,7 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 
 [<TestClass>]
 type TestPerformance() =
-    static let ret1 = datatask { return 1 }
+    static let ret1 = plan { return 1 }
     static let time f =
         let sw = new Stopwatch()
         sw.Start()
@@ -30,9 +30,9 @@ type TestPerformance() =
     member __.TestNestedReturn() =
         time <|
             {
-                Task = fun () -> datatask {
-                    return! datatask {
-                        return! datatask {
+                Task = fun () -> plan {
+                    return! plan {
+                        return! plan {
                             return! ret1
                         }
                     }
@@ -45,7 +45,7 @@ type TestPerformance() =
     member __.TestBindChain() =
         time <|
             {
-                Task = fun () -> datatask {
+                Task = fun () -> plan {
                     let! one1 = ret1
                     let! one2 = ret1
                     let! one3 = ret1
@@ -59,7 +59,7 @@ type TestPerformance() =
     member __.TestBindChainWithRequests() =
         time <|
             {
-                Task = fun () -> datatask {
+                Task = fun () -> plan {
                     let! _ = send "x"
                     let! one1 = ret1
                     let! _ = send "y"
@@ -81,7 +81,7 @@ type TestPerformance() =
     member __.TestBindChainWithBatchedRequests() =
         time <|
             {
-                Task = fun () -> datatask {
+                Task = fun () -> plan {
                     let! one1 = ret1
                     let! _ = send "x", send "y", send "z"
                     let! one2 = ret1

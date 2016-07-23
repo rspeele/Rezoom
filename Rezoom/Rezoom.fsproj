@@ -52,9 +52,9 @@
     <Compile Include="DefaultServiceContext.fs" />
     <Compile Include="ResponseCache.fs" />
     <Compile Include="Errand.fs" />
-    <Compile Include="DataTask.fs" />
-    <Compile Include="DataTaskModule.fs" />
-    <Compile Include="DataTaskBuilder.fs" />
+    <Compile Include="Plan.fs" />
+    <Compile Include="PlanModule.fs" />
+    <Compile Include="PlanBuilder.fs" />
     <Compile Include="CS.fs" />
     <Compile Include="CSExtensions.fs" />
   </ItemGroup>

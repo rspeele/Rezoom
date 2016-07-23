@@ -4,13 +4,13 @@ using System.Threading.Tasks;
 namespace Rezoom.IPGeo
 {
     /// <summary>
-    /// Implements <see cref="DataRequest"/> for looking up <see cref="GeoInfo"/> for an IP address.
+    /// Implements <see cref="Errand"/> for looking up <see cref="GeoInfo"/> for an IP address.
     /// </summary>
-    internal class GeoRequest : CS.AsynchronousDataRequest<GeoInfo>
+    internal class GeoErrand : CS.AsynchronousErrand<GeoInfo>
     {
         private readonly string _ip;
 
-        public GeoRequest(string ip)
+        public GeoErrand(string ip)
         {
             _ip = ip;
         }

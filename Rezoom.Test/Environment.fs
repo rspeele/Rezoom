@@ -46,16 +46,16 @@ exception ArtificialFailure of string
 
 let explode str = raise <| ArtificialFailure str
 
-let sendWith query post = TestRequest<_>(query, id, post).ToDataTask()
+let sendWith query post = TestRequest<_>(query, id, post).ToPlan()
 let send query = sendWith query id
-let mutateWith query post = TestRequest<_>(false, query, id, post).ToDataTask()
+let mutateWith query post = TestRequest<_>(false, query, id, post).ToPlan()
 let mutate query = mutateWith query id
 let failingPrepare msg query =
     TestRequest<_>
         ( query
         , fun () -> raise <| PrepareFailure msg
         , fun _ -> Unchecked.defaultof<_>
-        ) |> fun r -> r.ToDataTask()
+        ) |> fun r -> r.ToPlan()
 let failingRetrieve msg query = sendWith query (fun _ -> raise <| RetrieveFailure msg)
 
 type ExpectedResult<'a> =
@@ -64,7 +64,7 @@ type ExpectedResult<'a> =
 
 type ExpectedResultTest<'a> =
     {
-        Task : unit -> 'a DataTask
+        Task : unit -> 'a Plan
         Batches : string list list
         Result : ExpectedResult<'a>
     }

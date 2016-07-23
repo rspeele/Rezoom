@@ -1,16 +1,16 @@
 ﻿[<AutoOpen>]
-module Rezoom.DataTaskBuilder
-open Rezoom.DataTask
+module Rezoom.PlanBuilder
+open Rezoom.Plan
 open Rezoom
 open System
 open System.Collections.Generic
 open System.Threading.Tasks
 
-type DataTaskBuilder() =
-    member inline __.Zero() : unit DataTask = zero
+type PlanBuilder() =
+    member inline __.Zero() : unit Plan = zero
     member inline __.Return(value) = ret value
 
-    member inline __.ReturnFrom(task : _ DataTask) = task
+    member inline __.ReturnFrom(task : _ Plan) = task
     member inline __.ReturnFrom(task : _ Step) = task
 
     member inline __.Bind(task, cont) = bind task cont
@@ -19,13 +19,13 @@ type DataTaskBuilder() =
     member inline __.Bind((a, b, c), cont) = bind (tuple3 a b c) cont
     member inline __.Bind((a, b, c, d), cont) = bind (tuple4 a b c d) cont
 
-    member inline __.Delay(task : unit -> _ DataTask) = task
+    member inline __.Delay(task : unit -> _ Plan) = task
 
-    member inline __.Run(task : unit -> _ DataTask) = task()
+    member inline __.Run(task : unit -> _ Plan) = task()
 
-    member inline __.For(sequence : #seq<'a>, iteration : 'a -> unit DataTask) =
+    member inline __.For(sequence : #seq<'a>, iteration : 'a -> unit Plan) =
         forM sequence iteration
-    member __.For(BatchHint (sequence : #seq<'a>), iteration : 'a -> unit DataTask) =
+    member __.For(BatchHint (sequence : #seq<'a>), iteration : 'a -> unit Plan) =
         forA sequence iteration
 
     member inline __.Using(disposable : #IDisposable, body) =
@@ -40,4 +40,4 @@ type DataTaskBuilder() =
 
     member inline __.Combine(task, cont) = bind task (fun _ -> cont())
 
-let datatask = new DataTaskBuilder()
+let plan = new PlanBuilder()

@@ -19,7 +19,7 @@ type TestGeo() =
     member __.TestBatches() =
         {
             Task =
-                datatask {
+                plan {
                     let! g1, g2 = Geo.Locate(googleDNS), Geo.Locate(googleDNS2)
                     let! o = Geo.Locate(openDNS)
                     return g1.Isp, g2.Isp, o.Isp
@@ -36,7 +36,7 @@ type TestGeo() =
     member __.TestCaching() =
         {
             Task =
-                datatask {
+                plan {
                     let! g1 = Geo.Locate(googleDNS)
                     let! g2, o = Geo.Locate(googleDNS), Geo.Locate(openDNS)
                     return g1.Isp, g2.Isp, o.Isp
@@ -53,7 +53,7 @@ type TestGeo() =
     member __.TestDedup() =
         {
             Task =
-                datatask {
+                plan {
                     let! g1, fb1, fb2 = Geo.Locate(googleDNS), Geo.Locate(fb), Geo.Locate(fb)
                     return g1.Isp, fb1.Isp, fb2.Isp
                 }

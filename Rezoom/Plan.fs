@@ -25,8 +25,8 @@ type Batch<'a> =
 type Requests = Errand Batch
 type Responses = DataResponse Batch
 
-type Step<'result> = Requests * (Responses -> DataTask<'result>)
-and DataTask<'result> =
+type Step<'result> = Requests * (Responses -> Plan<'result>)
+and Plan<'result> =
     | Result of 'result
     | Step of Step<'result>
 

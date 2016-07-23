@@ -12,7 +12,7 @@ type 'a ExpectedResult =
 
 type 'a TestTask =
     {
-        Task : 'a DataTask
+        Task : 'a Plan
         Batches : string list list
         ExpectedResult : 'a ExpectedResult
     }

@@ -9,7 +9,7 @@ type TestExceptionCatching() =
     member __.TestSimpleCatch() =
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         explode "fail"
                         return 2
@@ -24,7 +24,7 @@ type TestExceptionCatching() =
     member __.TestBoundCatch() =
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         let! x = send "x"
                         explode "fail"
@@ -40,7 +40,7 @@ type TestExceptionCatching() =
     member __.TestSimpleFailingPrepare() =
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         let! x = failingPrepare "fail" "x"
                         return 2
@@ -55,7 +55,7 @@ type TestExceptionCatching() =
     member __.TestSimpleFailingRetrieve() =
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         let! x = failingRetrieve "fail" "x"
                         return 2
@@ -69,7 +69,7 @@ type TestExceptionCatching() =
     [<TestMethod>]
     member __.TestConcurrentCatching() =
         let catching query =
-            datatask {
+            plan {
                 let guid = Guid.NewGuid().ToString()
                 try
                     let! x = failingRetrieve guid query
@@ -79,13 +79,13 @@ type TestExceptionCatching() =
 
             }
         let good query =
-            datatask {
+            plan {
                 let! result = send query
                 return result
             }
         {
             Task = fun () ->
-                datatask {
+                plan {
                     let! x, y, z =
                         catching "x", catching "y", good "z"
                     return x + y + z
@@ -100,7 +100,7 @@ type TestExceptionCatching() =
     [<TestMethod>]
     member __.TestConcurrentLoopCatching() =
         let catching query =
-            datatask {
+            plan {
                 let guid = Guid.NewGuid().ToString()
                 try
                     let! x = failingRetrieve guid query
@@ -110,13 +110,13 @@ type TestExceptionCatching() =
 
             }
         let good query =
-            datatask {
+            plan {
                 let! result = send query
                 return ()
             }
         {
             Task = fun () ->
-                datatask {
+                plan {
                     for q in batch ["x"; "y"; "z"] do
                         if q = "y" then
                             do! good q
@@ -134,19 +134,19 @@ type TestExceptionCatching() =
     [<TestMethod>]
     member __.TestConcurrentNonCatching() =
         let notCatching query =
-            datatask {
+            plan {
                 let! x = failingRetrieve "fail" query
                 return x
             }
         let good query =
-            datatask {
+            plan {
                 let! result = send query
                 let! next = send "jim"
                 return result + next
             }
         {
             Task = fun () ->
-                datatask {
+                plan {
                     let! x, y, z =
                         notCatching "x", notCatching "y", good "z"
                     return x + y + z

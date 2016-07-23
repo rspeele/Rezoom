@@ -1,4 +1,4 @@
-﻿module Rezoom.DataTask
+﻿module Rezoom.Plan
 open System
 open System.Collections.Generic
 
@@ -21,7 +21,7 @@ let internal abortSteps (steps : 'a Step seq) (reason : exn) : 'b =
     if exns.Count > 1 then raise (aggregate exns)
     else dispatchRaise reason
 
-let internal abortTask (task : 'a DataTask) (reason : exn) : 'b =
+let internal abortTask (task : 'a Plan) (reason : exn) : 'b =
     match task with
     | Step (_, resume) ->
         try
@@ -47,7 +47,7 @@ let inline ret (result : 'a) = Result result
 let zero = ret ()
 
 /// Convert a `DataRequest<'a>` to a `DataTask<'a>`.
-let fromDataRequest (request : Errand<'a>) : DataTask<'a> =
+let ofErrand (request : Errand<'a>) : Plan<'a> =
     let onResponse =
         function
         | BatchLeaf (RetrievalSuccess suc) -> ret (Unchecked.unbox suc : 'a)
@@ -70,7 +70,7 @@ let inline _mapInline map f task =
 let rec _mapRecursive (f : 'a -> 'b) ((pending, resume) : 'a Step) : 'b Step =
     pending, fun responses -> _mapInline _mapRecursive f (resume responses)
 /// Map a function over the result of a `DataTask<'a>`, producing a new `DataTask<'b>`.
-and inline map (f : 'a -> 'b) (task : 'a DataTask): 'b DataTask =
+and inline map (f : 'a -> 'b) (task : 'a Plan): 'b Plan =
     _mapInline _mapRecursive f task
 
 ////////////////////////////////////////////////////////////
@@ -90,7 +90,7 @@ let rec _bindRecursive task cont =
 /// Chain a continuation `DataTask` onto an existing `DataTask` to
 /// get a new `DataTask`.
 /// The continuation can be dependent on the result of the first task.
-let inline bind (task : 'a DataTask) (cont : 'a -> 'b DataTask) : 'b DataTask =
+let inline bind (task : 'a Plan) (cont : 'a -> 'b Plan) : 'b Plan =
     _bindInline (_bindInline _bindRecursive) task cont
 
 ////////////////////////////////////////////////////////////
@@ -105,7 +105,7 @@ let inline bind (task : 'a DataTask) (cont : 'a -> 'b DataTask) : 'b DataTask =
 /// `taskF` to the value produced by `taskA` to obtain its result.
 /// The two tasks are independent, so they will execute concurrently and
 /// share batchable resources.
-let rec apply (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'b> =
+let rec apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
     match taskF, taskA with
     | Result f, Result a ->
         Result (f a)
@@ -120,8 +120,8 @@ let rec apply (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'b>
             | BatchPair (rspF, rspA) ->
                 let mutable exnF : exn = null
                 let mutable exnA : exn = null
-                let mutable resF : DataTask<'a -> 'b> = Unchecked.defaultof<_>
-                let mutable resA : DataTask<'a> = Unchecked.defaultof<_>
+                let mutable resF : Plan<'a -> 'b> = Unchecked.defaultof<_>
+                let mutable resA : Plan<'a> = Unchecked.defaultof<_>
                 try
                     resF <- resumeF rspF
                 with
@@ -145,13 +145,13 @@ let rec apply (taskF : DataTask<'a -> 'b>) (taskA : DataTask<'a>) : DataTask<'b>
         Step (pending, onResponses)
 
 /// Create a task that runs `taskA` and `taskB` concurrently and combines their results into a tuple.
-let tuple2 (taskA : 'a DataTask) (taskB : 'b DataTask) : ('a * 'b) DataTask =
+let tuple2 (taskA : 'a Plan) (taskB : 'b Plan) : ('a * 'b) Plan =
     apply
         (map (fun a b -> a, b) taskA)
         taskB
 
 /// Create a task that runs `taskA`, `taskB`, and `taskC` concurrently and combines their results into a tuple.
-let tuple3 (taskA : 'a DataTask) (taskB : 'b DataTask) (taskC : 'c DataTask) : ('a * 'b * 'c) DataTask =
+let tuple3 (taskA : 'a Plan) (taskB : 'b Plan) (taskC : 'c Plan) : ('a * 'b * 'c) Plan =
     apply
         (apply
             (map (fun a b c -> a, b, c) taskA)
@@ -161,11 +161,11 @@ let tuple3 (taskA : 'a DataTask) (taskB : 'b DataTask) (taskC : 'c DataTask) : (
 /// Create a task that runs `taskA`, `taskB`, `taskC`, and `taskD` concurrently
 /// and combines their results into a tuple.
 let tuple4
-    (taskA : 'a DataTask)
-    (taskB : 'b DataTask)
-    (taskC : 'c DataTask)
-    (taskD : 'd DataTask)
-    : ('a * 'b * 'c * 'd) DataTask =
+    (taskA : 'a Plan)
+    (taskB : 'b Plan)
+    (taskC : 'c Plan)
+    (taskD : 'd Plan)
+    : ('a * 'b * 'c * 'd) Plan =
     apply
         (apply
             (apply
@@ -183,7 +183,7 @@ let tuple4
 /// during execution of `wrapped`, whether it's in creating the `DataTask`
 /// to be run or in executing any step of the resulting task.
 /// The exception handler may rethrow the exception.
-let rec tryCatch (wrapped : unit -> 'a DataTask) (catcher : exn -> 'a DataTask) =
+let rec tryCatch (wrapped : unit -> 'a Plan) (catcher : exn -> 'a Plan) =
     try
         match wrapped() with
         | Result _ as result -> result
@@ -199,7 +199,7 @@ let rec tryCatch (wrapped : unit -> 'a DataTask) (catcher : exn -> 'a DataTask) 
 /// When the task is executed, the function `onExit` will be called
 /// after `wrapped` completes, regardless of whether the task
 /// succeeded, failed to be created, or failed while partially executed.
-let rec tryFinally (wrapped : unit -> 'a DataTask) (onExit : unit -> unit) =
+let rec tryFinally (wrapped : unit -> 'a Plan) (onExit : unit -> unit) =
     let mutable cleanExit = false
     let task =
         try
@@ -236,19 +236,19 @@ let rec tryFinally (wrapped : unit -> 'a DataTask) (onExit : unit -> unit) =
 // Rather than actually using `apply`, we treat this as a special case for efficiency's sake.
 ////////////////////////////////////////////////////////////
 
-let rec private forIterator (enumerator : 'a IEnumerator) (iteration : 'a -> unit DataTask) =
+let rec private forIterator (enumerator : 'a IEnumerator) (iteration : 'a -> unit Plan) =
     if not <| enumerator.MoveNext() then zero else
     bind (iteration enumerator.Current) (fun () -> forIterator enumerator iteration)
 
 /// Monadic iteration.
 /// Create a task that lazily iterates a sequence, executing `iteration` for each element.
-let forM (sequence : 'a seq) (iteration : 'a -> unit DataTask) =
+let forM (sequence : 'a seq) (iteration : 'a -> unit Plan) =
     let enumerator = sequence.GetEnumerator()
     tryFinally
         (fun () -> forIterator enumerator iteration)
         (fun () -> enumerator.Dispose())
 
-let rec private forAs (tasks : (unit -> unit DataTask) seq) : unit DataTask =
+let rec private forAs (tasks : (unit -> unit Plan) seq) : unit Plan =
     let steps =
         let steps = new ResizeArray<_>()
         let exns = new ResizeArray<_>()
@@ -282,5 +282,5 @@ let rec private forAs (tasks : (unit -> unit DataTask) seq) : unit DataTask =
 /// Applicative iteration.
 /// Create a task that strictly iterates a sequence, creating a `DataTask` for each element
 /// using the given `iteration` function, then runs those tasks concurrently.
-let forA (sequence : 'a seq) (iteration : 'a -> unit DataTask) =
+let forA (sequence : 'a seq) (iteration : 'a -> unit Plan) =
     forAs (sequence |> Seq.map (fun element () -> iteration element))

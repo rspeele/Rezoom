@@ -10,7 +10,7 @@ type TestExceptionFinally() =
         let mutable ran = 0
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         let! q = send "q"
                         let! r = send "r"
@@ -33,7 +33,7 @@ type TestExceptionFinally() =
         let mutable ran = 0
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         explode "fail"
                         return 2
@@ -49,7 +49,7 @@ type TestExceptionFinally() =
         let mutable ran = 0
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         let! x = send "x"
                         explode "fail"
@@ -66,7 +66,7 @@ type TestExceptionFinally() =
         let mutable ran = 0
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         let! x = failingPrepare "fail" "x"
                         return 2
@@ -82,7 +82,7 @@ type TestExceptionFinally() =
         let mutable ran = 0
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         let! x = failingRetrieve "fail" "x"
                         return 2
@@ -98,7 +98,7 @@ type TestExceptionFinally() =
         let mutable ran = 0
         {
             Task = fun () ->
-                datatask {
+                plan {
                     use d = { new IDisposable with member x.Dispose() = ran <- ran + 1 }
                     let! x = failingRetrieve "fail" "x"
                     return 2
@@ -112,7 +112,7 @@ type TestExceptionFinally() =
         let mutable ran = 0
         {
             Task = fun () ->
-                datatask {
+                plan {
                     use d = { new IDisposable with member x.Dispose() = ran <- ran + 1 }
                     let! x = send "x"
                     return 2
@@ -128,7 +128,7 @@ type TestExceptionFinally() =
         let mutable next = 0
         {
             Task = fun () ->
-                datatask {
+                plan {
                     try
                         try
                             let! x = failingRetrieve "fail" "x"
@@ -149,12 +149,12 @@ type TestExceptionFinally() =
     member __.TestConcurrentAbortion() =
         let mutable ranFinally = false
         let deadly query =
-            datatask {
+            plan {
                 let! x = failingRetrieve "fail" query
                 return x
             }
         let good query =
-            datatask {
+            plan {
                 try
                     let! result = send query
                     let! next = send "jim"
@@ -164,7 +164,7 @@ type TestExceptionFinally() =
             }
         {
             Task = fun () ->
-                datatask {
+                plan {
                     let! x, y, z =
                         deadly "x", deadly "y", good "z"
                     return x + y + z
@@ -180,12 +180,12 @@ type TestExceptionFinally() =
     member __.TestConcurrentLoopAbortion() =
         let mutable ranFinally = false
         let deadly query =
-            datatask {
+            plan {
                 let! x = failingRetrieve "fail" query
                 return ()
             }
         let good query =
-            datatask {
+            plan {
                 try
                     let! result = send query
                     let! next = send "jim"
@@ -195,7 +195,7 @@ type TestExceptionFinally() =
             }
         {
             Task = fun () ->
-                datatask {
+                plan {
                     for q in batch ["x"; "y"; "z"] do
                         if q = "y" then
                             do! good q

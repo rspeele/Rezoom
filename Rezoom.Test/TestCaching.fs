@@ -8,7 +8,7 @@ type TestCaching() =
     member __.TestStrictCachedPair() =
         {
             Task = fun () ->
-                datatask {
+                plan {
                     let! q1 = send "q"
                     let! q2 = send "q"
                     return q1 + q2
@@ -24,7 +24,7 @@ type TestCaching() =
     member __.TestConcurrentCachedPair() =
         {
             Task = fun () ->
-                datatask {
+                plan {
                     let! q1, q2 = send "q", send "q"
                     return q1 + q2
                 }
@@ -38,7 +38,7 @@ type TestCaching() =
     [<TestMethod>]
     member __.TestChainingCachedConcurrency() =
         let testTask x =
-            datatask {
+            plan {
                 let! a = send (x + "1")
                 let! b = send (x + "2")
                 let! c = send (x + "3")
@@ -46,7 +46,7 @@ type TestCaching() =
             }
         {
             Task = fun () ->
-                datatask {
+                plan {
                     let! x1, x2, x3 =
                         testTask "x", testTask "x", testTask "x"
                     return x1 + " " + x2 + " " + x3
@@ -64,7 +64,7 @@ type TestCaching() =
     member __.TestStillValid() =
         {
             Task = fun () ->
-                datatask {
+                plan {
                     let! q1 = send "q"
                     let! q2 = send "q"
                     let! m = send "x"
@@ -83,7 +83,7 @@ type TestCaching() =
     member __.TestInvalidation() =
         {
             Task = fun () ->
-                datatask {
+                plan {
                     let! q1 = send "q"
                     let! q2 = send "q"
                     let! m = mutate "x"
