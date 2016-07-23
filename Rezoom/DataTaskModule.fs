@@ -47,7 +47,7 @@ let inline ret (result : 'a) = Result result
 let zero = ret ()
 
 /// Convert a `DataRequest<'a>` to a `DataTask<'a>`.
-let fromDataRequest (request : DataRequest<'a>) : DataTask<'a> =
+let fromDataRequest (request : Errand<'a>) : DataTask<'a> =
     let onResponse =
         function
         | BatchLeaf (RetrievalSuccess suc) -> ret (Unchecked.unbox suc : 'a)
@@ -55,7 +55,7 @@ let fromDataRequest (request : DataRequest<'a>) : DataTask<'a> =
         | BatchAbort -> abort()
         | BatchPair _
         | BatchMany _ -> logicFault "Incorrect response shape for data request"
-    Step (BatchLeaf (request :> DataRequest), onResponse)
+    Step (BatchLeaf (request :> Errand), onResponse)
 
 ////////////////////////////////////////////////////////////
 // Mapping of plain-old functions over `DataTask`s.

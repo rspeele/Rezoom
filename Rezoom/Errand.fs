@@ -2,7 +2,7 @@
 open System.Threading.Tasks
 
 [<AbstractClass>]
-type DataRequest() =
+type Errand() =
     abstract member Identity : obj
     default __.Identity = null
     abstract member DataSource : obj
@@ -18,12 +18,12 @@ type DataRequest() =
     abstract member InternalPrepare : ServiceContext -> (unit -> obj Task)
 
 [<AbstractClass>]
-type DataRequest<'a>() =
-    inherit DataRequest()
+type Errand<'a>() =
+    inherit Errand()
 
 [<AbstractClass>]
-type AsynchronousDataRequest<'a>() =
-    inherit DataRequest<'a>()
+type AsynchronousErrand<'a>() =
+    inherit Errand<'a>()
     static member private BoxResult(task : 'a Task) =
         box task.Result
     abstract member Prepare : ServiceContext -> (unit -> 'a Task)
@@ -31,11 +31,11 @@ type AsynchronousDataRequest<'a>() =
         let typed = this.Prepare(cxt)
         fun () ->
             let t = typed()
-            t.ContinueWith(AsynchronousDataRequest<'a>.BoxResult, TaskContinuationOptions.ExecuteSynchronously)
+            t.ContinueWith(AsynchronousErrand<'a>.BoxResult, TaskContinuationOptions.ExecuteSynchronously)
 
 [<AbstractClass>]
-type SynchronousDataRequest<'a>() =
-    inherit DataRequest<'a>()
+type SynchronousErrand<'a>() =
+    inherit Errand<'a>()
     abstract member Prepare : ServiceContext -> (unit -> 'a)
     override this.InternalPrepare(cxt) : unit -> obj Task =
         let sync = this.Prepare(cxt)

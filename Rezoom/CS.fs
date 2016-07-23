@@ -5,7 +5,7 @@ open System.Threading.Tasks
 
 [<AbstractClass>]
 type AsynchronousDataRequest<'a>() =
-    inherit DataRequest<'a>()
+    inherit Errand<'a>()
     static member private BoxResult(task : 'a Task) =
         box task.Result
     abstract member Prepare : ServiceContext -> 'a Task Func
@@ -17,7 +17,7 @@ type AsynchronousDataRequest<'a>() =
 
 [<AbstractClass>]
 type SynchronousDataRequest<'a>() =
-    inherit DataRequest<'a>()
+    inherit Errand<'a>()
     abstract member Prepare : ServiceContext -> 'a Func
     override this.InternalPrepare(cxt) : unit -> obj Task =
         let sync = this.Prepare(cxt)

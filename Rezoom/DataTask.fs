@@ -22,7 +22,7 @@ type Batch<'a> =
         | BatchMany arr -> BatchMany (arr |> Array.map (fun b -> b.Map(f)))
         | BatchAbort -> BatchAbort
 
-type Requests = DataRequest Batch
+type Requests = Errand Batch
 type Responses = DataResponse Batch
 
 type Step<'result> = Requests * (Responses -> DataTask<'result>)

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -51,7 +51,7 @@
     <Compile Include="DefaultServiceFactory.fs" />
     <Compile Include="DefaultServiceContext.fs" />
     <Compile Include="ResponseCache.fs" />
-    <Compile Include="DataRequest.fs" />
+    <Compile Include="Errand.fs" />
     <Compile Include="DataTask.fs" />
     <Compile Include="DataTaskModule.fs" />
     <Compile Include="DataTaskBuilder.fs" />

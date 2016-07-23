@@ -25,7 +25,7 @@ type TestContext() =
         |> List.ofSeq
 
 type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : string -> 'a) =
-    inherit SynchronousDataRequest<'a>()
+    inherit SynchronousErrand<'a>()
     new (query, pre, post) =
         TestRequest<_>(true, query, pre, post)
     override __.Mutation = not idem
