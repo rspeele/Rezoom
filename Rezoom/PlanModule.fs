@@ -6,7 +6,7 @@ open System.Collections.Generic
 // Internal guts we use throughout the module.
 ////////////////////////////////////////////////////////////
 
-let internal abort() = raise (DataTaskAbortException "Task aborted")
+let internal abort() = raise (PlanAbortException "Task aborted")
 
 let internal abortSteps (steps : 'a Step seq) (reason : exn) : 'b =
     let exns = new ResizeArray<_>()
@@ -16,7 +16,7 @@ let internal abortSteps (steps : 'a Step seq) (reason : exn) : 'b =
             // this should fail with a DataTaskAbortException
             ignore <| resume BatchAbort
         with
-        | DataTaskAbortException _ -> ()
+        | PlanAbortException _ -> ()
         | exn -> exns.Add(exn)
     if exns.Count > 1 then raise (aggregate exns)
     else dispatchRaise reason
@@ -28,7 +28,7 @@ let internal abortTask (task : 'a Plan) (reason : exn) : 'b =
             ignore <| resume BatchAbort
             dispatchRaise reason
         with
-        | DataTaskAbortException _ -> dispatchRaise reason
+        | PlanAbortException _ -> dispatchRaise reason
         | exn -> raise (new AggregateException(reason, exn))
     | _ ->
         dispatchRaise reason
@@ -192,7 +192,7 @@ let rec tryCatch (wrapped : unit -> 'a Plan) (catcher : exn -> 'a Plan) =
                 tryCatch (fun () -> resume responses) catcher
             Step (pending, onResponses)
     with
-    | DataTaskAbortException _ -> reraise() // don't let them catch these
+    | PlanAbortException _ -> reraise() // don't let them catch these
     | ex -> catcher(ex)
 
 /// Wrap a `DataTask<'a>` with a block that must execute.
