@@ -13,7 +13,7 @@ let internal abortSteps (steps : 'a Step seq) (reason : exn) : 'b =
     exns.Add(reason)
     for _, resume in steps do
         try
-            // this should fail with a DataTaskAbortException
+            // this should fail with a PlanAbortException
             ignore <| resume BatchAbort
         with
         | PlanAbortException _ -> ()
@@ -38,15 +38,15 @@ let internal abortTask (task : 'a Plan) (reason : exn) : 'b =
 // Tasks that immediately return and tasks that encapsulate a single step.
 ////////////////////////////////////////////////////////////
 
-/// Monadic return for `DataTask`s.
-/// Creates a `DataTask` with no steps, whose immediate result is `result`.
+/// Monadic return for `Plan`s.
+/// Creates a `Plan` with no steps, whose immediate result is `result`.
 let inline ret (result : 'a) = Result result
 
-/// Monoidal identity for `DataTask`.
+/// Monoidal identity for `Plan`.
 /// Equivalent to `ret ()`.
 let zero = ret ()
 
-/// Convert a `DataRequest<'a>` to a `DataTask<'a>`.
+/// Convert a `DataRequest<'a>` to a `Plan<'a>`.
 let ofErrand (request : Errand<'a>) : Plan<'a> =
     let onResponse =
         function
@@ -58,7 +58,7 @@ let ofErrand (request : Errand<'a>) : Plan<'a> =
     Step (BatchLeaf (request :> Errand), onResponse)
 
 ////////////////////////////////////////////////////////////
-// Mapping of plain-old functions over `DataTask`s.
+// Mapping of plain-old functions over `Plan`s.
 //
 // This lets you transform the eventual values produced by the task.
 ////////////////////////////////////////////////////////////
@@ -69,7 +69,7 @@ let inline _mapInline map f task =
     | Step s -> Step (map f s)
 let rec _mapRecursive (f : 'a -> 'b) ((pending, resume) : 'a Step) : 'b Step =
     pending, fun responses -> _mapInline _mapRecursive f (resume responses)
-/// Map a function over the result of a `DataTask<'a>`, producing a new `DataTask<'b>`.
+/// Map a function over the result of a `Plan<'a>`, producing a new `Plan<'b>`.
 and inline map (f : 'a -> 'b) (task : 'a Plan): 'b Plan =
     _mapInline _mapRecursive f task
 
@@ -87,8 +87,8 @@ let inline _bindInline bind task cont =
         Step (pending, fun responses -> bind (resume responses) cont)
 let rec _bindRecursive task cont =
     _bindInline _bindRecursive task cont
-/// Chain a continuation `DataTask` onto an existing `DataTask` to
-/// get a new `DataTask`.
+/// Chain a continuation `Plan` onto an existing `Plan` to
+/// get a new `Plan`.
 /// The continuation can be dependent on the result of the first task.
 let inline bind (task : 'a Plan) (cont : 'a -> 'b Plan) : 'b Plan =
     _bindInline (_bindInline _bindRecursive) task cont
@@ -178,9 +178,9 @@ let tuple4
 // Exception handling.
 ////////////////////////////////////////////////////////////
 
-/// Wrap a `DataTask<'a>` with an exception handler.
+/// Wrap a `Plan<'a>` with an exception handler.
 /// The exception handler `catcher` will be called if an exception is thrown
-/// during execution of `wrapped`, whether it's in creating the `DataTask`
+/// during execution of `wrapped`, whether it's in creating the `Plan`
 /// to be run or in executing any step of the resulting task.
 /// The exception handler may rethrow the exception.
 let rec tryCatch (wrapped : unit -> 'a Plan) (catcher : exn -> 'a Plan) =
@@ -195,7 +195,7 @@ let rec tryCatch (wrapped : unit -> 'a Plan) (catcher : exn -> 'a Plan) =
     | PlanAbortException _ -> reraise() // don't let them catch these
     | ex -> catcher(ex)
 
-/// Wrap a `DataTask<'a>` with a block that must execute.
+/// Wrap a `Plan<'a>` with a block that must execute.
 /// When the task is executed, the function `onExit` will be called
 /// after `wrapped` completes, regardless of whether the task
 /// succeeded, failed to be created, or failed while partially executed.
@@ -280,7 +280,7 @@ let rec private forAs (tasks : (unit -> unit Plan) seq) : unit Plan =
         Step (pending, onResponses)
 
 /// Applicative iteration.
-/// Create a task that strictly iterates a sequence, creating a `DataTask` for each element
+/// Create a task that strictly iterates a sequence, creating a `Plan` for each element
 /// using the given `iteration` function, then runs those tasks concurrently.
 let forA (sequence : 'a seq) (iteration : 'a -> unit Plan) =
     forAs (sequence |> Seq.map (fun element () -> iteration element))
