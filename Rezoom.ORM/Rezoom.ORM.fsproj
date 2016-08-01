@@ -61,7 +61,7 @@
     <Compile Include="BlueprintConstructorAttribute.fs" />
     <Compile Include="Blueprint.fs" />
     <Compile Include="BlueprintModule.fs" />
-    <Compile Include="EntityReaderColumnGenerator.fs" />
+    <Compile Include="ReaderGenerators.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
