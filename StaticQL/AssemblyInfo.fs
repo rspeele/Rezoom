@@ -1,4 +1,4 @@
-﻿namespace Rezoom.ORM.AssemblyInfo
+﻿namespace StaticQL.AssemblyInfo
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -7,11 +7,11 @@ open System.Runtime.InteropServices
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[<assembly: AssemblyTitle("Rezoom.ORM")>]
+[<assembly: AssemblyTitle("StaticQL")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("Rezoom.ORM")>]
+[<assembly: AssemblyProduct("StaticQL")>]
 [<assembly: AssemblyCopyright("Copyright ©  2016")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
@@ -22,7 +22,7 @@ open System.Runtime.InteropServices
 [<assembly: ComVisible(false)>]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[<assembly: Guid("6b6a06c5-157a-4fe3-8b4c-2a1ae6a15333")>]
+[<assembly: Guid("87fcd04a-1f90-4d53-a428-cf5f5c532a22")>]
 
 // Version information for an assembly consists of the following four values:
 // 
