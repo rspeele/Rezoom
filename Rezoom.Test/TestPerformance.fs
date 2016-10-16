@@ -20,8 +20,7 @@ type TestPerformance() =
     [<TestMethod>]
     member __.TestSingleReturn() =
         time <|
-            {
-                Task = fun () -> ret1
+            {   Task = fun () -> ret1
                 Batches = []
                 Result = Good 1
             }
@@ -29,8 +28,7 @@ type TestPerformance() =
     [<TestMethod>]
     member __.TestNestedReturn() =
         time <|
-            {
-                Task = fun () -> plan {
+            {   Task = fun () -> plan {
                     return! plan {
                         return! plan {
                             return! ret1
@@ -44,8 +42,7 @@ type TestPerformance() =
     [<TestMethod>]
     member __.TestBindChain() =
         time <|
-            {
-                Task = fun () -> plan {
+            {   Task = fun () -> plan {
                     let! one1 = ret1
                     let! one2 = ret1
                     let! one3 = ret1
@@ -58,8 +55,7 @@ type TestPerformance() =
     [<TestMethod>]
     member __.TestBindChainWithRequests() =
         time <|
-            {
-                Task = fun () -> plan {
+            {   Task = fun () -> plan {
                     let! _ = send "x"
                     let! one1 = ret1
                     let! _ = send "y"
@@ -69,8 +65,7 @@ type TestPerformance() =
                     return one1 + one2 + one3
                 }
                 Batches =
-                    [
-                        ["x"]
+                    [   ["x"]
                         ["y"]
                         ["z"]
                     ]
@@ -80,8 +75,7 @@ type TestPerformance() =
     [<TestMethod>]
     member __.TestBindChainWithBatchedRequests() =
         time <|
-            {
-                Task = fun () -> plan {
+            {   Task = fun () -> plan {
                     let! one1 = ret1
                     let! _ = send "x", send "y", send "z"
                     let! one2 = ret1
@@ -90,8 +84,7 @@ type TestPerformance() =
                     return one1 + one2 + one3
                 }
                 Batches =
-                    [
-                        ["x";"y";"z"]
+                    [   ["x";"y";"z"]
                         ["q";"r";"s"]
                     ]
                 Result = Good 3

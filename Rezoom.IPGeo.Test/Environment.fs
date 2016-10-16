@@ -11,8 +11,7 @@ type 'a ExpectedResult =
     | Value of 'a
 
 type 'a TestTask =
-    {
-        Task : 'a Plan
+    {   Task : 'a Plan
         Batches : string list list
         ExpectedResult : 'a ExpectedResult
     }

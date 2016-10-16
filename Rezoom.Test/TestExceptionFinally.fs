@@ -8,8 +8,7 @@ type TestExceptionFinally() =
     [<TestMethod>]
     member __.TestFinallyNoThrow() =
         let mutable ran = 0
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         let! q = send "q"
@@ -19,8 +18,7 @@ type TestExceptionFinally() =
                         ran <- ran + 1
                 }
             Batches =
-                [
-                    [ "q" ]
+                [   [ "q" ]
                     [ "r" ]
                 ]
             Result = Good "qr"
@@ -31,8 +29,7 @@ type TestExceptionFinally() =
     [<TestMethod>]
     member __.TestSimpleFinally() =
         let mutable ran = 0
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         explode "fail"
@@ -47,8 +44,7 @@ type TestExceptionFinally() =
     [<TestMethod>]
     member __.TestBoundFinally() =
         let mutable ran = 0
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         let! x = send "x"
@@ -64,8 +60,7 @@ type TestExceptionFinally() =
     [<TestMethod>]
     member __.TestSimpleFailingPrepare() =
         let mutable ran = 0
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         let! x = failingPrepare "fail" "x"
@@ -80,8 +75,7 @@ type TestExceptionFinally() =
     [<TestMethod>]
     member __.TestSimpleFailingRetrieve() =
         let mutable ran = 0
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         let! x = failingRetrieve "fail" "x"
@@ -96,8 +90,7 @@ type TestExceptionFinally() =
     [<TestMethod>]
     member __.TestUsingThrow() =
         let mutable ran = 0
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     use d = { new IDisposable with member x.Dispose() = ran <- ran + 1 }
                     let! x = failingRetrieve "fail" "x"
@@ -110,8 +103,7 @@ type TestExceptionFinally() =
     [<TestMethod>]
     member __.TestUsingNoThrow() =
         let mutable ran = 0
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     use d = { new IDisposable with member x.Dispose() = ran <- ran + 1 }
                     let! x = send "x"
@@ -126,8 +118,7 @@ type TestExceptionFinally() =
         let mutable counter = 0
         let mutable first = 0
         let mutable next = 0
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         try
@@ -162,16 +153,14 @@ type TestExceptionFinally() =
                 finally
                     ranFinally <- true
             }
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! x, y, z =
                         deadly "x", deadly "y", good "z"
                     return x + y + z
                 }
             Batches =
-                [
-                    [ "x"; "y"; "z" ]
+                [   [ "x"; "y"; "z" ]
                 ]
             Result = Bad (fun ex -> ranFinally)
         } |> test
@@ -193,8 +182,7 @@ type TestExceptionFinally() =
                 finally
                     ranFinally <- true
             }
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     for q in batch ["x"; "y"; "z"] do
                         if q = "y" then
@@ -204,8 +192,7 @@ type TestExceptionFinally() =
                     return ()
                 }
             Batches =
-                [
-                    [ "x"; "y"; "z" ]
+                [   [ "x"; "y"; "z" ]
                 ]
             Result = Bad (fun _ ->
                 ranFinally)

@@ -7,8 +7,7 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 type TestExceptionCatching() =
     [<TestMethod>]
     member __.TestSimpleCatch() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         explode "fail"
@@ -22,8 +21,7 @@ type TestExceptionCatching() =
         
     [<TestMethod>]
     member __.TestBoundCatch() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         let! x = send "x"
@@ -38,8 +36,7 @@ type TestExceptionCatching() =
 
     [<TestMethod>]
     member __.TestSimpleFailingPrepare() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         let! x = failingPrepare "fail" "x"
@@ -53,8 +50,7 @@ type TestExceptionCatching() =
 
     [<TestMethod>]
     member __.TestSimpleFailingRetrieve() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     try
                         let! x = failingRetrieve "fail" "x"
@@ -83,16 +79,14 @@ type TestExceptionCatching() =
                 let! result = send query
                 return result
             }
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! x, y, z =
                         catching "x", catching "y", good "z"
                     return x + y + z
                 }
             Batches =
-                [
-                    [ "x"; "y"; "z" ]
+                [   [ "x"; "y"; "z" ]
                 ]
             Result = Good "badbadz"
         } |> test
@@ -114,8 +108,7 @@ type TestExceptionCatching() =
                 let! result = send query
                 return ()
             }
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     for q in batch ["x"; "y"; "z"] do
                         if q = "y" then
@@ -125,8 +118,7 @@ type TestExceptionCatching() =
                     return ()
                 }
             Batches =
-                [
-                    [ "x"; "y"; "z" ]
+                [   [ "x"; "y"; "z" ]
                 ]
             Result = Good ()
         } |> test
@@ -144,16 +136,14 @@ type TestExceptionCatching() =
                 let! next = send "jim"
                 return result + next
             }
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! x, y, z =
                         notCatching "x", notCatching "y", good "z"
                     return x + y + z
                 }
             Batches =
-                [
-                    [ "x"; "y"; "z" ]
+                [   [ "x"; "y"; "z" ]
                 ]
             Result = Bad (fun ex -> true)
         } |> test
