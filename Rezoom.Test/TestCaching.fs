@@ -6,31 +6,27 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 type TestCaching() =
     [<TestMethod>]
     member __.TestStrictCachedPair() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! q1 = send "q"
                     let! q2 = send "q"
                     return q1 + q2
                 }
             Batches =
-                [
-                    [ "q" ]
+                [   [ "q" ]
                 ]
             Result = Good "qq"
         } |> test
         
     [<TestMethod>]
     member __.TestConcurrentCachedPair() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! q1, q2 = send "q", send "q"
                     return q1 + q2
                 }
             Batches =
-                [
-                    [ "q" ]
+                [   [ "q" ]
                 ]
             Result = Good "qq"
         } |> test
@@ -44,16 +40,14 @@ type TestCaching() =
                 let! c = send (x + "3")
                 return a + b + c
             }
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! x1, x2, x3 =
                         testTask "x", testTask "x", testTask "x"
                     return x1 + " " + x2 + " " + x3
                 }
             Batches =
-                [
-                    [ "x1" ]
+                [   [ "x1" ]
                     [ "x2" ]
                     [ "x3" ]
                 ]
@@ -62,8 +56,7 @@ type TestCaching() =
 
     [<TestMethod>]
     member __.TestStillValid() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! q1 = send "q"
                     let! q2 = send "q"
@@ -72,8 +65,7 @@ type TestCaching() =
                     return q1 + q2 + m + q3
                 }
             Batches =
-                [
-                    [ "q" ]
+                [   [ "q" ]
                     [ "x" ]
                 ]
             Result = Good "qqxq"
@@ -81,8 +73,7 @@ type TestCaching() =
 
     [<TestMethod>]
     member __.TestInvalidation() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! q1 = send "q"
                     let! q2 = send "q"
@@ -91,8 +82,7 @@ type TestCaching() =
                     return q1 + q2 + m + q3
                 }
             Batches =
-                [
-                    [ "q" ]
+                [   [ "q" ]
                     [ "x" ]
                     [ "q" ]
                 ]
