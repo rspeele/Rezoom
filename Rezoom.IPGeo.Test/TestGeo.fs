@@ -17,16 +17,14 @@ type TestGeo() =
 
     [<TestMethod>]
     member __.TestBatches() =
-        {
-            Task =
+        {   Task =
                 plan {
                     let! g1, g2 = Geo.Locate(googleDNS), Geo.Locate(googleDNS2)
                     let! o = Geo.Locate(openDNS)
                     return g1.Isp, g2.Isp, o.Isp
                 }
             Batches =
-                [
-                    [googleDNS; googleDNS2]
+                [   [googleDNS; googleDNS2]
                     [openDNS]
                 ]
             ExpectedResult = Value (googleDNSISP, googleDNS2ISP, openDNSISP)
@@ -34,16 +32,14 @@ type TestGeo() =
 
     [<TestMethod>]
     member __.TestCaching() =
-        {
-            Task =
+        {   Task =
                 plan {
                     let! g1 = Geo.Locate(googleDNS)
                     let! g2, o = Geo.Locate(googleDNS), Geo.Locate(openDNS)
                     return g1.Isp, g2.Isp, o.Isp
                 }
             Batches =
-                [
-                    [googleDNS]
+                [   [googleDNS]
                     [openDNS] // note that we don't request google DNS again
                 ]
             ExpectedResult = Value (googleDNSISP, googleDNSISP, openDNSISP)
@@ -51,15 +47,13 @@ type TestGeo() =
 
     [<TestMethod>]
     member __.TestDedup() =
-        {
-            Task =
+        {   Task =
                 plan {
                     let! g1, fb1, fb2 = Geo.Locate(googleDNS), Geo.Locate(fb), Geo.Locate(fb)
                     return g1.Isp, fb1.Isp, fb2.Isp
                 }
             Batches =
-                [
-                    [googleDNS; fb] // note that we don't request fb twice
+                [   [googleDNS; fb] // note that we don't request fb twice
                 ]
             ExpectedResult = Value (googleDNSISP, fbISP, fbISP)
         } |> test

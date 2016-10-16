@@ -63,8 +63,7 @@ type ExpectedResult<'a> =
     | Bad of (exn -> bool)
 
 type ExpectedResultTest<'a> =
-    {
-        Task : unit -> 'a Plan
+    {   Task : unit -> 'a Plan
         Batches : string list list
         Result : ExpectedResult<'a>
     }

@@ -6,16 +6,14 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 type TestConcurrency() =
     [<TestMethod>]
     member __.TestStrictPair() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! q = send "q"
                     let! r = send "r"
                     return q + r
                 }
             Batches =
-                [
-                    [ "q" ]
+                [   [ "q" ]
                     [ "r" ]
                 ]
             Result = Good "qr"
@@ -23,15 +21,13 @@ type TestConcurrency() =
         
     [<TestMethod>]
     member __.TestConcurrentPair() =
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! q, r = send "q", send "r"
                     return q + r
                 }
             Batches =
-                [
-                    [ "q"; "r" ]
+                [   [ "q"; "r" ]
                 ]
             Result = Good "qr"
         } |> test
@@ -45,16 +41,14 @@ type TestConcurrency() =
                 let! c = send (x + "3")
                 return a + b + c
             }
-        {
-            Task = fun () ->
+        {   Task = fun () ->
                 plan {
                     let! x, y, z =
                         testTask "x", testTask "y", testTask "z"
                     return x + " " + y + " " + z
                 }
             Batches =
-                [
-                    [ "x1"; "y1"; "z1" ]
+                [   [ "x1"; "y1"; "z1" ]
                     [ "x2"; "y2"; "z2" ]
                     [ "x3"; "y3"; "z3" ]
                 ]
