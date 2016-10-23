@@ -50,6 +50,7 @@
     <Compile Include="ServiceFactories.fs" />
     <Compile Include="DefaultServiceFactory.fs" />
     <Compile Include="DefaultServiceContext.fs" />
+    <Compile Include="Caching.fs" />
     <Compile Include="ResponseCache.fs" />
     <Compile Include="Errand.fs" />
     <Compile Include="Plan.fs" />
