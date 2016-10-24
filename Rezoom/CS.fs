@@ -9,7 +9,7 @@ type AsynchronousErrand<'a>() =
     static member private BoxResult(task : 'a Task) =
         box task.Result
     abstract member Prepare : ServiceContext -> 'a Task Func
-    override this.InternalPrepare(cxt) : unit -> obj Task =
+    override this.PrepareUntyped(cxt) : unit -> obj Task =
         let typed = this.Prepare(cxt)
         fun () ->
             let t = typed.Invoke()
@@ -19,7 +19,7 @@ type AsynchronousErrand<'a>() =
 type SynchronousErrand<'a>() =
     inherit Errand<'a>()
     abstract member Prepare : ServiceContext -> 'a Func
-    override this.InternalPrepare(cxt) : unit -> obj Task =
+    override this.PrepareUntyped(cxt) : unit -> obj Task =
         let sync = this.Prepare(cxt)
         fun () ->
             Task.FromResult(box (sync.Invoke()))
