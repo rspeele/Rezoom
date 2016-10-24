@@ -50,12 +50,15 @@
     <Compile Include="ServiceFactories.fs" />
     <Compile Include="DefaultServiceFactory.fs" />
     <Compile Include="DefaultServiceContext.fs" />
-    <Compile Include="Caching.fs" />
-    <Compile Include="ResponseCache.fs" />
+    <Compile Include="CacheInfo.fs" />
     <Compile Include="Errand.fs" />
     <Compile Include="Plan.fs" />
     <Compile Include="PlanModule.fs" />
     <Compile Include="PlanBuilder.fs" />
+    <Compile Include="..\Shared\TaskBuilder.fs">
+      <Link>TaskBuilder.fs</Link>
+    </Compile>
+    <Compile Include="Execution.fs" />
     <Compile Include="CS.fs" />
     <Compile Include="CSExtensions.fs" />
   </ItemGroup>

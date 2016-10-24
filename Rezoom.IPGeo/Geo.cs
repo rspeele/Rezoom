@@ -1,4 +1,6 @@
-﻿namespace Rezoom.IPGeo
+﻿using Rezoom.IPGeo.Internals;
+
+namespace Rezoom.IPGeo
 {
     public static class Geo
     {

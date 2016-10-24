@@ -17,24 +17,20 @@ type 'a TestTask =
     }
 
 type TestExecutionLog() =
+    inherit ExecutionLog()
     let batches = new ResizeArray<string ResizeArray>()
     member __.Batches =
         batches |> Seq.map List.ofSeq |> List.ofSeq
-    interface IExecutionLog with
-        member this.OnComplete(request, response) = ()
-        member this.OnPrepareFailure(exn) = ()
-        member this.OnPrepare(request) =
-            batches.[batches.Count - 1].Add(string request.Identity)
-        member this.OnStepFinish() = ()
-        member this.OnStepStart() = batches.Add(new ResizeArray<_>())
+    override this.OnPreparedErrand(cacheInfo, arg) =
+        batches.[batches.Count - 1].Add(string cacheInfo.Identity.Value.Identity)
+    override this.OnBeginStep() = batches.Add(new ResizeArray<_>())
 
 let test (task : 'a TestTask) =
     let log = new TestExecutionLog()
-    use context =
-        new ExecutionContext(new ZeroServiceFactory(), log)
     let answer =
         try
-            context.Execute(task.Task).Result |> Some
+            let task = executeWithLog log (ZeroServiceFactory()) task.Task
+            Some task.Result
         with
         | ex ->
             match task.ExpectedResult with
