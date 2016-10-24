@@ -6,38 +6,32 @@ open System
 open System.Collections
 open System.Collections.Generic
 
-type TestContext() =
-    let batches = new List<List<string>>()
-    let mutable inProgress = false
-    member __.Prepare(query : string) =
-        if not inProgress then
-            batches.Add(new List<string>())
-            inProgress <- true
-        let batch = batches.[batches.Count - 1]
-        let index = batch.Count
-        batch.Add(query)
-        ()
-    member __.Execute() =
-        inProgress <- false // end this batch
+type TestExecutionLog() =
+    inherit ExecutionLog()
+    let steps = ResizeArray()
+    override __.OnBeginStep() =
+        steps.Add(ResizeArray())
+    override __.OnPreparedErrand(info, _) =
+        steps.[steps.Count - 1].Add(string info.Identity.Value.Identity)
     member __.Batches() =
-        batches
-        |> Seq.map List.ofSeq
-        |> List.ofSeq
+        steps |> Seq.map List.ofSeq |> Seq.filter (not << List.isEmpty) |> List.ofSeq
 
 type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : string -> 'a) =
     inherit SynchronousErrand<'a>()
     new (query, pre, post) =
         TestRequest<_>(true, query, pre, post)
-    override __.Mutation = not idem
-    override __.Idempotent = idem
-    override __.DataSource = box typeof<TestContext>
-    override __.Identity = box query
+    override __.CacheInfo =
+        { new CacheInfo() with
+            override __.TagDependencies = upcast [|Key(580us, "nuke")|]
+            override __.TagInvalidations =
+                if idem then base.TagInvalidations
+                else upcast [|Key(580us, "nuke")|]
+            override __.Category = Key(6229us, query)
+            override __.Identity = Nullable(Key(query))
+        }
     override __.Prepare(serviceContext : ServiceContext) =
-        let db = serviceContext.GetService<ExecutionLocal<TestContext>>().Service
         pre()
-        db.Prepare(query)
         fun () ->
-            db.Execute()
             post query
 
 exception PrepareFailure of string
@@ -69,21 +63,21 @@ type ExpectedResultTest<'a> =
     }
 
 let testSpeed expectedResult =
-    use execContext = new ExecutionContext(new ZeroServiceFactory())
-    let result = execContext.Execute(expectedResult.Task()).Result
+    let log = TestExecutionLog()
+    let result = (executeWithLog log (ZeroServiceFactory()) (expectedResult.Task())).Result
     match expectedResult.Result with
     | Good x when x = result -> ()
     | _ -> failwith "Invalid result for speed test (try running this as a regular test)"
 
 let test expectedResult =
-    use execContext = new ExecutionContext(new ZeroServiceFactory())
+    let log = TestExecutionLog()
+    let execContext = executeWithLog log (ZeroServiceFactory())
     let result =
         try
-            execContext.Execute(expectedResult.Task()).Result |> Choice1Of2
+            (execContext (expectedResult.Task())).Result |> Choice1Of2
         with
         | ex -> Choice2Of2 ex
-    let testContext = execContext.GetService<ExecutionLocal<TestContext>>().Service
-    let batches = testContext.Batches()
+    let batches = log.Batches()
 
     if batches <> expectedResult.Batches then
         failwithf "Batches do not match (actual: %A)" batches
