@@ -21,8 +21,8 @@ type TestExecutionLog() =
     let batches = new ResizeArray<string ResizeArray>()
     member __.Batches =
         batches |> Seq.map List.ofSeq |> List.ofSeq
-    override this.OnPreparedErrand(cacheInfo, arg) =
-        batches.[batches.Count - 1].Add(string cacheInfo.Identity.Value.Identity)
+    override this.OnPreparedErrand(errand) =
+        batches.[batches.Count - 1].Add(string errand.CacheInfo.Identity)
     override this.OnBeginStep() = batches.Add(new ResizeArray<_>())
 
 let test (task : 'a TestTask) =

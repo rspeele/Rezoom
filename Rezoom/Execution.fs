@@ -12,156 +12,122 @@ type ExecutionLog() =
     default __.OnBeginStep() = ()
     abstract member OnEndStep : unit -> unit
     default __.OnEndStep() = ()
-    abstract member OnPreparingErrand : CacheInfo * Key Nullable -> unit
-    default __.OnPreparingErrand(_, _) = ()
-    abstract member OnPreparedErrand : CacheInfo * Key Nullable -> unit
-    default __.OnPreparedErrand(_, _) = ()
+    abstract member OnPreparingErrand : Errand -> unit
+    default __.OnPreparingErrand(_) = ()
+    abstract member OnPreparedErrand : Errand -> unit
+    default __.OnPreparedErrand(_) = ()
 
-type private KeyDictionary<'a>() =
-    static let bucketBits = 0x800
-    let buckets = BitArray(bucketBits)
-    let byIdentity = Dictionary<obj, 'a>()
-    member this.TryGetValue(key : Key, [<Out>] value : 'a byref) =
-        buckets.[int key.Bucket % bucketBits]
-        && byIdentity.TryGetValue(key.Identity, &value)
-    member this.SetValue(key : Key, value : 'a) =
-        buckets.[int key.Bucket % bucketBits] <- true
-        byIdentity.[key.Identity] <- value
-    member this.GetValue(key : Key, defaultValue : Key -> 'a) =
+type Dictionary<'k, 'v> with
+    member this.GetValue(key : 'k, generate : 'k -> 'v) =
         let succ, v = this.TryGetValue(key)
         if succ then v else
-        let v = defaultValue key
-        this.SetValue(key, v)
-        v
-    member this.Remove(key : Key) = ignore <| byIdentity.Remove(key)
-    member this.Count = byIdentity.Count
-    member this.Values = byIdentity.Values
+        let generated = generate key
+        this.Add(key, generated)
+        generated
 
-type private CacheResponse =
-    {   mutable Response : obj
-        Tags : CacheTag array
-        Stamps : int array
-    }
-    member this.Valid() =
-        let mutable i = 0
-        let mutable good = true
-        while i < this.Stamps.Length do
-            if this.Stamps.[i] <> this.Tags.[i].Stamp then
-                good <- false
-                i <- this.Stamps.Length
-            else
-                i <- i + 1
-        good
+[<Struct>]
+[<CustomEquality>]
+[<NoComparison>]
+type private CacheKey(identity : obj, argument : obj) =
+    member inline private __.Identity = identity
+    member inline private __.Argument = argument
+    member this.Equals(other : CacheKey) =
+        identity = other.Identity && argument = other.Argument
+    override this.Equals(other : obj) =
+        match other with
+        | :? CacheKey as k -> this.Equals(k)
+        | _ -> false
+    override __.GetHashCode() =
+        let h1 = identity.GetHashCode()
+        if isNull argument then h1 else
+        ((h1 <<< 5) + h1) ^^^ argument.GetHashCode()
+    interface IEquatable<CacheKey> with
+        member this.Equals(other) = this.Equals(other)
 
-and private CacheTag() =
-    let mutable stamp = 0
-    member __.Stamp = stamp
-    member __.Invalidate() =
-        stamp <- stamp + 1
-
-type private IdentityCache() =
-    let byArg = KeyDictionary()
-    let mutable self = Unchecked.defaultof<_>
-    let mutable hasSelf = false
-    member __.TryGetValue(arg : Key Nullable, [<Out>] value : CacheResponse byref) =
-        if arg.HasValue then
-            if byArg.TryGetValue(arg.Value, &value) then
-                if value.Valid() then true else
-                byArg.Remove(arg.Value)
-                false
-            else false
-        elif hasSelf then
-            value <- self
-            if value.Valid() then true else
-            hasSelf <- false
-            false
-        else false
-    member this.GetValue(arg : Key Nullable, defaultValue : unit -> CacheResponse) =
-        let succ, v = this.TryGetValue(arg)
-        if succ then v else
-        let v = defaultValue()
-        if arg.HasValue then
-            byArg.SetValue(arg.Value, v)
-        else
-            hasSelf <- true
-            self <- v
-        v
+[<AllowNullLiteral>]
+type private CategoryCache(category : obj) =
+    let cache = Dictionary<CacheKey, obj>()
+    let mutable tags = BitMask.Zero
+    member __.Category = category
+    member __.Store(info : CacheInfo, arg : obj, result : obj) =
+        cache.[CacheKey(info.Identity, arg)] <- result
+        // Set all the dependency bits to 1
+        tags <- tags ||| info.DependencyMask
+    member __.Retrieve(info : CacheInfo, arg : obj) =
+        let succ, cached = cache.TryGetValue(CacheKey(info.Identity, arg))
+        if not succ then None else
+        let mask = info.DependencyMask
+        // Check that all the dependency bits are still 1
+        if (mask &&& tags).Equals(mask) then Some cached
+        else None
+    member __.Invalidate(info : CacheInfo) =
+        tags <- tags &&& ~~~info.InvalidationMask
 
 type private Cache() =
-    let tags = KeyDictionary<CacheTag>()
-    let byCategory = KeyDictionary<KeyDictionary<IdentityCache>>()
-    member __.InvalidateTag(tag) =
-        let succ, ctag = tags.TryGetValue(tag)
-        if succ then ctag.Invalidate()
-    member __.Retrieve(category : Key, id : Key, arg : Key Nullable) =
-        let succ, category = byCategory.TryGetValue(category)
-        if not succ then None else
-        let succ, identity = category.TryGetValue(id)
-        if not succ then None else
-        let succ, response = identity.TryGetValue(arg)
-        if not succ then None else
-        Some response.Response
-    member __.Set(info : CacheInfo, arg : Key Nullable, result : obj) =
-        if isNull info then () else
-        let id = info.Identity
-        if not id.HasValue then () else
-        let category = byCategory.GetValue(info.Category, fun _ -> KeyDictionary())
-        let identity = category.GetValue(id.Value, fun _ -> IdentityCache())
-        let dependencies = info.TagDependencies
-        let tagCount = dependencies.Count
-        let defaultCached() =
-            {   Response = result
-                Stamps = Array.zeroCreate tagCount
-                Tags = Array.zeroCreate tagCount
-            }
-        let cached = identity.GetValue(arg, defaultCached)
-        cached.Response <- result
-        let tagRefs = cached.Tags
-        let stamps = cached.Stamps
-        for i, tag in dependencies |> Seq.indexed do
-            let tagRef = tags.GetValue(tag, fun _ -> CacheTag())
-            tagRefs.[i] <- tagRef
-            stamps.[i] <- tagRef.Stamp
+    let byCategory = Dictionary<obj, CategoryCache>()
+    // Remember the last one touched as a shortcut.
+    let mutable lastCategory = CategoryCache(null)
+    let getExistingCategory (category : obj) =
+        if lastCategory.Category = category then lastCategory else
+        let succ, found = byCategory.TryGetValue(category)
+        if succ then found else null
+    let getCategory (category : obj) =
+        let existing = getExistingCategory category
+        if isNull existing then
+            let newCategory = CategoryCache(category)
+            lastCategory <- newCategory
+            byCategory.[category] <- newCategory
+            newCategory
+        else existing
+    member __.Invalidate(info : CacheInfo) =
+        match getExistingCategory info.Category with
+        | null -> () // nothing to invalidate
+        | cat -> cat.Invalidate(info)
+    member __.Retrieve(info : CacheInfo, arg : obj) =
+        match getExistingCategory info.Category with
+        | null -> None
+        | cat -> cat.Retrieve(info, arg)
+    member __.Store(info : CacheInfo, arg : obj, result : obj) =
+        let cat = getCategory info.Category
+        cat.Store(info, arg, result)
 
 type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
+    static let defaultGroup _ = ResizeArray()
     let ungrouped = ResizeArray()
-    let grouped = KeyDictionary()
-    let defaultGroup _ = ResizeArray()
-    let invalidateTags (cacheInfo : CacheInfo) =
-        if isNull cacheInfo then () else
-        let invalidations = cacheInfo.TagInvalidations
-        if isNull invalidations || invalidations.Count <= 0 then () else
-        for tag in invalidations do
-            cache.InvalidateTag(tag)
+    let grouped = Dictionary()
     let deduped = Dictionary()
     let addToRun (errand : Errand) =
-        invalidateTags errand.CacheInfo
+        match errand.CacheInfo with
+        | null -> ()
+        | cacheInfo -> cache.Invalidate(cacheInfo)
         try
             let mutable result = Unchecked.defaultof<_>
-            log.OnPreparingErrand(errand.CacheInfo, errand.CacheArgument)
+            log.OnPreparingErrand(errand)
             let prepared = errand.PrepareUntyped(context)
-            log.OnPreparedErrand(errand.CacheInfo, errand.CacheArgument)
+            log.OnPreparedErrand(errand)
             let retrieve () =
                 task {
                     try
                         let! obj = prepared()
                         result <- RetrievalSuccess obj
-                        cache.Set(errand.CacheInfo, errand.CacheArgument, obj)
+                        cache.Store(errand.CacheInfo, errand.CacheArgument, obj)
                     with
                     | exn ->
                         result <- RetrievalException exn
                 }
             let sequenceGroup = errand.SequenceGroup
-            if errand.SequenceGroup.HasValue then
-                let group = grouped.GetValue(errand.SequenceGroup.Value, defaultGroup)
-                group.Add(retrieve)
-            else
+            match errand.SequenceGroup with
+            | null ->
                 ungrouped.Add(retrieve)
+            | sequenceGroup ->
+                let group = grouped.GetValue(sequenceGroup, defaultGroup)
+                group.Add(retrieve)
             fun () -> result
         with
         | exn -> fun () -> RetrievalException exn
-    let addWithDedup (errand : Errand) (category : Key) (identity : Key) =
-        let dedupKey = category, identity, errand.CacheArgument
+    let addWithDedup (errand : Errand) =
+        let cacheInfo = errand.CacheInfo
+        let dedupKey = cacheInfo.Category, cacheInfo.Identity, errand.CacheArgument
         let succ, already = deduped.TryGetValue(dedupKey)
         if succ then already else
         let added = addToRun errand
@@ -171,11 +137,11 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
     member __.AddRequest(errand : Errand) =
         match errand.CacheInfo with
         | null -> addToRun errand
-        | cacheInfo when not cacheInfo.Identity.HasValue -> addToRun errand
+        | cacheInfo when isNull cacheInfo.Identity -> addToRun errand
         | cacheInfo ->
-            match cache.Retrieve(cacheInfo.Category, cacheInfo.Identity.Value, errand.CacheArgument) with
+            match cache.Retrieve(cacheInfo, errand.CacheArgument) with
             | None ->
-                addWithDedup errand cacheInfo.Category cacheInfo.Identity.Value
+                addWithDedup errand
             | Some cached ->
                 fun () -> RetrievalSuccess cached
             
