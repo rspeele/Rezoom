@@ -17,6 +17,8 @@ type BitMask(high : uint64, low : uint64) =
 
     static member BitLength = 128
 
+    member __.IsZero = 0UL = (high ||| low)
+    member __.IsFull = ~~~0UL = (high &&& low)
     member __.WithBit(bit : int, set : bool) =
         if bit < 32 then
             BitMask(high, if set then low ||| (1UL <<< bit) else low &&& ~~~(1UL <<< bit))
