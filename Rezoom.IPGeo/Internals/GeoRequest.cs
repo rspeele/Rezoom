@@ -10,8 +10,8 @@ namespace Rezoom.IPGeo.Internals
         {
             _ip = ip;
         }
-        public override Key Category => new Key(31485, typeof(GeoCacheInfo));
-        public override Key? Identity => new Key(_ip);
+        public override object Category => typeof(GeoCacheInfo).Assembly;
+        public override object Identity => _ip;
     }
     /// <summary>
     /// Implements <see cref="Errand"/> for looking up <see cref="GeoInfo"/> for an IP address.

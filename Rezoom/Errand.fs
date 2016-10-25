@@ -7,10 +7,10 @@ open System.Threading.Tasks
 type Errand() =
     abstract member CacheInfo : CacheInfo
     default __.CacheInfo = null
-    abstract member CacheArgument : Key Nullable
-    default __.CacheArgument = Nullable()
-    abstract member SequenceGroup : Key Nullable
-    default __.SequenceGroup = Nullable()
+    abstract member CacheArgument : obj
+    default __.CacheArgument = null
+    abstract member SequenceGroup : obj
+    default __.SequenceGroup = null
     abstract member PrepareUntyped : ServiceContext -> (unit -> obj Task)
 
 [<AbstractClass>]

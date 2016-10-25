@@ -11,8 +11,8 @@ type TestExecutionLog() =
     let steps = ResizeArray()
     override __.OnBeginStep() =
         steps.Add(ResizeArray())
-    override __.OnPreparedErrand(info, _) =
-        steps.[steps.Count - 1].Add(string info.Identity.Value.Identity)
+    override __.OnPreparedErrand(errand) =
+        steps.[steps.Count - 1].Add(string errand.CacheInfo.Identity)
     member __.Batches() =
         steps |> Seq.map List.ofSeq |> Seq.filter (not << List.isEmpty) |> List.ofSeq
 
@@ -22,12 +22,12 @@ type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : str
         TestRequest<_>(true, query, pre, post)
     override __.CacheInfo =
         { new CacheInfo() with
-            override __.TagDependencies = upcast [|Key(580us, "nuke")|]
-            override __.TagInvalidations =
-                if idem then base.TagInvalidations
-                else upcast [|Key(580us, "nuke")|]
-            override __.Category = Key(6229us, query)
-            override __.Identity = Nullable(Key(query))
+            override __.DependencyMask = BitMask(0UL, 1UL)
+            override __.InvalidationMask =
+                if idem then BitMask.Zero
+                else BitMask.Full
+            override __.Category = upcast typeof<TestExecutionLog>.Assembly
+            override __.Identity = upcast query
         }
     override __.Prepare(serviceContext : ServiceContext) =
         pre()
