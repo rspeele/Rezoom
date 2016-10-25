@@ -79,12 +79,13 @@ type TestCaching() =
                     let! q2 = send "q"
                     let! m = mutate "x"
                     let! q3 = send "q"
-                    return q1 + q2 + m + q3
+                    let! q4 = send "q"
+                    return q1 + q2 + m + q3 + q4
                 }
             Batches =
                 [   [ "q" ]
                     [ "x" ]
                     [ "q" ]
                 ]
-            Result = Good "qqxq"
+            Result = Good "qqxqq"
         } |> test

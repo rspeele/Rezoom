@@ -44,24 +44,72 @@ type private CacheKey(identity : obj, argument : obj) =
     interface IEquatable<CacheKey> with
         member this.Equals(other) = this.Equals(other)
 
+[<Struct>]
+[<NoEquality>]
+[<NoComparison>]
+type private CacheValue(generation : int, value : obj) =
+    member __.Generation = generation
+    member __.Value = value
+
 [<AllowNullLiteral>]
-type private CategoryCache(category : obj) =
-    let cache = Dictionary<CacheKey, obj>()
-    let mutable tags = BitMask.Zero
+type private CategoryCache(windowSize : int, category : obj) =
+    let cache = Dictionary<CacheKey, CacheValue>()
+    /// Moving window of dependency bitmasks, indexed by generation % windowSize.
+    let history = Array.zeroCreate windowSize : BitMask array
+    /// Generation of invalidations we're on.
+    let mutable generation = 0
+    /// Pending invalidation mask.
+    let mutable invalidationMask = BitMask.Full
+
+    new(category) = CategoryCache(16, category)
+
     member __.Category = category
-    member __.Store(info : CacheInfo, arg : obj, result : obj) =
-        cache.[CacheKey(info.Identity, arg)] <- result
-        // Set all the dependency bits to 1
-        tags <- tags ||| info.DependencyMask
-    member __.Retrieve(info : CacheInfo, arg : obj) =
+
+    member private __.Sweep() =
+        if invalidationMask.IsFull then () else
+        let mask = invalidationMask
+        let latest = generation % windowSize
+        let mutable i = latest
+        let mutable sweeping = true
+        // Go back in time invalidating bits. We can stop when we perform a mask that has no effect, since older
+        // entries will necessarily have only the same or a subset of the bits of newer entries.
+        while sweeping && i >= 0 do
+            let existing = history.[i]
+            let updated = existing &&& mask
+            sweeping <- not (existing.Equals(updated))
+            history.[i] <- updated
+            i <- i - 1
+        let anySwept = sweeping || i <> latest - 1
+        i <- windowSize - 1
+        while sweeping && i > latest do
+            let existing = history.[i]
+            let masked = existing &&& mask
+            sweeping <- not (existing.Equals(mask))
+            history.[i] <- masked
+            i <- i - 1
+        invalidationMask <- BitMask.Full
+        if anySwept then
+            generation <- generation + 1
+            history.[generation % windowSize] <- history.[latest]
+
+    member this.Store(info : CacheInfo, arg : obj, result : obj) =
+        this.Sweep()
+        cache.[CacheKey(info.Identity, arg)] <- CacheValue(generation, result)
+        let index = generation % windowSize
+        history.[index] <- history.[index] ||| info.DependencyMask
+
+    member this.Retrieve(info : CacheInfo, arg : obj) =
         let succ, cached = cache.TryGetValue(CacheKey(info.Identity, arg))
         if not succ then None else
-        let mask = info.DependencyMask
-        // Check that all the dependency bits are still 1
-        if (mask &&& tags).Equals(mask) then Some cached
-        else None
+            this.Sweep()
+            if generation - cached.Generation >= windowSize then None else
+                let mask = info.DependencyMask
+                // Check that all the dependency bits are still 1
+                if mask.Equals(mask &&& history.[cached.Generation % windowSize]) then Some cached.Value
+                else None
+
     member __.Invalidate(info : CacheInfo) =
-        tags <- tags &&& ~~~info.InvalidationMask
+        invalidationMask <- invalidationMask &&& ~~~info.InvalidationMask
 
 type private Cache() =
     let byCategory = Dictionary<obj, CategoryCache>()
