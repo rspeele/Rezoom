@@ -145,15 +145,15 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
     let grouped = Dictionary()
     let deduped = Dictionary()
     let addToRun (errand : Errand) =
-        match errand.CacheInfo with
-        | null -> ()
-        | cacheInfo -> cache.Invalidate(cacheInfo)
         try
             let mutable result = Unchecked.defaultof<_>
             log.OnPreparingErrand(errand)
             let prepared = errand.PrepareUntyped(context)
             log.OnPreparedErrand(errand)
             let retrieve () =
+                match errand.CacheInfo with
+                | null -> ()
+                | cacheInfo -> cache.Invalidate(cacheInfo)
                 task {
                     try
                         let! obj = prepared()
