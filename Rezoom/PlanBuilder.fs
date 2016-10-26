@@ -10,10 +10,10 @@ type PlanBuilder() =
     member inline __.Zero() : unit Plan = zero
     member inline __.Return(value) = ret value
 
-    member inline __.ReturnFrom(task : _ Plan) = task
-    member inline __.ReturnFrom(task : _ Step) = task
+    member inline __.ReturnFrom(plan : _ Plan) = plan
 
-    member inline __.Bind(task, cont) = bind task cont
+    member inline __.Combine(plan : unit Plan, cont) = bind plan cont
+    member inline __.Bind(plan, cont) = bind plan cont
 
     member inline __.Bind((a, b), cont) = bind (tuple2 a b) cont
     member inline __.Bind((a, b, c), cont) = bind (tuple3 a b c) cont
@@ -37,7 +37,5 @@ type PlanBuilder() =
 
     member inline __.TryFinally(task, onExit) = tryFinally task onExit
     member inline __.TryWith(task, onExit) = tryCatch task onExit
-
-    member inline __.Combine(task, cont) = bind task (fun _ -> cont())
 
 let plan = new PlanBuilder()
