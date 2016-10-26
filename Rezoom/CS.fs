@@ -2,6 +2,7 @@
 open Rezoom
 open System
 open System.Threading.Tasks
+open System.Runtime.CompilerServices
 
 [<AbstractClass>]
 type AsynchronousErrand<'a>() =
@@ -23,3 +24,9 @@ type SynchronousErrand<'a>() =
         let sync = this.Prepare(cxt)
         fun () ->
             Task.FromResult(box (sync.Invoke()))
+
+[<Extension>]
+type CSExtensions =
+    [<Extension>]
+    static member ToPlan(request : Errand<'a>) =
+        Plan.ofErrand request

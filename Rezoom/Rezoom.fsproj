@@ -60,7 +60,6 @@
     </Compile>
     <Compile Include="Execution.fs" />
     <Compile Include="CS.fs" />
-    <Compile Include="CSExtensions.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
