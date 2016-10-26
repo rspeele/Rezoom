@@ -40,16 +40,16 @@ exception ArtificialFailure of string
 
 let explode str = raise <| ArtificialFailure str
 
-let sendWith query post = TestRequest<_>(query, id, post).ToPlan()
+let sendWith query post = Plan.ofErrand <| TestRequest<_>(query, id, post)
 let send query = sendWith query id
-let mutateWith query post = TestRequest<_>(false, query, id, post).ToPlan()
+let mutateWith query post = Plan.ofErrand <| TestRequest<_>(false, query, id, post)
 let mutate query = mutateWith query id
 let failingPrepare msg query =
     TestRequest<_>
         ( query
         , fun () -> raise <| PrepareFailure msg
         , fun _ -> Unchecked.defaultof<_>
-        ) |> fun r -> r.ToPlan()
+        ) |> Plan.ofErrand
 let failingRetrieve msg query = sendWith query (fun _ -> raise <| RetrieveFailure msg)
 
 type ExpectedResult<'a> =
