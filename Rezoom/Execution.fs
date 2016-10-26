@@ -194,21 +194,19 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
                 fun () -> RetrievalSuccess cached
             
     member __.Execute() =
-        task {
-            let all = Array.zeroCreate (ungrouped.Count + grouped.Count)
-            let mutable i = 0
-            for group in grouped.Values do
-                all.[i] <-
-                    task {
-                        for sub in group do
-                            do! sub()
-                    }
-                i <- i + 1
-            for ungrouped in ungrouped do
-                all.[i] <- ungrouped()
-                i <- i + 1
-            do! Task.WhenAll(all)
-        }
+        let all = Array.zeroCreate (ungrouped.Count + grouped.Count)
+        let mutable i = 0
+        for group in grouped.Values do
+            all.[i] <-
+                task {
+                    for sub in group do
+                        do! sub()
+                }
+            i <- i + 1
+        for ungrouped in ungrouped do
+            all.[i] <- ungrouped()
+            i <- i + 1
+        Task.WhenAll(all)
 
 let executeWithLog (log : ExecutionLog) (factory : ServiceFactory) (plan : 'a Plan) =
     task {
