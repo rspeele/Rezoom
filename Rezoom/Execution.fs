@@ -99,14 +99,17 @@ type private CategoryCache(windowSize : int, category : obj) =
         history.[index] <- history.[index] ||| info.DependencyMask
 
     member this.Retrieve(info : CacheInfo, arg : obj) =
+        this.Sweep()
+        let mask = info.DependencyMask
+        // If we're not valid in the current generation, we definitely won't be valid in any older ones.
+        // This might save us from doing a dictionary lookup with a complex object as the key.
+        if not <| mask.Equals(mask &&& history.[generation % windowSize]) then None else
         let succ, cached = cache.TryGetValue(CacheKey(info.Identity, arg))
         if not succ then None else
-            this.Sweep()
-            if generation - cached.Generation >= windowSize then None else
-                let mask = info.DependencyMask
-                // Check that all the dependency bits are still 1
-                if mask.Equals(mask &&& history.[cached.Generation % windowSize]) then Some cached.Value
-                else None
+        if generation - cached.Generation >= windowSize then None else
+        // Check that all the dependency bits are still 1
+        if mask.Equals(mask &&& history.[cached.Generation % windowSize]) then Some cached.Value
+        else None
 
     member __.Invalidate(info : CacheInfo) =
         invalidationMask <- invalidationMask &&& ~~~info.InvalidationMask
