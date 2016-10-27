@@ -116,6 +116,7 @@ type private CategoryCache(windowSize : int, category : obj) =
 
 type private Cache() =
     let byCategory = Dictionary<obj, CategoryCache>()
+    let sync = obj()
     // Remember the last one touched as a shortcut.
     let mutable lastCategory = CategoryCache(null)
     let getExistingCategory (category : obj) =
@@ -139,8 +140,9 @@ type private Cache() =
         | null -> None
         | cat -> cat.Retrieve(info, arg)
     member __.Store(info : CacheInfo, arg : obj, result : obj) =
-        let cat = getCategory info.Category
-        cat.Store(info, arg, result)
+        lock sync <| fun unit -> // only stores run asynchronously and might need to be thread-safe
+            let cat = getCategory info.Category
+            cat.Store(info, arg, result)
 
 type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
     static let defaultGroup _ = ResizeArray()
