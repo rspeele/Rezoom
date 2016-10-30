@@ -12,6 +12,9 @@ type BitMask(high : uint64, low : uint64) =
     member inline private __.High = high
     member inline private __.Low = low
 
+    member __.HighBits = high
+    member __.LowBits = low
+
     static member Zero = BitMask(0UL, 0UL)
     static member Full = BitMask(~~~0UL, ~~~0UL)
 
