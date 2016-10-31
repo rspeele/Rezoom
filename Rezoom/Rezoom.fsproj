@@ -46,10 +46,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ExceptionTypes.fs" />
     <Compile Include="InternalUtilities.fs" />
-    <Compile Include="ServiceFactory.fs" />
-    <Compile Include="ServiceFactories.fs" />
-    <Compile Include="DefaultServiceFactory.fs" />
-    <Compile Include="DefaultServiceContext.fs" />
+    <Compile Include="Services.fs" />
     <Compile Include="CacheInfo.fs" />
     <Compile Include="Errand.fs" />
     <Compile Include="Plan.fs" />
