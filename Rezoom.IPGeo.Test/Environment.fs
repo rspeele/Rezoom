@@ -29,7 +29,7 @@ let test (task : 'a TestTask) =
     let log = new TestExecutionLog()
     let answer =
         try
-            let task = executeWithLog log (ZeroServiceFactory()) task.Task
+            let task = executeWithLog log task.Task
             Some task.Result
         with
         | ex ->

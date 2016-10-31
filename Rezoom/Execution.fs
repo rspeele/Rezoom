@@ -213,10 +213,10 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
             i <- i + 1
         Task.WhenAll(all)
 
-let executeWithLog (log : ExecutionLog) (factory : ServiceFactory) (plan : 'a Plan) =
+let executeWithLog (log : ExecutionLog) (plan : 'a Plan) =
     task {
         let cache = Cache()
-        use context = new DefaultServiceContext(factory)
+        use context = new InternalServiceContext()
         let mutable plan = plan
         let mutable looping = true
         let mutable returned = Unchecked.defaultof<_>
@@ -227,19 +227,18 @@ let executeWithLog (log : ExecutionLog) (factory : ServiceFactory) (plan : 'a Pl
                 returned <- r
             | Step (requests, resume) ->
                 log.OnBeginStep()
-                context.BeginStep()
                 try
                     let step = Step(log, context, cache)
                     let retrievals = requests.Map(step.AddRequest)
                     do! step.Execute()
                     plan <- resume <| retrievals.Map((|>) ())
                 finally
-                    context.EndStep()
+                    context.ClearLocals()
                     log.OnEndStep()
         return returned
     }
 
 let private noLog = ExecutionLog()
 
-let execute factory plan = executeWithLog noLog factory plan
+let execute plan = executeWithLog noLog plan
     
