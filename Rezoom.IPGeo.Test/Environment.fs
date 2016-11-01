@@ -27,9 +27,10 @@ type TestExecutionLog() =
 
 let test (task : 'a TestTask) =
     let log = new TestExecutionLog()
+    let config = { ExecutionConfig.Default with Log = log }
     let answer =
         try
-            let task = executeWithLog log task.Task
+            let task = execute config task.Task
             Some task.Result
         with
         | ex ->
