@@ -17,6 +17,15 @@ type ExecutionLog() =
     abstract member OnPreparedErrand : Errand -> unit
     default __.OnPreparedErrand(_) = ()
 
+type ExecutionConfig =
+    {   Log : ExecutionLog
+        ServiceConfig : IServiceConfig
+    }
+    static member Default =
+        {   Log = ExecutionLog()
+            ServiceConfig = { new IServiceConfig with member __.TryGetConfig() = None }
+        }
+
 type Dictionary<'k, 'v> with
     member this.GetValue(key : 'k, generate : 'k -> 'v) =
         let succ, v = this.TryGetValue(key)
@@ -213,10 +222,51 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
             i <- i + 1
         Task.WhenAll(all)
 
-let executeWithLog (log : ExecutionLog) (plan : 'a Plan) =
+type private ExecutionServiceContext(config : IServiceConfig) =
+    inherit ServiceContext()
+    let services = Dictionary<Type, obj>()
+    let locals = Stack<_>()
+    let globals = Stack<_>()
+    override __.Configuration = config
+    override this.GetService<'f, 'a when 'f :> ServiceFactory<'a> and 'f : (new : unit -> 'f)>() =
+        let ty = typeof<'f>
+        let succ, service = services.TryGetValue(ty)
+        if succ then Unchecked.unbox service else
+        let factory = new 'f()
+        let service = factory.CreateService(this)
+        let stack =
+            match factory.ServiceLifetime with
+            | ServiceLifetime.ExecutionLocal -> globals
+            | ServiceLifetime.StepLocal -> locals
+            | other -> failwithf "Unknown service lifetime: %O" other
+        services.Add(ty, box service)
+        stack.Push(fun () ->
+            factory.DisposeService(service)
+            ignore <| services.Remove(ty))
+        service
+    static member private ClearStack(stack : _ Stack) =
+        let mutable exn = null
+        while stack.Count > 0 do
+            let disposer = stack.Pop()
+            try
+                disposer()
+            with
+            | e -> exn <- e
+        if not (isNull exn) then raise exn
+    member __.ClearLocals() = ExecutionServiceContext.ClearStack(locals)
+    member this.Dispose() =
+        try
+            this.ClearLocals()
+        finally
+            ExecutionServiceContext.ClearStack(globals)
+    interface IDisposable with
+        member this.Dispose() = this.Dispose()
+
+let execute (config : ExecutionConfig) (plan : 'a Plan) =
     task {
+        let log = config.Log
         let cache = Cache()
-        use context = new InternalServiceContext()
+        use context = new ExecutionServiceContext(config.ServiceConfig)
         let mutable plan = plan
         let mutable looping = true
         let mutable returned = Unchecked.defaultof<_>
@@ -237,8 +287,4 @@ let executeWithLog (log : ExecutionLog) (plan : 'a Plan) =
                     log.OnEndStep()
         return returned
     }
-
-let private noLog = ExecutionLog()
-
-let execute plan = executeWithLog noLog plan
     
