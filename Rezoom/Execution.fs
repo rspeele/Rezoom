@@ -17,6 +17,18 @@ type ExecutionLog() =
     abstract member OnPreparedErrand : Errand -> unit
     default __.OnPreparedErrand(_) = ()
 
+type ConsoleExecutionLog() =
+    inherit ExecutionLog()
+    let write str =
+        Diagnostics.Debug.WriteLine(str)
+        Console.WriteLine(str)
+    override __.OnBeginStep() = write "Step {"
+    override __.OnEndStep() = write "} // end step"
+    override __.OnPreparingErrand(errand) =
+        write ("    Preparing errand " + string errand)
+    override __.OnPreparedErrand(errand) =
+        write ("    Prepared errand " + string errand)
+
 type ExecutionConfig =
     {   Log : ExecutionLog
         ServiceConfig : IServiceConfig
