@@ -1,20 +1,18 @@
 ﻿namespace Rezoom
 
 type DataResponse =
-    | RetrievalSuccess of obj
-    | RetrievalException of exn
+    /// The errand ran and produced a result.
+    | RetrievalSuccess of result : obj
+    /// The errand failed with an exception.
+    | RetrievalException of exn : exn
+    /// The errand has not yet been run.
+    | RetrievalDeferred
 
 type Batch<'a> =
     | BatchLeaf of 'a
     | BatchPair of ('a Batch * 'a Batch)
     | BatchMany of ('a Batch array)
     | BatchAbort
-    member this.MapCS(f : System.Func<'a, 'b>) =
-        match this with
-        | BatchLeaf x -> BatchLeaf (f.Invoke(x))
-        | BatchPair (l, r) -> BatchPair (l.MapCS(f), r.MapCS(f))
-        | BatchMany arr -> BatchMany (arr |> Array.map (fun b -> b.MapCS(f)))
-        | BatchAbort -> BatchAbort
     member this.Map(f : 'a -> 'b) =
         match this with
         | BatchLeaf x -> BatchLeaf (f x)

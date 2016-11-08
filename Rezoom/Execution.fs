@@ -167,10 +167,14 @@ type private Cache() =
 
 type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
     static let defaultGroup _ = ResizeArray()
+    static let retrievalDeferred () = RetrievalDeferred
     let ungrouped = ResizeArray()
     let grouped = Dictionary()
     let deduped = Dictionary()
-    let addToRun (errand : Errand) =
+    let anyCached = ref false
+    let pending = ResizeArray()
+    let run (errand : Errand) =
+        if !anyCached then retrievalDeferred else
         try
             let mutable result = Unchecked.defaultof<_>
             log.OnPreparingErrand(errand)
@@ -199,6 +203,12 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
             fun () -> result
         with
         | exn -> fun () -> RetrievalException exn
+            
+    let addToRun (errand : Errand) =
+        let ran = lazy run errand
+        pending.Add(ran)
+        fun () -> ran.Value()
+
     let addWithDedup (errand : Errand) =
         let cacheInfo = errand.CacheInfo
         let dedupKey = cacheInfo.Category, cacheInfo.Identity, errand.CacheArgument
@@ -217,20 +227,24 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
             | None ->
                 addWithDedup errand
             | Some cached ->
+                anyCached := true
                 fun () -> RetrievalSuccess cached
             
     member __.Execute() =
-        let all = Array.zeroCreate (ungrouped.Count + grouped.Count)
+        for i = 0 to pending.Count - 1 do ignore <| pending.[i].Force()
+        let taskCount = ungrouped.Count + grouped.Count
+        if taskCount <= 0 then Task.CompletedTask else
+        let all = Array.zeroCreate taskCount
         let mutable i = 0
         for group in grouped.Values do
             all.[i] <-
                 task {
                     for sub in group do
                         do! sub()
-                }
+                } :> Task
             i <- i + 1
         for ungrouped in ungrouped do
-            all.[i] <- ungrouped()
+            all.[i] <- upcast ungrouped()
             i <- i + 1
         Task.WhenAll(all)
 

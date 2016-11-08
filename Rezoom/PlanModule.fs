@@ -48,14 +48,17 @@ let zero = ret ()
 
 /// Convert an `Errand<'a>` to a `Plan<'a>`.
 let ofErrand (request : Errand<'a>) : Plan<'a> =
-    let onResponse =
+    let rec onResponse =
         function
+        | BatchLeaf RetrievalDeferred -> step
         | BatchLeaf (RetrievalSuccess suc) -> ret (Unchecked.unbox suc : 'a)
         | BatchLeaf (RetrievalException exn) -> dispatchRaise exn
         | BatchAbort -> abort()
         | BatchPair _
         | BatchMany _ -> logicFault "Incorrect response shape for data request"
-    Step (BatchLeaf (request :> Errand), onResponse)
+    and step = 
+        Step (BatchLeaf (request :> Errand), onResponse)
+    step
 
 ////////////////////////////////////////////////////////////
 // Mapping of plain-old functions over `Plan`s.
