@@ -306,7 +306,7 @@ let execute (config : ExecutionConfig) (plan : 'a Plan) =
                 try
                     let step = Step(log, context, cache)
                     let retrievals = requests.Map(step.AddRequest)
-                    do! step.Execute()
+                    do! step.Execute().ConfigureAwait(continueOnCapturedContext = true)
                     plan <- resume <| retrievals.Map((|>) ())
                 finally
                     context.ClearLocals()
