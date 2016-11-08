@@ -40,7 +40,8 @@ type TestGeo() =
                 }
             Batches =
                 [   [googleDNS]
-                    [openDNS] // note that we don't request google DNS again
+                    [] // empty batch because we defer openDNS after getting google from the cache
+                    [openDNS]
                 ]
             ExpectedResult = Value (googleDNSISP, googleDNSISP, openDNSISP)
         } |> test

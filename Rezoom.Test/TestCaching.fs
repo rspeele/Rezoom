@@ -89,3 +89,31 @@ type TestCaching() =
                 ]
             Result = Good "qqxqq"
         } |> test
+
+    [<TestMethod>]
+    member __.TestDeferredExecution() =
+        let px =
+            plan {
+                let! q = send "q"
+                let! x = send "x"
+                return x
+            }
+        let py = send "y"
+        {   Task = fun () ->
+                plan {
+                    let! q = send "q"
+                    // when px and py are batched together, at first there is a step with both
+                    // q (from px) and y (from py) pending.
+                    // q will be pulled from the cache, but rather than just executing y, we should
+                    // defer y and advance px so we can batch x and y together.
+                    let! x, y = px, py
+                    let! z = send "z"
+                    return q + x + y + z
+                }
+            Batches =
+                [   [ "q" ]
+                    [ "x"; "y" ] // x and y batched together
+                    [ "z" ]
+                ]
+            Result = Good "qxyz"
+        } |> test
