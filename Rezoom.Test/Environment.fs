@@ -26,6 +26,7 @@ type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : str
             override __.InvalidationMask =
                 if idem then BitMask.Zero
                 else BitMask.Full
+            override __.Cacheable = idem
             override __.Category = upcast typeof<TestExecutionLog>.Assembly
             override __.Identity = upcast query
         }

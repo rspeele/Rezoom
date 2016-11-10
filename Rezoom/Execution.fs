@@ -181,9 +181,7 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
             let prepared = errand.PrepareUntyped(context)
             log.OnPreparedErrand(errand)
             let retrieve () =
-                match errand.CacheInfo with
-                | null -> ()
-                | cacheInfo -> cache.Invalidate(cacheInfo)
+                cache.Invalidate(errand.CacheInfo)
                 task {
                     try
                         let! obj = prepared()
@@ -219,16 +217,16 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
         added
 
     member __.AddRequest(errand : Errand) =
-        match errand.CacheInfo with
-        | null -> addToRun errand
-        | cacheInfo when isNull cacheInfo.Identity -> addToRun errand
-        | cacheInfo ->
+        let cacheInfo = errand.CacheInfo
+        if cacheInfo.Cacheable then
             match cache.Retrieve(cacheInfo, errand.CacheArgument) with
             | None ->
                 addWithDedup errand
             | Some cached ->
                 anyCached := true
                 fun () -> RetrievalSuccess cached
+        else
+            addToRun errand
             
     member __.Execute() =
         for i = 0 to pending.Count - 1 do ignore <| pending.[i].Force()

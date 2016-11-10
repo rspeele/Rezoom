@@ -13,6 +13,7 @@ namespace Rezoom.IPGeo.Internals
         }
         public override object Category => typeof(GeoCacheInfo).Assembly;
         public override object Identity => _ip;
+        public override bool Cacheable => true;
     }
     /// <summary>
     /// Implements <see cref="Errand"/> for looking up <see cref="GeoInfo"/> for an IP address.

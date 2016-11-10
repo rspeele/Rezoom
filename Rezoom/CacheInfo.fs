@@ -54,12 +54,29 @@ type BitMask(high : uint64, low : uint64) =
         member this.Equals(other) = this.Equals(other)
 
 [<AbstractClass>]
-[<AllowNullLiteral>]
 type CacheInfo() =
+    /// A non-null comparable object which identifies the cache that this errand should use. Each category gets its
+    /// own isolated cache, so results associated with it can't be interfered with by errands from other categories.
+    /// Typically all errands defined by a library will have the same category because their identities are known
+    /// not to collide. A good choice for overriding this is `typeof<PrivateTypeInMyLibrary`.
     abstract member Category : obj
+    /// A non-null comparable object that uniquely (within Category) identifies the function that produced this errand.
+    /// For example, the string "userById" might be a reasonable identity for an errand returned from
+    /// `getUserById 27`.
     abstract member Identity : obj
-    default __.Identity = null
+    /// Determines whether this errand's result can be cached. It is useful to specify cache info even for
+    /// errands that can't be cached, because they can still invalidate other cached results, and specifying their
+    /// identities is useful for logging.
+    abstract member Cacheable : bool
+    /// A 128-bit mask where bits set to 1 represent dependencies of this errand. If another errand runs in this or a
+    /// later execution step that includes *any* of these bits in its InvalidationMask, the cached result for this
+    /// errand will be discarded.
     abstract member DependencyMask : BitMask
-    default __.DependencyMask = BitMask.Zero
+    default __.DependencyMask = BitMask.Full // default is safest: any invalidations kill us
+    /// A 128-bit mask where bits set to 1 represent dependencies invalidated by executing this errand.
+    /// When the errand runs, any cached results from errands in this `Category` which had any of these bits in their
+    /// `DependencyMask` will be discarded.
     abstract member InvalidationMask : BitMask
-    default __.InvalidationMask = BitMask.Zero
+    default this.InvalidationMask =
+        // default is that anything that isn't itself cachable wipes out the whole cache
+        if this.Cacheable then BitMask.Zero else BitMask.Full
