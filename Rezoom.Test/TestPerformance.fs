@@ -10,12 +10,11 @@ let ret1 = plan { return 1 }
 let time f =
     let sw = new Stopwatch()
     sw.Start()
-    let mutable iterations = 0L
-    while sw.ElapsedMilliseconds < 1000L do
+    let iterations = 10 * 1000
+    for i = 1 to iterations do
         testSpeed f
-        iterations <- iterations + 1L
     sw.Stop()
-    printfn "%s iterations in %O" (iterations.ToString("#,###")) sw.Elapsed
+    printfn "%d iterations per second" (int64 iterations * 1000L / sw.ElapsedMilliseconds)
 
 [<Test>]
 let ``single return`` () =
