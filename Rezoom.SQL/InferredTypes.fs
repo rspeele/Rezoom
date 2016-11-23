@@ -3,48 +3,6 @@ open Rezoom.SQL
 open System
 open System.Collections.Generic
 
-type TypeVariableId = int
-
-type InferredType =
-    | ConcreteType of ColumnType
-    | OneOfTypes of ColumnType list
-    /// A type whose nullability depends on that of another type.
-    | DependentlyNullType of ifNull: InferredType * thenNull: InferredType
-    | TypeVariable of TypeVariableId
-    static member Float = ConcreteType { Nullable = false; Type = FloatType Float32 }
-    static member Integer = ConcreteType { Nullable = false; Type = IntegerType Integer8 }
-    static member Number =
-            [   { Nullable = false; Type = IntegerType Integer8 }
-                { Nullable = false; Type = FloatType Float32 }
-            ] |> OneOfTypes
-    static member String = ConcreteType { Nullable = false; Type = StringType }
-    static member Boolean = ConcreteType { Nullable = false; Type = BooleanType }
-    static member DateTime = ConcreteType { Nullable = false; Type = DateTimeType }
-    static member DateTimeOffset = ConcreteType { Nullable = false; Type = DateTimeOffsetType }
-    static member Blob = ConcreteType { Nullable = false; Type = BinaryType }
-    static member Any = ConcreteType { Nullable = false; Type = AnyType }
-    static member Dependent(ifNull : InferredType, outputType : CoreColumnType) =
-        DependentlyNullType(ifNull, ConcreteType { Nullable = false; Type = outputType })
-    static member OfLiteral(literal : Literal) =
-        match literal with
-        | NullLiteral -> ConcreteType { Nullable = true; Type = AnyType }
-        | BooleanLiteral _ -> InferredType.Boolean
-        | StringLiteral _ -> InferredType.String
-        | BlobLiteral _ -> InferredType.Blob
-        | NumericLiteral (IntegerLiteral _) -> InferredType.Number
-        | NumericLiteral (FloatLiteral _) -> InferredType.Float
-        | DateTimeLiteral _ -> InferredType.DateTime
-        | DateTimeOffsetLiteral _ -> InferredType.DateTimeOffset
-    static member OfTypeName(typeName : TypeName, inputType : InferredType) =
-        let affinity = CoreColumnType.OfTypeName(typeName)
-        match inputType with
-        | TypeVariable _ as tv
-        | DependentlyNullType (_ as tv, _) -> InferredType.Dependent(tv, affinity)
-        | OneOfTypes tys ->
-            ConcreteType { Type = affinity; Nullable = tys |> List.exists (fun t -> t.Nullable) }
-        | ConcreteType ty ->
-            ConcreteType { ty with Type = affinity }
-
 type InfExprType = ExprType<InferredType ObjectInfo, InferredType ExprInfo>
 type InfExpr = Expr<InferredType ObjectInfo, InferredType ExprInfo>
 type InfInExpr = InExpr<InferredType ObjectInfo, InferredType ExprInfo>
@@ -58,8 +16,7 @@ type InfColumnName = ColumnName<InferredType ObjectInfo>
 type InfInSet = InSet<InferredType ObjectInfo, InferredType ExprInfo>
 type InfCaseExpr = CaseExpr<InferredType ObjectInfo, InferredType ExprInfo>
 type InfCastExpr = CastExpr<InferredType ObjectInfo, InferredType ExprInfo>
-type InfFunctionInvocationExpr = FunctionInvocationExpr<InferredType ObjectInfo, InferredType ExprInfo>
-    
+type InfFunctionInvocationExpr = FunctionInvocationExpr<InferredType ObjectInfo, InferredType ExprInfo>   
 type InfWithClause = WithClause<InferredType ObjectInfo, InferredType ExprInfo>
 type InfCommonTableExpression = CommonTableExpression<InferredType ObjectInfo, InferredType ExprInfo>
 type InfCompoundExprCore = CompoundExprCore<InferredType ObjectInfo, InferredType ExprInfo>
@@ -98,20 +55,16 @@ type InfStmt = Stmt<InferredType ObjectInfo, InferredType ExprInfo>
 type InfVendorStmt = VendorStmt<InferredType ObjectInfo, InferredType ExprInfo>
 type InfTotalStmt = TotalStmt<InferredType ObjectInfo, InferredType ExprInfo>
 
-type ITypeInferenceContext =
-    abstract member AnonymousVariable : unit -> InferredType
-    abstract member Variable : BindParameter -> InferredType
-    /// Unify the two types (ensure they are compatible and add constraints)
-    /// and produce the most specific type.
-    abstract member Unify : InferredType * InferredType -> Result<InferredType, string>
-    abstract member Concrete : InferredType -> ColumnType
-    abstract member Parameters : BindParameter seq
+let concreteType (columnType : ColumnType) =
+    {   InfType = InfClass (ExactClass columnType.Type)
+        InfNullable = KnownNullable columnType.Nullable
+    }
 
 type InferredQueryColumn() =
     static member OfColumn(fromAlias : Name option, column : SchemaColumn) =
         {   Expr =
                 {   Source = SourceInfo.Invalid
-                    Info = { ExprInfo<_>.OfType(ConcreteType column.ColumnType) with Column = Some column }
+                    Info = { ExprInfo<_>.OfType(concreteType column.ColumnType) with Column = Some column }
                     Value = ColumnNameExpr { ColumnName = column.ColumnName; Table = None }
                 }
             ColumnName = column.ColumnName
@@ -133,7 +86,7 @@ let inferredOfTable (table : SchemaTable) =
 
 let inferredOfView (view : SchemaView) =
     let concreteQuery = view.Definition.Value.Info.Query
-    concreteQuery.Map(ConcreteType)
+    concreteQuery.Map(concreteType)
 
 type InferredFromClause =
     {   /// The tables named in the "from" clause of the query, if any.
