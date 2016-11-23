@@ -32,7 +32,7 @@ type ParameterTransform =
             | DateTimeOffsetType -> DbType.DateTimeOffset
             | StringType -> DbType.String
             | BinaryType -> DbType.Binary
-            | AnyType -> DbType.Object
+            | ObjectType -> DbType.Object
         {   ParameterType = ty
             ValueTransform = transform
         }

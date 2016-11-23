@@ -127,9 +127,28 @@ type CoreInfType =
 type InfNullable =
     | UnknownNullable
     | KnownNullable of bool
-    | NullableIfNullable of TypeVariableId
+    | NullableIfVar of TypeVariableId
     | NullableIfBoth of InfNullable * InfNullable
     | NullableIfEither of InfNullable * InfNullable
+    member this.EitherNullable(other : InfNullable) =
+        if this = other then this else
+        match this, other with
+        | UnknownNullable, known
+        | known, UnknownNullable -> known
+        | KnownNullable true as t, _
+        | _, (KnownNullable true as t) -> t
+        | cond1, cond2 ->
+            NullableIfEither (cond1, cond2)
+    member this.BothNullable(other : InfNullable) =
+        if this = other then this else
+        match this, other with
+        | UnknownNullable, known
+        | known, UnknownNullable -> known
+        | KnownNullable false as known, _
+        | _, (KnownNullable false as known) -> known
+        | cond1, cond2 ->
+            NullableIfBoth (cond1, cond2)
+
 
 type InferredType =
     {   InfType : CoreInfType
@@ -141,7 +160,7 @@ type ITypeInferenceContext =
     abstract member Variable : BindParameter -> InferredType
     /// Unify the two types (ensure they are compatible and add constraints)
     /// and produce the most specific type.
-    abstract member Unify : InferredType * InferredType -> Result<InferredType, string>
+    abstract member Unify : SourceInfo * InferredType * InferredType -> InferredType
     abstract member Concrete : InferredType -> ColumnType
     abstract member Parameters : BindParameter seq
 

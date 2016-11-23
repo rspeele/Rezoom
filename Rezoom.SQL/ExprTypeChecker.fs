@@ -43,7 +43,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
     member this.Literal(source : SourceInfo, literal : Literal) =
         {   Expr.Source = source
             Value = LiteralExpr literal
-            Info = ExprInfo<_>.OfType(InferredType.OfLiteral(literal))
+            Info = ExprInfo<_>.OfType(InferredTypes.ofLiteral literal)
         }
 
     member this.BindParameter(source : SourceInfo, par : BindParameter) =
@@ -86,7 +86,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
 
     member this.Cast(source : SourceInfo, cast : CastExpr) =
         let input = this.Expr(cast.Expression)
-        let ty = InferredType.OfTypeName(cast.AsType, input.Info.Type)
+        let ty = InferredTypes.ofTypeName(cast.AsType) |> InferredTypes.nullIf input.Info.Type
         {   Expr.Source = source
             Value =
                 {   Expression = input

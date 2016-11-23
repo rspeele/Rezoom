@@ -55,16 +55,51 @@ type InfStmt = Stmt<InferredType ObjectInfo, InferredType ExprInfo>
 type InfVendorStmt = VendorStmt<InferredType ObjectInfo, InferredType ExprInfo>
 type InfTotalStmt = TotalStmt<InferredType ObjectInfo, InferredType ExprInfo>
 
-let concreteType (columnType : ColumnType) =
+let ofNull =
+    {   InfType = InfClass AnyClass
+        InfNullable = KnownNullable true
+    }
+
+let ofColumnType (columnType : ColumnType) =
     {   InfType = InfClass (ExactClass columnType.Type)
         InfNullable = KnownNullable columnType.Nullable
     }
+
+let ofCoreType (coreType : CoreColumnType) =
+    {   InfType = InfClass (ExactClass coreType)
+        InfNullable = KnownNullable false
+    }
+
+let ofTypeName (typeName : TypeName) =
+    {   InfType = InfClass (ExactClass (CoreColumnType.OfTypeName(typeName)))
+        InfNullable = UnknownNullable
+    }
+
+let nullIf (ifTy : InferredType) thenTy =
+    { thenTy with InfNullable = ifTy.InfNullable }
+
+let ofLiteral (literal : Literal) =
+    match literal with
+    | NullLiteral -> ofNull
+    | BooleanLiteral _ -> ofCoreType BooleanType
+    | StringLiteral _ -> ofCoreType StringType
+    | BlobLiteral _ -> ofCoreType BinaryType
+    | DateTimeLiteral _ -> ofCoreType DateTimeType
+    | DateTimeOffsetLiteral _ -> ofCoreType DateTimeOffsetType
+    | NumericLiteral lit ->
+        let cla =
+            match lit with
+            | IntegerLiteral _ -> IntegeryClass
+            | FloatLiteral _ -> FloatyClass
+        {   InfType = InfClass cla
+            InfNullable = KnownNullable false
+        }
 
 type InferredQueryColumn() =
     static member OfColumn(fromAlias : Name option, column : SchemaColumn) =
         {   Expr =
                 {   Source = SourceInfo.Invalid
-                    Info = { ExprInfo<_>.OfType(concreteType column.ColumnType) with Column = Some column }
+                    Info = { ExprInfo<_>.OfType(ofColumnType column.ColumnType) with Column = Some column }
                     Value = ColumnNameExpr { ColumnName = column.ColumnName; Table = None }
                 }
             ColumnName = column.ColumnName
@@ -86,7 +121,7 @@ let inferredOfTable (table : SchemaTable) =
 
 let inferredOfView (view : SchemaView) =
     let concreteQuery = view.Definition.Value.Info.Query
-    concreteQuery.Map(concreteType)
+    concreteQuery.Map(ofColumnType)
 
 type InferredFromClause =
     {   /// The tables named in the "from" clause of the query, if any.
