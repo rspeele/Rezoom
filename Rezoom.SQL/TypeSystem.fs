@@ -125,30 +125,43 @@ type CoreInfType =
     | InfVariable of TypeVariableId
 
 type InfNullable =
-    | UnknownNullable
-    | KnownNullable of bool
+    private
+    // if false... there's nothing to indicate that it's nullable
+    | Nullable of nullable : bool
+    // wrapped is what the nullability would be in the absence of the outer join
+    | NullableDueToOuterJoin of wrapped : InfNullable
     | NullableIfVar of TypeVariableId
     | NullableIfBoth of InfNullable * InfNullable
     | NullableIfEither of InfNullable * InfNullable
-    member this.EitherNullable(other : InfNullable) =
+    static member Nope = Nullable false
+    static member Yep = Nullable true
+    static member Of(nullable) = Nullable nullable
+    static member Of(tvarId) = NullableIfVar tvarId
+    member this.NullableOuterJoin() =
+        NullableDueToOuterJoin this
+    member this.IgnoreOuterJoin() = // strip off one level of outer-joinitude
+        match this with
+        | Nullable _
+        | NullableIfVar _ -> this
+        | NullableDueToOuterJoin x -> x
+        | NullableIfBoth (left, right) ->
+            NullableIfBoth (left.IgnoreOuterJoin(), right.IgnoreOuterJoin())
+        | NullableIfEither (left, right) ->
+            NullableIfEither (left.IgnoreOuterJoin(), right.IgnoreOuterJoin())
+    member this.Or(other : InfNullable) =
         if this = other then this else
         match this, other with
-        | UnknownNullable, known
-        | known, UnknownNullable -> known
-        | KnownNullable true as t, _
-        | _, (KnownNullable true as t) -> t
-        | cond1, cond2 ->
-            NullableIfEither (cond1, cond2)
-    member this.BothNullable(other : InfNullable) =
+        | (Nullable true as t), _
+        | _, (Nullable true as t)
+        | (NullableDueToOuterJoin _ as t), _
+        | _, (NullableDueToOuterJoin _ as t) -> t
+        | cond1, cond2 -> NullableIfEither (cond1, cond2)
+    member this.And(other : InfNullable) =
         if this = other then this else
         match this, other with
-        | UnknownNullable, known
-        | known, UnknownNullable -> known
-        | KnownNullable false as known, _
-        | _, (KnownNullable false as known) -> known
-        | cond1, cond2 ->
-            NullableIfBoth (cond1, cond2)
-
+        | Nullable false as known, _
+        | _, (Nullable false as known) -> known
+        | cond1, cond2 -> NullableIfBoth(cond1, cond2)
 
 type InferredType =
     {   InfType : CoreInfType
@@ -158,9 +171,8 @@ type InferredType =
 type ITypeInferenceContext =
     abstract member AnonymousVariable : unit -> InferredType
     abstract member Variable : BindParameter -> InferredType
-    /// Unify the two types (ensure they are compatible and add constraints)
-    /// and produce the most specific type.
-    abstract member Unify : SourceInfo * InferredType * InferredType -> InferredType
+    abstract member UnifyTypes : SourceInfo * CoreInfType * CoreInfType -> CoreInfType
+    abstract member InfectNullable : SourceInfo * InfNullable * InfNullable -> unit
     abstract member Concrete : InferredType -> ColumnType
     abstract member Parameters : BindParameter seq
 

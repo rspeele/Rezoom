@@ -3,14 +3,21 @@ open System
 open System.Collections.Generic
 open Rezoom.SQL.InferredTypes
 
-type InferredQueryShape = InferredType QueryExprInfo
-type SelfQueryShape =
-    {   CTEName : Name option
-        KnownShape : InferredQueryShape option
-    }
-    static member Known(known) = { CTEName = None; KnownShape = known }
-    static member Known(known) = SelfQueryShape.Known(Some known)
-    static member Unknown = { CTEName = None; KnownShape = None }
+module private TypeCheckerUtilities =
+    let inline implicitAlias column =
+        match column with
+        | _, (Some _ as a) -> a
+        | ColumnNameExpr c, None -> Some c.ColumnName
+        | _ -> None
+    type InferredQueryShape = InferredType QueryExprInfo
+    type SelfQueryShape =
+        {   CTEName : Name option
+            KnownShape : InferredQueryShape option
+        }
+        static member Known(known) = { CTEName = None; KnownShape = known }
+        static member Known(known) = SelfQueryShape.Known(Some known)
+        static member Unknown = { CTEName = None; KnownShape = None }
+open TypeCheckerUtilities
 
 type TypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope) as this =
     let exprChecker = ExprTypeChecker(cxt, scope, this)

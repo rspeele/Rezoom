@@ -62,7 +62,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
                     Right = right
                 } |> BinaryExpr
             Info =
-                {   Type = cxt.Binary(binary.Operator, left.Info.Type, right.Info.Type) |> resultAt source
+                {   Type = InferredTypes.binary source binary.Operator left.Info.Type right.Info.Type cxt
                     Idempotent = left.Info.Idempotent && right.Info.Idempotent
                     Function = None
                     Column = None
@@ -77,7 +77,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
                     Operand = operand
                 } |> UnaryExpr
             Info =
-                {   Type = cxt.Unary(unary.Operator, operand.Info.Type) |> resultAt source
+                {   Type = InferredTypes.unary source unary.Operator operand.Info.Type cxt
                     Idempotent = operand.Info.Idempotent
                     Function = None
                     Column = None
@@ -102,14 +102,14 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
 
     member this.Collation(source : SourceInfo, collation : CollationExpr) =
         let input = this.Expr(collation.Input)
-        cxt.Unify(input.Info.Type, InferredType.String) |> resultOk source
+        let infTy = cxt.UnifyEitherNull(source, input.Info.Type, InferredTypes.string)
         {   Expr.Source = source
             Value = 
                 {   Input = this.Expr(collation.Input)
                     Collation = collation.Collation
                 } |> CollateExpr
             Info =
-                {   Type = input.Info.Type
+                {   Type = infTy
                     Idempotent = input.Info.Idempotent
                     Function = None
                     Column = None

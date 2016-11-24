@@ -1,7 +1,7 @@
 ﻿module Rezoom.SQL.InferredTypes
-open Rezoom.SQL
 open System
 open System.Collections.Generic
+open Rezoom.SQL
 
 type InfExprType = ExprType<InferredType ObjectInfo, InferredType ExprInfo>
 type InfExpr = Expr<InferredType ObjectInfo, InferredType ExprInfo>
@@ -55,25 +55,37 @@ type InfStmt = Stmt<InferredType ObjectInfo, InferredType ExprInfo>
 type InfVendorStmt = VendorStmt<InferredType ObjectInfo, InferredType ExprInfo>
 type InfTotalStmt = TotalStmt<InferredType ObjectInfo, InferredType ExprInfo>
 
+let ofClass clas =
+    {   InfType = InfClass clas
+        InfNullable = InfNullable.Nope
+    }
+
+let ofCoreType (coreType : CoreColumnType) = ofClass (ExactClass coreType)
+
+let any = ofClass AnyClass
+
+let numeric = ofClass NumericClass
+
+let inty = ofClass IntegeryClass
+
+let stringy = ofClass StringyClass
+
+let string = ofCoreType StringType
+
+let boolean = ofCoreType BooleanType
+
 let ofNull =
     {   InfType = InfClass AnyClass
-        InfNullable = KnownNullable true
+        InfNullable = InfNullable.Yep
     }
 
 let ofColumnType (columnType : ColumnType) =
     {   InfType = InfClass (ExactClass columnType.Type)
-        InfNullable = KnownNullable columnType.Nullable
-    }
-
-let ofCoreType (coreType : CoreColumnType) =
-    {   InfType = InfClass (ExactClass coreType)
-        InfNullable = KnownNullable false
+        InfNullable = Nullable columnType.Nullable
     }
 
 let ofTypeName (typeName : TypeName) =
-    {   InfType = InfClass (ExactClass (CoreColumnType.OfTypeName(typeName)))
-        InfNullable = UnknownNullable
-    }
+    ofClass (ExactClass (CoreColumnType.OfTypeName(typeName)))
 
 let nullIf (ifTy : InferredType) thenTy =
     { thenTy with InfNullable = ifTy.InfNullable }
@@ -92,7 +104,78 @@ let ofLiteral (literal : Literal) =
             | IntegerLiteral _ -> IntegeryClass
             | FloatLiteral _ -> FloatyClass
         {   InfType = InfClass cla
-            InfNullable = KnownNullable false
+            InfNullable = InfNullable.Nope
+        }
+
+type ITypeInferenceContext with
+    member this.UnifyTypes(source : SourceInfo, types : CoreInfType seq) =
+        let mutable unified = InfClass AnyClass
+        for ty in types do
+            unified <- this.UnifyTypes(source, unified, ty)
+        unified
+    member this.UnifyWithConstraint(source : SourceInfo, inputType, constr : TypeClass) =
+        {   InfType = this.UnifyTypes(source, inputType.InfType, InfClass constr)
+            InfNullable = inputType.InfNullable
+        }
+    member this.UnifyEitherNull(source : SourceInfo, left, right) =
+        {   InfType = this.UnifyTypes(source, left.InfType, right.InfType)
+            InfNullable = left.InfNullable.Or(right.InfNullable)
+        }
+    member this.UnifyEitherNull(source : SourceInfo, left, right, knownType : CoreInfType) =
+        {   InfType =
+                this.UnifyTypes(source, this.UnifyTypes(source, left.InfType, right.InfType), knownType)
+            InfNullable = left.InfNullable.Or(right.InfNullable)
+        }
+
+let binary
+    (source : SourceInfo)
+    (op : BinaryOperator)
+    (left : InferredType)
+    (right : InferredType)
+    (cxt : ITypeInferenceContext) =
+    match op with
+    | Concatenate -> cxt.UnifyEitherNull(source, left, right, string.InfType)
+    | Multiply
+    | Divide
+    | Add
+    | Subtract -> cxt.UnifyEitherNull(source, left, right, numeric.InfType)
+    | Modulo
+    | BitShiftLeft
+    | BitShiftRight
+    | BitAnd
+    | BitOr -> cxt.UnifyEitherNull(source, left, right, inty.InfType)
+    | LessThan
+    | LessThanOrEqual
+    | GreaterThan
+    | GreaterThanOrEqual
+    | Equal
+    | NotEqual ->
+        let unified = cxt.UnifyEitherNull(source, left, right)
+        {   InfType = boolean.InfType
+            InfNullable = unified.InfNullable
+        }
+    | Is
+    | IsNot ->
+        let unified = cxt.UnifyEitherNull(source, left, right)
+        cxt.InfectNullable(source, left.InfNullable, right.InfNullable) // IS operators push back nullability
+        unified
+    | And
+    | Or -> cxt.UnifyEitherNull(source, left, right, boolean.InfType)
+
+let unary
+    (source : SourceInfo)
+    (op : UnaryOperator)
+    (operand : InferredType)
+    (cxt : ITypeInferenceContext) =
+    match op with
+    | Negative
+    | BitNot -> cxt.UnifyWithConstraint(source, operand, NumericClass)
+    | Not -> cxt.UnifyWithConstraint(source, operand, ExactClass BooleanType)
+    | IsNull
+    | NotNull ->
+        cxt.InfectNullable(source, operand.InfNullable, InfNullable.Yep)
+        {   InfType = boolean.InfType
+            InfNullable = InfNullable.Yep
         }
 
 type InferredQueryColumn() =
