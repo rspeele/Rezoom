@@ -178,6 +178,12 @@ let unary
             InfNullable = InfNullable.Yep
         }
 
+let func
+    (source : SourceInfo)
+    (funcTy : FunctionType)
+    (func : InfFunctionInvocationExpr) =
+    let aggregate = funcTy.Aggregate (func.Arguments)
+
 type InferredQueryColumn() =
     static member OfColumn(fromAlias : Name option, column : SchemaColumn) =
         {   Expr =

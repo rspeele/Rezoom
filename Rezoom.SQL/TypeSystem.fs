@@ -207,5 +207,4 @@ type FunctionType =
         Aggregate : FunctionArguments<unit, unit> -> AggregateType option
         Idempotent : bool
     }
-
-
+       
