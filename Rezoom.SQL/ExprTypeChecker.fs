@@ -144,15 +144,12 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
         let pattern = this.Expr(sim.Pattern)
         let escape = Option.map this.Expr sim.Escape
         let output =
-            result {
-                let! inputType = cxt.Unify(input.Info.Type, StringType)
-                let! patternType = cxt.Unify(pattern.Info.Type, StringType)
-                match escape with
+            let inputType = cxt.UnifyEitherNull(input.Source, input.Info.Type, InferredTypes.string)
+            let patternType = cxt.UnifyEitherNull(pattern.Source, pattern.Info.Type, InferredTypes.string)
+            match escape with
                 | None -> ()
-                | Some escape -> ignore <| cxt.Unify(escape.Info.Type, StringType)
-                let! unified = cxt.Unify(inputType, patternType)
-                return InferredType.Dependent(unified, BooleanType)
-            } |> resultAt source
+                | Some escape -> ignore <| cxt.UnifyEitherNull(escape.Source, escape.Info.Type, InferredTypes.string)
+            cxt.UnifyEitherNull(source, inputType, patternType)
         {   Expr.Source = source
             Value =
                 {   Invert = sim.Invert
@@ -176,7 +173,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
         {   Expr.Source = source
             Value = { Invert = between.Invert; Input = input; Low = low; High = high } |> BetweenExpr
             Info =
-                {   Type = cxt.Unify([ input.Info.Type; low.Info.Type; high.Info.Type ]) |> resultAt source
+                {   Type = cxt.UnifyAnyNull(source, [ input.Info.Type; low.Info.Type; high.Info.Type ])
                     Idempotent = input.Info.Idempotent && low.Info.Idempotent && high.Info.Idempotent
                     Function = None
                     Column = None
@@ -196,7 +193,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
                 let exprs = exprs |> rmap this.Expr
                 let involvedInfos =
                     Seq.append (Seq.singleton input) exprs |> Seq.map (fun e -> e.Info) |> toReadOnlyList
-                involvedInfos |> Seq.map (fun e -> e.Type) |> cxt.Unify |> resultOk inex.Set.Source
+                ignore <| cxt.UnifyWhoCaresAboutNull(source, involvedInfos |> Seq.map (fun e -> e.Type))
                 InExpressions exprs,
                     (involvedInfos |> Seq.forall (fun i -> i.Idempotent))
             | InSelect select ->
@@ -215,7 +212,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
                     Set = { Source = inex.Set.Source; Value = set }
                 } |> InExpr
             Info =
-                {   Type = InferredType.Dependent(input.Info.Type, BooleanType)
+                {   Type = cxt.UnifyEitherNull(source, input.Info.Type, InferredTypes.boolean)
                     Idempotent = input.Info.Idempotent
                     Function = None
                     Column = None
@@ -241,14 +238,14 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
                 match case.Else.Value with
                 | None -> ()
                 | Some els -> yield els.Info.Type
-            } |> cxt.Unify |> resultAt source
+            } |> fun ts -> cxt.UnifyAnyNull(source, ts)
         seq {
             yield
                 match case.Input with
-                | None -> InferredType.Boolean
+                | None -> InferredTypes.boolean
                 | Some input -> input.Info.Type
             for whenExpr, _ in case.Cases -> whenExpr.Info.Type
-        } |> cxt.Unify |> resultOk source
+        } |> fun ts -> cxt.UnifyWhoCaresAboutNull(source, ts) |> ignore
         let subExprs =
             seq {
                 match case.Input with
@@ -276,7 +273,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
         {   Expr.Source = source
             Value = ExistsExpr exists
             Info =
-                {   Type = InferredType.Boolean
+                {   Type = InferredTypes.boolean
                     Idempotent = exists.Value.Info.Idempotent
                     Function = None
                     Column = None
@@ -314,5 +311,5 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
 
     member this.Expr(expr : Expr, ty : CoreColumnType) =
         let expr = this.Expr(expr)
-        cxt.Unify(expr.Info.Type, ty) |> resultOk expr.Source
+        ignore <| cxt.UnifyTypes(expr.Source, InfClass (ExactClass ty), expr.Info.Type.InfType)
         expr

@@ -126,6 +126,16 @@ type ITypeInferenceContext with
                 this.UnifyTypes(source, this.UnifyTypes(source, left.InfType, right.InfType), knownType)
             InfNullable = left.InfNullable.Or(right.InfNullable)
         }
+    member this.UnifyWhoCaresAboutNull(source : SourceInfo, types) =
+        let mutable acc = any.InfType
+        for ty in types do
+            acc <- this.UnifyTypes(source, acc, ty.InfType)
+        { InfType = acc; InfNullable = Nullable false }
+    member this.UnifyAnyNull(source : SourceInfo, types) =
+        let mutable acc = any
+        for ty in types do
+            acc <- this.UnifyEitherNull(source, acc, ty)
+        acc
 
 let binary
     (source : SourceInfo)
