@@ -178,11 +178,87 @@ let unary
             InfNullable = InfNullable.Yep
         }
 
+let private funcArgTypes (func : FunctionType) =
+    seq {
+        for arg in func.FixedArguments ->
+            arg
+        match func.VariableArgument with
+        | None -> ()
+        | Some varArg ->
+            while true do
+                yield varArg.Type
+    }
+
 let func
     (source : SourceInfo)
-    (funcTy : FunctionType)
-    (func : InfFunctionInvocationExpr) =
-    let aggregate = funcTy.Aggregate (func.Arguments)
+    (func : FunctionType)
+    (invoc : InfFunctionInvocationExpr)
+    (cxt : ITypeInferenceContext) =
+    let aggregate =
+        match invoc.Arguments with
+        | ArgumentWildcard -> func.Aggregate None
+        | ArgumentList (_, args) -> func.Aggregate (Some args.Length)
+    let byName = Dictionary()
+    let infFrom (source : SourceInfo) (cla : TypeClass) (tvar : Name option) =
+        match tvar with
+        | None ->
+            InfClass cla
+        | Some tvar ->
+            let existing =
+                let succ, existing = byName.TryGetValue(tvar)
+                if succ then existing else
+                let tid = cxt.AnonymousVariable().InfType
+                byName.[tvar] <- tid
+                tid
+            cxt.UnifyTypes(source, InfClass cla, existing)
+    match invoc.Arguments, aggregate with
+    | ArgumentWildcard, None ->
+        failAt source "Non-aggregate function cannot permit wildcard"
+    | ArgumentWildcard, Some agg ->
+        if not agg.AllowWildcard then
+            failAt source <| sprintf "Aggregate function ``%O`` does not permit wildcard" func.FunctionName
+        else
+            let out = func.Output
+            {   InfType = infFrom source out.Class out.TypeVariable
+                InfNullable = out.Nullable Seq.empty
+            }
+    | ArgumentList (distinct, args), aggregate ->
+        match distinct, aggregate with
+        | None, _ -> ()
+        | Some _, None ->
+            failAt source <| sprintf "Non-aggregate function cannot permit DISTINCT keyword"
+        | Some _, Some aggregate ->
+            if not aggregate.AllowDistinct then
+                failAt source <| sprintf "Aggregate function ``%O`` does not permit DISTINCT keyword" func.FunctionName
+        if args.Length < func.FixedArguments.Length then
+            failAt ((Array.last args).Source) <|
+                sprintf "The function ``%O`` requires at least %d arguments, but was given only %d"
+                    func.FunctionName func.FixedArguments.Length args.Length
+        let maxArguments =
+            match func.VariableArgument with
+            | None -> Some func.FixedArguments.Length
+            | Some { MaxCount = Some max } -> Some (func.FixedArguments.Length + max)
+            | Some _ -> None
+        match maxArguments with
+        | Some maxArgs when maxArgs < args.Length ->
+            failAt ((Array.last args).Source) <|
+                sprintf "The function ``%O`` accepts at most %d arguments, but was given %d"
+                    func.FunctionName maxArgs args.Length
+        | _ -> ()
+        let infTypeOf source (inputTy : InfInputType) =
+            let core = infFrom source inputTy.Class inputTy.TypeVariable
+            {   InfType = core
+                InfNullable = inputTy.Nullable
+            }
+        for argType, arg in Seq.zip (funcArgTypes func) args do
+            let passedType = arg.Info.Type
+            let expectedType = infTypeOf arg.Source argType
+            ignore <| cxt.InfectNullable(arg.Source, expectedType.InfNullable, passedType.InfNullable)
+            ignore <| cxt.UnifyTypes(arg.Source, expectedType.InfType, passedType.InfType)
+        let out = func.Output
+        {   InfType = infFrom source out.Class out.TypeVariable
+            InfNullable = out.Nullable (args |> Seq.map (fun a -> a.Info.Type.InfNullable))
+        }   
 
 type InferredQueryColumn() =
     static member OfColumn(fromAlias : Name option, column : SchemaColumn) =

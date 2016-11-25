@@ -204,7 +204,8 @@ type FunctionType =
         FixedArguments : InfInputType array
         VariableArgument : InfVariableArgument option
         Output : InfOutputType
-        Aggregate : FunctionArguments<unit, unit> -> AggregateType option
+        /// Given the number of args, is this an aggregate function?
+        Aggregate : int option -> AggregateType option
         Idempotent : bool
     }
        

@@ -82,9 +82,12 @@ and private aggReferences (expr : InfExpr) =
     | CastExpr cast -> aggReferences cast.Expression
     | CollateExpr collate -> aggReferences collate.Input
     | FunctionInvocationExpr f ->
-        let mapping = ASTMapping((fun _ -> ()), fun _ -> ())
+        let args =
+            match f.Arguments with
+            | ArgumentWildcard -> None
+            | ArgumentList (_, args) -> Some args.Length
         match expr.Info.Function with
-        | Some funcInfo when mapping.FunctionInvocation(f).Arguments |> funcInfo.Aggregate |> Option.isSome ->
+        | Some funcInfo when args |> funcInfo.Aggregate |> Option.isSome ->
             Seq.singleton Aggregate
         | _ ->
             match f.Arguments with
