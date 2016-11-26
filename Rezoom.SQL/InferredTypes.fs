@@ -113,6 +113,8 @@ type ITypeInferenceContext with
         for ty in types do
             unified <- this.UnifyTypes(source, unified, ty)
         unified
+    member this.UnifyTypes(source : SourceInfo, left, right) =
+        this.UnifyTypes(source, left.InfType, right.InfType)
     member this.UnifyWithConstraint(source : SourceInfo, inputType, constr : TypeClass) =
         {   InfType = this.UnifyTypes(source, inputType.InfType, InfClass constr)
             InfNullable = inputType.InfNullable
@@ -136,6 +138,20 @@ type ITypeInferenceContext with
         for ty in types do
             acc <- this.UnifyEitherNull(source, acc, ty)
         acc
+    member this.AnonymousQueryInfo(columnNames) =
+        {   Columns =
+                seq {
+                    for { WithSource.Source = source; Value = name } in columnNames ->
+                        {   ColumnName = name
+                            FromAlias = None
+                            Expr =
+                                {   Value = ColumnNameExpr { Table = None; ColumnName = name }
+                                    Source = source
+                                    Info = ExprInfo.OfType(this.AnonymousVariable())
+                                }
+                        }
+                } |> toReadOnlyList
+        }
 
 let binary
     (source : SourceInfo)

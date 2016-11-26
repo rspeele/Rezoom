@@ -4,87 +4,96 @@ open System.Collections.Generic
 open Rezoom.SQL
 open Rezoom.SQL.InferredTypes
 
-//type private TypeInferenceContext() =
-//    let variablesByParameter = Dictionary<BindParameter, InferredType>()
-//    let variablesById = Dictionary<TypeVariableId, InferredType>()
-//    let mutable nextVariableId = 0
-//    let getVar id =
-//        let succ, inferred = variablesById.TryGetValue(id)
-//        if not succ then bug "Type variable not found"
-//        else inferred
-//    interface ITypeInferenceContext with
-//        member this.AnonymousVariable() = failwith "not impl"
-//        member this.Variable(parameter) = failwith "not impl"
-//        member this.Unify(source, left, right) = failwith "not impl"
-//        member this.Concrete(inferred) = failwith "not impl"
-//        member __.Parameters = variablesByParameter.Keys :> _ seq
-// 
-//[<AutoOpen>]
-//module private TypeInferenceExtensions =
-//    type ITypeInferenceContext with
-//        member typeInference.Unify(inferredType, coreType : CoreColumnType) =
-//            typeInference.Unify(inferredType, InferredType.Dependent(inferredType, coreType))
-//        member typeInference.Unify(inferredType, resultType : Result<InferredType, string>) =
-//            match resultType with
-//            | Ok t -> typeInference.Unify(inferredType, t)
-//            | Error _ as e -> e
-//        member typeInference.Unify(types : InferredType seq) =
-//            types
-//            |> Seq.fold
-//                (function | Ok s -> (fun t -> typeInference.Unify(s, t)) | Error _ as e -> (fun _ -> e))
-//                (Ok InferredType.Any)
-//        member typeInference.Concrete(inferred) = typeInference.Concrete(inferred)
-//        member typeInference.Binary(op, left, right) =
-//            match op with
-//            | Concatenate -> typeInference.Unify([ left; right; InferredType.String ])
-//            | Multiply
-//            | Divide
-//            | Add
-//            | Subtract -> typeInference.Unify([ left; right; InferredType.Number ])
-//            | Modulo
-//            | BitShiftLeft
-//            | BitShiftRight
-//            | BitAnd
-//            | BitOr -> typeInference.Unify([ left; right; InferredType.Integer ])
-//            | LessThan
-//            | LessThanOrEqual
-//            | GreaterThan
-//            | GreaterThanOrEqual
-//            | Equal
-//            | NotEqual
-//            | Is
-//            | IsNot ->
-//                result {
-//                    let! operandType = typeInference.Unify(left, right)
-//                    return InferredType.Dependent(operandType, BooleanType)
-//                }
-//            | And
-//            | Or -> typeInference.Unify([ left; right; InferredType.Boolean ])
-//        member typeInference.Unary(op, operandType) =
-//            match op with
-//            | Negative
-//            | BitNot -> typeInference.Unify(operandType, InferredType.Number)
-//            | Not -> typeInference.Unify(operandType, InferredType.Boolean)
-//            | IsNull
-//            | NotNull -> result { return InferredType.Boolean }
-//        member typeInference.AnonymousQueryInfo(columnNames) =
-//            {   Columns =
-//                    seq {
-//                        for { WithSource.Source = source; Value = name } in columnNames ->
-//                            {   ColumnName = name
-//                                FromAlias = None
-//                                Expr =
-//                                    {   Value = ColumnNameExpr { Table = None; ColumnName = name }
-//                                        Source = source
-//                                        Info = ExprInfo.OfType(typeInference.AnonymousVariable())
-//                                    }
-//                            }
-//                    } |> toReadOnlyList
-//            }
-//
-//    let inline implicitAlias column =
-//        match column with
-//        | _, (Some _ as a) -> a
-//        | ColumnNameExpr c, None -> Some c.ColumnName
-//        | _ -> None
-//
+type private TypeInferenceVariable(variableId) =
+    // uhoh gotta make nulls separate so when we unify @x and @y at the type level we don't force them to be the same nullability
+    let infType =
+        {   InfType = InfVariable variableId
+            InfNullable = InfNullable.Of(variableId)
+        }
+    let mutable hasCurrentClass = false
+    let mutable currentClass = AnyClass
+    let mutable currentNullable = InfNullable.Nope
+    let mutable aliasFor = None : TypeInferenceVariable option
+    member __.VariableId =
+        match aliasFor with
+        | Some tvar -> tvar.VariableId
+        | None -> variableId
+    member __.Type =
+        match aliasFor with
+        | Some tvar -> tvar.Type
+        | None -> infType
+    member this.Unify(source : SourceInfo, cla : TypeClass) =
+        match aliasFor with
+        | Some tvar -> tvar.Unify(source, cla)
+        | None ->
+            if hasCurrentClass then
+                match currentClass.Unify(cla) with
+                | None ->
+                    failAt source <| sprintf "The type variable cannot be unified with ``%O``" cla
+                | Some unified ->
+                    currentClass <- unified
+            else
+                hasCurrentClass <- true
+                currentClass <- cla
+            this.Type
+    member private this.CurrentClass =
+        match aliasFor with
+        | Some tvar -> tvar.CurrentClass
+        | None -> currentClass
+    member private this.BecomeAliasFor(other) =
+        aliasFor <- Some other
+    member this.Unify(source : SourceInfo, tvar : TypeInferenceVariable) =
+        let unified = this.Unify(source, tvar.CurrentClass)
+        tvar.BecomeAliasFor(this)
+        this.Type
+
+type private TypeInferenceContext() =
+    let variablesByParameter = Dictionary<_, TypeInferenceVariable>()
+    let variablesById = Dictionary<_, TypeInferenceVariable>()
+    let mutable nextVariableId = 0
+    let nextVar () =
+        let tvar = TypeInferenceVariable(nextVariableId)
+        variablesById.[nextVariableId] <- tvar
+        nextVariableId <- nextVariableId + 1
+        tvar
+    let getVar id =
+        let succ, inferred = variablesById.TryGetValue(id)
+        if not succ then bug "Type variable not found"
+        else inferred
+    interface ITypeInferenceContext with
+        member this.AnonymousVariable() = nextVar().Type
+        member this.Variable(parameter) =
+            let succ, found = variablesByParameter.TryGetValue(parameter)
+            if succ then found.Type else
+            let var = nextVar()
+            variablesByParameter.[parameter] <- var
+            var.Type
+        member this.UnifyTypes(source, left, right) =
+            match left, right with
+            | InfClass lc, InfClass rc ->
+                match lc.Unify(rc) with
+                | None -> failAt source <| sprintf "The types ``%O`` and ``%O`` cannot be unified" lc rc
+                | Some unified -> InfClass unified
+            | InfClass cla, InfVariable vid
+            | InfVariable vid, InfClass cla ->
+                variablesById.[vid].Unify(source, cla).InfType
+            | InfVariable lid, InfVariable rid ->
+                variablesById.[lid].Unify(source, variablesById.[rid]).InfType
+
+        member this.InfectNullable(source, left, right) =
+            match left, right with
+            | Nullable _, Nullable _ -> ()
+            | NullableIfVar lvar, NullableIfVar rvar ->
+                ()
+            | 
+                
+
+        member this.Concrete(inferred) = failwith "not impl"
+        member __.Parameters = variablesByParameter.Keys :> _ seq
+
+//    abstract member AnonymousVariable : unit -> InferredType
+//    abstract member Variable : BindParameter -> InferredType
+//    abstract member UnifyTypes : SourceInfo * CoreInfType * CoreInfType -> CoreInfType
+//    abstract member InfectNullable : SourceInfo * InfNullable * InfNullable -> unit
+//    abstract member Concrete : InferredType -> ColumnType
+//    abstract member Parameters : BindParameter seq

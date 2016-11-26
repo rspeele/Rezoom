@@ -153,7 +153,7 @@ type TypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope) as th
             for i = 0 to columns.Length - 1 do
                 let selected, alias as selectedCol = columns.[i].Case.AssumeColumn()
                 let shape = shape.Columns.[i]
-                cxt.Unify(selected.Info.Type, shape.Expr.Info.Type) |> resultOk selected.Source
+                ignore <| cxt.UnifyTypes(selected.Source, selected.Info.Type.InfType, shape.Expr.Info.Type.InfType)
                 match implicitAlias (selected.Value, alias) with
                 | Some a when a = shape.ColumnName -> ()
                 | _ ->
@@ -250,7 +250,7 @@ type TypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope) as th
                                     sprintf "Incorrect number of columns (expected %d, got %d)"
                                         shape.Columns.Count row.Value.Length
                             for colVal, colShape in Seq.zip row.Value shape.Columns do
-                                cxt.Unify(colVal.Info.Type, colShape.Expr.Info.Type) |> resultOk row.Source
+                                ignore <| cxt.UnifyTypes(colVal.Source, colVal.Info.Type, colShape.Expr.Info.Type)
                                 if rowIndex > 0 then () else
                                 yield
                                     {   Expr = colVal
@@ -290,7 +290,7 @@ type TypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope) as th
                 | Except (expr, term) -> Except <| nested expr term
         }
 
-    member this.CompoundTop(compound : CompoundExpr, selfShape : SelfQueryShape) : InfCompoundExpr =
+    member private this.CompoundTop(compound : CompoundExpr, selfShape : SelfQueryShape) : InfCompoundExpr =
         match selfShape.CTEName with
         | None -> this.Compound(compound, selfShape.KnownShape)
         | Some cteName ->
@@ -312,7 +312,7 @@ type TypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope) as th
                     | Except (expr, term) -> Except <| nested expr term
             }
 
-    member this.Select(select : SelectStmt, selfShape : SelfQueryShape) : InfSelectStmt =
+    member private this.Select(select : SelectStmt, selfShape : SelfQueryShape) : InfSelectStmt =
         {   Source = select.Source
             Value =
                 let select = select.Value
@@ -510,7 +510,7 @@ type TypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope) as th
                     match cols.ColumnByName(name.Value) with
                     | Found col ->
                         let expr = checker.Expr(expr)
-                        cxt.Unify(col.Expr.Info.Type, expr.Info.Type) |> resultOk name.Source
+                        ignore <| cxt.UnifyTypes(name.Source, col.Expr.Info.Type, expr.Info.Type)
                         yield name, expr
                     | _ ->
                         failAt name.Source <| sprintf "No such column to set: ``%O``" name.Value

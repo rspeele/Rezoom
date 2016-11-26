@@ -307,7 +307,7 @@ type ExprTypeChecker(cxt : ITypeInferenceContext, scope : InferredSelectScope, q
         | ExistsExpr select -> this.Exists(source, select)
         | CaseExpr case -> this.Case(source, case)
         | ScalarSubqueryExpr select -> this.ScalarSubquery(source, select)
-        | RaiseExpr raise -> { Source = source; Value = RaiseExpr raise; Info = ExprInfo<_>.OfType(InferredType.Any) }
+        | RaiseExpr raise -> { Source = source; Value = RaiseExpr raise; Info = ExprInfo<_>.OfType(InferredTypes.any) }
 
     member this.Expr(expr : Expr, ty : CoreColumnType) =
         let expr = this.Expr(expr)
