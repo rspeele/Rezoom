@@ -4,16 +4,26 @@ open System.Collections.Generic
 open Rezoom.SQL
 open Rezoom.SQL.InferredTypes
 
-type private TypeInferenceVariable(variableId) =
-    // uhoh gotta make nulls separate so when we unify @x and @y at the type level we don't force them to be the same nullability
-    let infType =
-        {   InfType = InfVariable variableId
-            InfNullable = InfNullable.Of(variableId)
-        }
+type private NVariable(variableId : TypeVariableId) =
+    let mutable currentNullable = InfNullable.Nope
+    let infNull = InfNullable.Of(variableId)
+    member __.VariableId = variableId
+    member __.Type = infNull
+    member __.Unify(source : SourceInfo, cla : InfNullable) =
+        match cla with
+        | Nullable true as definitely ->
+            currentNullable <- definitely
+        | Nullable false -> ()
+        | NullableDueToOuterJoin wrapped -> ()
+        | NullableIfVar of TypeVariableId
+        | NullableIfBoth of InfNullable * InfNullable
+        | NullableIfEither of InfNullable * InfNullable
+
+type private TVariable(variableId) =
+    let infType = InfVariable variableId
     let mutable hasCurrentClass = false
     let mutable currentClass = AnyClass
-    let mutable currentNullable = InfNullable.Nope
-    let mutable aliasFor = None : TypeInferenceVariable option
+    let mutable aliasFor = None : TVariable option
     member __.VariableId =
         match aliasFor with
         | Some tvar -> tvar.VariableId
@@ -42,17 +52,17 @@ type private TypeInferenceVariable(variableId) =
         | None -> currentClass
     member private this.BecomeAliasFor(other) =
         aliasFor <- Some other
-    member this.Unify(source : SourceInfo, tvar : TypeInferenceVariable) =
+    member this.Unify(source : SourceInfo, tvar : TVariable) =
         let unified = this.Unify(source, tvar.CurrentClass)
         tvar.BecomeAliasFor(this)
         this.Type
 
-type private TypeInferenceContext() =
-    let variablesByParameter = Dictionary<_, TypeInferenceVariable>()
-    let variablesById = Dictionary<_, TypeInferenceVariable>()
+type VariableLookup<'a, 'b>(create, get : 'a -> 'b) =
+    let variablesByParameter = Dictionary<_, 'a>()
+    let variablesById = Dictionary<_, 'a>()
     let mutable nextVariableId = 0
     let nextVar () =
-        let tvar = TypeInferenceVariable(nextVariableId)
+        let tvar = create nextVariableId
         variablesById.[nextVariableId] <- tvar
         nextVariableId <- nextVariableId + 1
         tvar
@@ -60,14 +70,22 @@ type private TypeInferenceContext() =
         let succ, inferred = variablesById.TryGetValue(id)
         if not succ then bug "Type variable not found"
         else inferred
+    member __.AnonymousVariable() = get(nextVar())
+    member __.Variable(parameter : BindParameter) =
+        let succ, found = variablesByParameter.TryGetValue(parameter)
+        if succ then get found else
+        let var = nextVar()
+        variablesByParameter.[parameter] <- var
+        get var
+
+type private TypeInferenceContext() =
+    let nvars = VariableLookup(NVariable, fun x -> x.Type)
+    let tvars = VariableLookup(TVariable, fun x -> x.Type)
     interface ITypeInferenceContext with
-        member this.AnonymousVariable() = nextVar().Type
-        member this.Variable(parameter) =
-            let succ, found = variablesByParameter.TryGetValue(parameter)
-            if succ then found.Type else
-            let var = nextVar()
-            variablesByParameter.[parameter] <- var
-            var.Type
+        member this.AnonymousTypeVariable() = tvars.AnonymousVariable()
+        member this.TypeVariable(parameter) = tvars.Variable(parameter)
+        member this.AnonymousNullableVariable() = nvars.AnonymousVariable()
+        member this.NullableVariable(parameter) = nvars.Variable(parameter)
         member this.UnifyTypes(source, left, right) =
             match left, right with
             | InfClass lc, InfClass rc ->

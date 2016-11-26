@@ -125,7 +125,6 @@ type CoreInfType =
     | InfVariable of TypeVariableId
 
 type InfNullable =
-    private
     // if false... there's nothing to indicate that it's nullable
     | Nullable of nullable : bool
     // wrapped is what the nullability would be in the absence of the outer join
@@ -169,10 +168,15 @@ type InferredType =
     }
 
 type ITypeInferenceContext =
-    abstract member AnonymousVariable : unit -> InferredType
-    abstract member Variable : BindParameter -> InferredType
+    abstract member AnonymousNullableVariable : unit -> InfNullable
+    abstract member AnonymousTypeVariable : unit -> CoreInfType
+
+    abstract member NullableVariable : BindParameter -> InfNullable
+    abstract member TypeVariable : BindParameter -> CoreInfType
+
     abstract member UnifyTypes : SourceInfo * CoreInfType * CoreInfType -> CoreInfType
-    abstract member InfectNullable : SourceInfo * InfNullable * InfNullable -> unit
+    abstract member UnifyNullable : SourceInfo * InfNullable * InfNullable -> InfNullable
+
     abstract member Concrete : InferredType -> ColumnType
     abstract member Parameters : BindParameter seq
 
