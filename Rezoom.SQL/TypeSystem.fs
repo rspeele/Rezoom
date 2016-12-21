@@ -130,7 +130,6 @@ type InfNullable =
     // wrapped is what the nullability would be in the absence of the outer join
     | NullableDueToOuterJoin of wrapped : InfNullable
     | NullableIfVar of TypeVariableId
-    | NullableIfBoth of InfNullable * InfNullable
     | NullableIfEither of InfNullable * InfNullable
     static member Nope = Nullable false
     static member Yep = Nullable true
@@ -143,8 +142,6 @@ type InfNullable =
         | Nullable _
         | NullableIfVar _ -> this
         | NullableDueToOuterJoin x -> x
-        | NullableIfBoth (left, right) ->
-            NullableIfBoth (left.IgnoreOuterJoin(), right.IgnoreOuterJoin())
         | NullableIfEither (left, right) ->
             NullableIfEither (left.IgnoreOuterJoin(), right.IgnoreOuterJoin())
     member this.Or(other : InfNullable) =
@@ -155,12 +152,6 @@ type InfNullable =
         | (NullableDueToOuterJoin _ as t), _
         | _, (NullableDueToOuterJoin _ as t) -> t
         | cond1, cond2 -> NullableIfEither (cond1, cond2)
-    member this.And(other : InfNullable) =
-        if this = other then this else
-        match this, other with
-        | Nullable false as known, _
-        | _, (Nullable false as known) -> known
-        | cond1, cond2 -> NullableIfBoth(cond1, cond2)
 
 type InferredType =
     {   InfType : CoreInfType
@@ -168,14 +159,13 @@ type InferredType =
     }
 
 type ITypeInferenceContext =
-    abstract member AnonymousNullableVariable : unit -> InfNullable
     abstract member AnonymousTypeVariable : unit -> CoreInfType
 
     abstract member NullableVariable : BindParameter -> InfNullable
     abstract member TypeVariable : BindParameter -> CoreInfType
 
     abstract member UnifyTypes : SourceInfo * CoreInfType * CoreInfType -> CoreInfType
-    abstract member UnifyNullable : SourceInfo * InfNullable * InfNullable -> InfNullable
+    abstract member ForceNullable : SourceInfo * InfNullable -> unit
 
     abstract member Concrete : InferredType -> ColumnType
     abstract member Parameters : BindParameter seq

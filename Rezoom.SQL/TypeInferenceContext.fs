@@ -9,15 +9,6 @@ type private NVariable(variableId : TypeVariableId) =
     let infNull = InfNullable.Of(variableId)
     member __.VariableId = variableId
     member __.Type = infNull
-    member __.Unify(source : SourceInfo, cla : InfNullable) =
-        match cla with
-        | Nullable true as definitely ->
-            currentNullable <- definitely
-        | Nullable false -> ()
-        | NullableDueToOuterJoin wrapped -> ()
-        | NullableIfVar of TypeVariableId
-        | NullableIfBoth of InfNullable * InfNullable
-        | NullableIfEither of InfNullable * InfNullable
 
 type private TVariable(variableId) =
     let infType = InfVariable variableId
@@ -77,6 +68,7 @@ type VariableLookup<'a, 'b>(create, get : 'a -> 'b) =
         let var = nextVar()
         variablesByParameter.[parameter] <- var
         get var
+    member __.Variable(id) = variablesById.[id]
 
 type private TypeInferenceContext() =
     let nvars = VariableLookup(NVariable, fun x -> x.Type)
@@ -84,7 +76,6 @@ type private TypeInferenceContext() =
     interface ITypeInferenceContext with
         member this.AnonymousTypeVariable() = tvars.AnonymousVariable()
         member this.TypeVariable(parameter) = tvars.Variable(parameter)
-        member this.AnonymousNullableVariable() = nvars.AnonymousVariable()
         member this.NullableVariable(parameter) = nvars.Variable(parameter)
         member this.UnifyTypes(source, left, right) =
             match left, right with
@@ -94,17 +85,11 @@ type private TypeInferenceContext() =
                 | Some unified -> InfClass unified
             | InfClass cla, InfVariable vid
             | InfVariable vid, InfClass cla ->
-                variablesById.[vid].Unify(source, cla).InfType
+                tvars.Variable(vid).Unify(source, cla)
             | InfVariable lid, InfVariable rid ->
-                variablesById.[lid].Unify(source, variablesById.[rid]).InfType
-
-        member this.InfectNullable(source, left, right) =
-            match left, right with
-            | Nullable _, Nullable _ -> ()
-            | NullableIfVar lvar, NullableIfVar rvar ->
-                ()
-            | 
-                
+                tvars.Variable(lid).Unify(source, tvars.Variable(rid))
+        member this.ForceNullable(source, nullable) =
+            () // TODO: maintain a record of all the forced nullables  
 
         member this.Concrete(inferred) = failwith "not impl"
         member __.Parameters = variablesByParameter.Keys :> _ seq
