@@ -6,6 +6,10 @@ type ServiceLifetime =
     | ExecutionLocal = 1
     | StepLocal = 2
 
+type ExecutionState =
+    | ExecutionFault
+    | ExecutionSuccess
+
 type IServiceConfig =
     abstract member TryGetConfig<'cfg> : unit -> 'cfg option
 
@@ -25,7 +29,7 @@ type ServiceConfig() =
 [<AbstractClass>]
 type ServiceFactory<'a>() =
     abstract member CreateService : ServiceContext -> 'a
-    abstract member DisposeService : 'a -> unit
+    abstract member DisposeService : ExecutionState * 'a -> unit
     abstract member ServiceLifetime : ServiceLifetime
 and [<AbstractClass>] ServiceContext() =
     abstract member Configuration : IServiceConfig
@@ -35,7 +39,7 @@ type StepLocal<'a when 'a : (new : unit -> 'a)>() =
     inherit ServiceFactory<'a>()
     override __.ServiceLifetime = ServiceLifetime.StepLocal
     override __.CreateService(_) = new 'a()
-    override __.DisposeService(s) =
+    override __.DisposeService(_, s) =
         match box s with
         | :? IDisposable as d -> d.Dispose()
         | _ -> ()
@@ -44,7 +48,7 @@ type ExecutionLocal<'a when 'a : (new : unit -> 'a)>() =
     inherit ServiceFactory<'a>()
     override __.ServiceLifetime = ServiceLifetime.ExecutionLocal
     override __.CreateService(_) = new 'a()
-    override __.DisposeService(s) =
+    override __.DisposeService(_, s) =
         match box s with
         | :? IDisposable as d -> d.Dispose()
         | _ -> ()
