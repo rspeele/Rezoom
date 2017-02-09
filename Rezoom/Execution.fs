@@ -251,6 +251,7 @@ type private ExecutionServiceContext(config : IServiceConfig) =
     let services = Dictionary<Type, obj>()
     let locals = Stack<_>()
     let globals = Stack<_>()
+    let mutable totalSuccess = false
     override __.Configuration = config
     override this.GetService<'f, 'a when 'f :> ServiceFactory<'a> and 'f : (new : unit -> 'f)>() =
         let ty = typeof<'f>
@@ -264,25 +265,29 @@ type private ExecutionServiceContext(config : IServiceConfig) =
             | ServiceLifetime.StepLocal -> locals
             | other -> failwithf "Unknown service lifetime: %O" other
         services.Add(ty, box service)
-        stack.Push(fun () ->
-            factory.DisposeService(service)
+        stack.Push(fun state ->
+            factory.DisposeService(state, service)
             ignore <| services.Remove(ty))
         service
-    static member private ClearStack(stack : _ Stack) =
+    static member private ClearStack(stack : _ Stack, state) =
         let mutable exn = null
         while stack.Count > 0 do
             let disposer = stack.Pop()
             try
-                disposer()
+                disposer state
             with
-            | e -> exn <- e
+            | e ->
+                if isNull exn then exn <- e
+                else exn <- AggregateException(exn, e)
         if not (isNull exn) then raise exn
-    member __.ClearLocals() = ExecutionServiceContext.ClearStack(locals)
+    member __.ClearLocals(state) = ExecutionServiceContext.ClearStack(locals, state)
+    member __.SetSuccessful() = totalSuccess <- true
     member this.Dispose() =
+        let state = if totalSuccess then ExecutionSuccess else ExecutionFault
         try
-            this.ClearLocals()
+            this.ClearLocals(state)
         finally
-            ExecutionServiceContext.ClearStack(globals)
+            ExecutionServiceContext.ClearStack(globals, state)
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
@@ -301,14 +306,17 @@ let execute (config : ExecutionConfig) (plan : 'a Plan) =
                 returned <- r
             | Step (requests, resume) ->
                 log.OnBeginStep()
+                let mutable stepState = ExecutionFault
                 try
                     let step = Step(log, context, cache)
                     let retrievals = requests.Map(step.AddRequest)
                     do! step.Execute().ConfigureAwait(continueOnCapturedContext = true)
                     plan <- resume <| retrievals.Map((|>) ())
+                    stepState <- ExecutionSuccess
                 finally
-                    context.ClearLocals()
+                    context.ClearLocals(stepState)
                     log.OnEndStep()
+        context.SetSuccessful() // if we got this far we can dispose with success (commit)
         return returned
     }
     
