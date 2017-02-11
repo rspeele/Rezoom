@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Rezoom;
 
@@ -29,7 +30,7 @@ namespace Rezoom.IPGeo.Internals
 
         public override CacheInfo CacheInfo => new GeoCacheInfo(_ip);
 
-        public override Func<Task<GeoInfo>> Prepare(ServiceContext context)
+        public override Func<CancellationToken, Task<GeoInfo>> Prepare(ServiceContext context)
         {
             var batch = context.GetService<StepLocal<GeoBatch>, GeoBatch>();
             return batch.Prepare(new GeoQuery { Query = _ip });
