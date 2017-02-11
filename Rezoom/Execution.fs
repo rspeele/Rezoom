@@ -3,6 +3,7 @@ open System
 open System.Collections
 open System.Collections.Generic
 open System.Runtime.InteropServices
+open System.Threading
 open System.Threading.Tasks
 open FSharp.Control.Tasks.ContextInsensitive
 open Rezoom
@@ -180,11 +181,11 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
             log.OnPreparingErrand(errand)
             let prepared = errand.PrepareUntyped(context)
             log.OnPreparedErrand(errand)
-            let retrieve () =
+            let retrieve token =
                 cache.Invalidate(errand.CacheInfo)
                 task {
                     try
-                        let! obj = prepared()
+                        let! obj = prepared token
                         result <- RetrievalSuccess obj
                         cache.Store(errand.CacheInfo, errand.CacheArgument, obj)
                     with
@@ -228,7 +229,7 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
         else
             addToRun errand
             
-    member __.Execute() =
+    member __.Execute(token) =
         for i = 0 to pending.Count - 1 do ignore <| pending.[i].Force()
         let taskCount = ungrouped.Count + grouped.Count
         if taskCount <= 0 then Task.CompletedTask else
@@ -238,11 +239,11 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
             all.[i] <-
                 task {
                     for sub in group do
-                        do! sub()
+                        do! sub token
                 } :> Task
             i <- i + 1
         for ungrouped in ungrouped do
-            all.[i] <- upcast ungrouped()
+            all.[i] <- upcast ungrouped token
             i <- i + 1
         Task.WhenAll(all)
 
@@ -291,7 +292,7 @@ type private ExecutionServiceContext(config : IServiceConfig) =
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
-let execute (config : ExecutionConfig) (plan : 'a Plan) =
+let executeWithCancellation (token : CancellationToken) (config : ExecutionConfig) (plan : 'a Plan) =
     task {
         let log = config.Log
         let cache = Cache()
@@ -310,7 +311,7 @@ let execute (config : ExecutionConfig) (plan : 'a Plan) =
                 try
                     let step = Step(log, context, cache)
                     let retrievals = requests.Map(step.AddRequest)
-                    do! step.Execute().ConfigureAwait(continueOnCapturedContext = true)
+                    do! step.Execute(token).ConfigureAwait(continueOnCapturedContext = true)
                     plan <- resume <| retrievals.Map((|>) ())
                     stepState <- ExecutionSuccess
                 finally
@@ -319,4 +320,8 @@ let execute (config : ExecutionConfig) (plan : 'a Plan) =
         context.SetSuccessful() // if we got this far we can dispose with success (commit)
         return returned
     }
+
+let execute (config : ExecutionConfig) (plan : 'a Plan) =
+    let token = CancellationToken()
+    executeWithCancellation token config plan
     

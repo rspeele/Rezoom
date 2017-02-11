@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rezoom.IPGeo
@@ -14,7 +15,7 @@ namespace Rezoom.IPGeo
 
         private Task<List<GeoInfo>> _runningTask;
 
-        public Func<Task<GeoInfo>> Prepare(GeoQuery query)
+        public Func<CancellationToken, Task<GeoInfo>> Prepare(GeoQuery query)
         {
             if (_runningTask != null)
             {
@@ -22,7 +23,7 @@ namespace Rezoom.IPGeo
             }
             var index = _queries.Count;
             _queries.Add(query);
-            return () => GetResult(index);
+            return _ => GetResult(index);
         }
 
         private static async Task<List<GeoInfo>> GetResults(List<GeoQuery> requests)
