@@ -2,7 +2,7 @@
 
 #r "../Rezoom.SQL.Provider/bin/Debug/Rezoom.dll"
 #r "../Rezoom.SQL.Provider/bin/Debug/LicenseToCIL.dll"
-#r "../Rezoom.SQL.Provider/bin/Debug/Rezoom.SQL.dll"
+#r "../Rezoom.SQL.Provider/bin/Debug/Rezoom.SQL.Compiler.dll"
 #r "../Rezoom.SQL.Provider/bin/Debug/Rezoom.SQL.Mapping.dll"
 #r "../Rezoom.SQL.Provider/bin/Debug/Rezoom.SQL.Provider.dll"
 #nowarn "193"
