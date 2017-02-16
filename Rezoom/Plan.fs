@@ -23,10 +23,12 @@ type Batch<'a> =
 type Requests = Errand Batch
 type Responses = DataResponse Batch
 
-type Step<'result> = Requests * (Responses -> Plan<'result>)
-and Plan<'result> =
+type Step<'result> = Requests * (Responses -> PlanState<'result>)
+and PlanState<'result> =
     | Result of 'result
     | Step of Step<'result>
+
+type Plan<'result> = unit -> PlanState<'result>
 
 /// Hint that it is OK to batch the given sequence or task
 type BatchHint<'a> = internal | BatchHint of 'a
