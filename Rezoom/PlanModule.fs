@@ -21,7 +21,7 @@ let internal abortSteps (steps : 'a Step seq) (reason : exn) : 'b =
     if exns.Count > 1 then raise (aggregate exns)
     else dispatchRaise reason
 
-let internal abortTask (task : 'a Plan) (reason : exn) : 'b =
+let internal abortTask (task : 'a PlanState) (reason : exn) : 'b =
     match task with
     | Step (_, resume) ->
         try
@@ -40,7 +40,7 @@ let internal abortTask (task : 'a Plan) (reason : exn) : 'b =
 
 /// Monadic return for `Plan`s.
 /// Creates a `Plan` with no steps, whose immediate result is `result`.
-let inline ret (result : 'a) = Result result
+let ret (result : 'a) : Plan<'a> = fun () -> Result result
 
 /// Monoidal identity for `Plan`.
 /// Equivalent to `ret ()`.
@@ -51,14 +51,14 @@ let ofErrand (request : Errand<'a>) : Plan<'a> =
     let rec onResponse =
         function
         | BatchLeaf RetrievalDeferred -> step
-        | BatchLeaf (RetrievalSuccess suc) -> ret (Unchecked.unbox suc : 'a)
+        | BatchLeaf (RetrievalSuccess suc) -> Result (Unchecked.unbox suc : 'a)
         | BatchLeaf (RetrievalException exn) -> dispatchRaise exn
         | BatchAbort -> abort()
         | BatchPair _
         | BatchMany _ -> logicFault "Incorrect response shape for data request"
-    and step = 
+    and step : PlanState<'a> = 
         Step (BatchLeaf (request :> Errand), onResponse)
-    step
+    fun () -> step
 
 ////////////////////////////////////////////////////////////
 // Mapping of plain-old functions over `Plan`s.
@@ -74,7 +74,7 @@ let rec _mapRecursive (f : 'a -> 'b) ((pending, resume) : 'a Step) : 'b Step =
     pending, fun responses -> _mapInline _mapRecursive f (resume responses)
 /// Map a function over the result of a `Plan<'a>`, producing a new `Plan<'b>`.
 and inline map (f : 'a -> 'b) (task : 'a Plan): 'b Plan =
-    _mapInline _mapRecursive f task
+    fun () -> _mapInline _mapRecursive f (task())
 
 ////////////////////////////////////////////////////////////
 // Monadic `bind`.
@@ -85,7 +85,7 @@ and inline map (f : 'a -> 'b) (task : 'a Plan): 'b Plan =
 
 let inline _bindInline bind task cont =
     match task with
-    | Result r -> cont r
+    | Result r -> cont r ()
     | Step (pending, resume) ->
         Step (pending, fun responses -> bind (resume responses) cont)
 let rec _bindRecursive task cont =
@@ -94,7 +94,20 @@ let rec _bindRecursive task cont =
 /// get a new `Plan`.
 /// The continuation can be dependent on the result of the first task.
 let inline bind (task : 'a Plan) (cont : 'a -> 'b Plan) : 'b Plan =
-    _bindInline (_bindInline _bindRecursive) task cont
+    fun () -> _bindInline (_bindInline _bindRecursive) (task()) cont
+
+let inline _combineInline bind task cont =
+    match task with
+    | Result _ -> cont ()
+    | Step (pending, resume) ->
+        Step (pending, fun responses -> bind (resume responses) cont)
+let rec _combineRecursive task cont =
+    _combineInline _combineRecursive task cont
+/// Chain a continuation `Plan` onto an existing `Plan` to
+/// get a new `Plan`.
+/// The continuation can be dependent on the result of the first task.
+let inline combine (task : 'a Plan) (cont : 'b Plan) : 'b Plan =
+    fun () -> _combineInline (_combineInline _combineRecursive) (task()) cont
 
 ////////////////////////////////////////////////////////////
 // Applicative functor `apply`.
@@ -104,18 +117,14 @@ let inline bind (task : 'a Plan) (cont : 'a -> 'b Plan) : 'b Plan =
 // concurrently and share batchable resources.
 ////////////////////////////////////////////////////////////
 
-/// Create a task that will eventually apply the function produced by
-/// `taskF` to the value produced by `taskA` to obtain its result.
-/// The two tasks are independent, so they will execute concurrently and
-/// share batchable resources.
-let rec apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
+let rec private applyState (taskF : PlanState<'a -> 'b>) (taskA : PlanState<'a>) : PlanState<'b> =
     match taskF, taskA with
     | Result f, Result a ->
         Result (f a)
     | Result f, step ->
-        map ((<|) f) step
+         _mapInline _mapRecursive ((<|) f) step
     | step, Result a ->
-        map ((|>) a) step
+         _mapInline _mapRecursive ((|>) a) step
     | Step (pendingF, resumeF), Step (pendingA, resumeA) ->
         let pending = BatchPair (pendingF, pendingA)
         let onResponses =
@@ -123,8 +132,8 @@ let rec apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
             | BatchPair (rspF, rspA) ->
                 let mutable exnF : exn = null
                 let mutable exnA : exn = null
-                let mutable resF : Plan<'a -> 'b> = Unchecked.defaultof<_>
-                let mutable resA : Plan<'a> = Unchecked.defaultof<_>
+                let mutable resF : PlanState<'a -> 'b> = Unchecked.defaultof<_>
+                let mutable resA : PlanState<'a> = Unchecked.defaultof<_>
                 try
                     resF <- resumeF rspF
                 with
@@ -135,7 +144,7 @@ let rec apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
                 with
                 | exn -> exnA <- exn
                 if isNull exnF && isNull exnA then
-                    apply resF resA
+                    applyState resF resA
                 else if not (isNull exnF) && not (isNull exnA) then
                     raise (new AggregateException(exnF, exnA))
                 else if isNull exnF then
@@ -146,6 +155,13 @@ let rec apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
             | BatchLeaf _
             | BatchMany _ -> logicFault "Incorrect response shape for applied pair"
         Step (pending, onResponses)
+
+/// Create a task that will eventually apply the function produced by
+/// `taskF` to the value produced by `taskA` to obtain its result.
+/// The two tasks are independent, so they will execute concurrently and
+/// share batchable resources.
+let apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
+    fun () -> applyState (taskF()) (taskA())
 
 /// Create a task that runs `taskA` and `taskB` concurrently and combines their results into a tuple.
 let tuple2 (taskA : 'a Plan) (taskB : 'b Plan) : ('a * 'b) Plan =
@@ -186,46 +202,48 @@ let tuple4
 /// during execution of `wrapped`, whether it's in creating the `Plan`
 /// to be run or in executing any step of the resulting task.
 /// The exception handler may rethrow the exception.
-let rec tryCatch (wrapped : unit -> 'a Plan) (catcher : exn -> 'a Plan) =
-    try
-        match wrapped() with
-        | Result _ as result -> result
-        | Step (pending, resume) ->
-            let onResponses (responses : Responses) =
-                tryCatch (fun () -> resume responses) catcher
-            Step (pending, onResponses)
-    with
-    | PlanAbortException _ -> reraise() // don't let them catch these
-    | ex -> catcher(ex)
+let rec tryCatch (wrapped : 'a Plan) (catcher : exn -> 'a Plan) : 'a Plan =
+    fun () ->
+        try
+            match wrapped() with
+            | Result _ as result -> result
+            | Step (pending, resume) ->
+                let onResponses (responses : Responses) =
+                    tryCatch (fun () -> resume responses) catcher ()
+                Step (pending, onResponses)
+        with
+        | PlanAbortException _ -> reraise() // don't let them catch these
+        | ex -> catcher ex ()
 
 /// Wrap a `Plan<'a>` with a block that must execute.
 /// When the task is executed, the function `onExit` will be called
 /// after `wrapped` completes, regardless of whether the task
 /// succeeded, failed to be created, or failed while partially executed.
-let rec tryFinally (wrapped : unit -> 'a Plan) (onExit : unit -> unit) =
-    let mutable cleanExit = false
-    let task =
-        try
-            match wrapped() with
-            | Result _ as result ->
-                cleanExit <- true
-                result
-            | Step (pending, resume) ->
-                let onResponses (responses : Responses) =
-                    tryFinally (fun () -> resume responses) onExit
-                Step (pending, onResponses)
-        with
-        | ex ->
+let rec tryFinally (wrapped : 'a Plan) (onExit : unit -> unit) : 'a Plan =
+    fun () -> 
+        let mutable cleanExit = false
+        let task =
             try
-                onExit()
+                match wrapped() with
+                | Result _ as result ->
+                    cleanExit <- true
+                    result
+                | Step (pending, resume) ->
+                    let onResponses (responses : Responses) =
+                        tryFinally (fun () -> resume responses) onExit ()
+                    Step (pending, onResponses)
             with
-            | inner ->
-                raise (aggregate [|ex; inner|])
-            reraise()
-    if cleanExit then
-        // run outside of the try/catch so we don't risk recursion
-        onExit()
-    task
+            | ex ->
+                try
+                    onExit()
+                with
+                | inner ->
+                    raise (aggregate [|ex; inner|])
+                reraise()
+        if cleanExit then
+            // run outside of the try/catch so we don't risk recursion
+            onExit()
+        task
 
 ////////////////////////////////////////////////////////////
 // Looping.
@@ -245,45 +263,48 @@ let rec private forIterator (enumerator : 'a IEnumerator) (iteration : 'a -> uni
 
 /// Monadic iteration.
 /// Create a task that lazily iterates a sequence, executing `iteration` for each element.
-let forM (sequence : 'a seq) (iteration : 'a -> unit Plan) =
-    let enumerator = sequence.GetEnumerator()
-    tryFinally
-        (fun () -> forIterator enumerator iteration)
-        (fun () -> enumerator.Dispose())
+let forM (sequence : 'a seq) (iteration : 'a -> unit Plan) : unit Plan =
+    fun () ->
+        let enumerator = sequence.GetEnumerator()
+        tryFinally
+            (fun () -> forIterator enumerator iteration ())
+            (fun () -> enumerator.Dispose())
+            ()
 
-let rec private forAs (tasks : (unit -> unit Plan) seq) : unit Plan =
-    let steps =
-        let steps = new ResizeArray<_>()
-        let exns = new ResizeArray<_>()
-        for task in tasks do
-            try
-                match task() with
-                | Step step -> steps.Add(step)
-                | Result _ -> ()
-            with
-            | exn -> exns.Add(exn)
-        if exns.Count > 0 then abortSteps steps (aggregate exns)
-        else steps
-    if steps.Count <= 0 then zero
-    else
-        let pending =
-            let arr = Array.zeroCreate steps.Count
-            for i = 0 to steps.Count - 1 do
-                arr.[i] <- fst steps.[i]
-            BatchMany arr
-        let onResponses =
-            function
-            | BatchMany responses ->
-                responses
-                |> Seq.mapi (fun i rsp () -> snd steps.[i] rsp)
-                |> forAs
-            | BatchAbort -> abort()
-            | BatchPair _
-            | BatchLeaf _ -> logicFault "Incorrect response shape for applicative batch"
-        Step (pending, onResponses)
+let rec private forAs (tasks : (unit Plan) seq) : unit Plan =
+    fun () ->
+        let steps =
+            let steps = new ResizeArray<_>()
+            let exns = new ResizeArray<_>()
+            for task in tasks do
+                try
+                    match task() with
+                    | Step step -> steps.Add(step)
+                    | Result _ -> ()
+                with
+                | exn -> exns.Add(exn)
+            if exns.Count > 0 then abortSteps steps (aggregate exns)
+            else steps
+        if steps.Count <= 0 then Result ()
+        else
+            let pending =
+                let arr = Array.zeroCreate steps.Count
+                for i = 0 to steps.Count - 1 do
+                    arr.[i] <- fst steps.[i]
+                BatchMany arr
+            let onResponses =
+                function
+                | BatchMany responses ->
+                    responses
+                    |> Seq.mapi (fun i rsp () -> snd steps.[i] rsp)
+                    |> forAs <| ()
+                | BatchAbort -> abort()
+                | BatchPair _
+                | BatchLeaf _ -> logicFault "Incorrect response shape for applicative batch"
+            Step (pending, onResponses)
 
 /// Applicative iteration.
 /// Create a task that strictly iterates a sequence, creating a `Plan` for each element
 /// using the given `iteration` function, then runs those tasks concurrently.
-let forA (sequence : 'a seq) (iteration : 'a -> unit Plan) =
-    forAs (sequence |> Seq.map (fun element () -> iteration element))
+let forA (sequence : 'a seq) (iteration : 'a -> unit Plan) : unit Plan =
+    forAs (sequence |> Seq.map (fun element -> iteration element))
