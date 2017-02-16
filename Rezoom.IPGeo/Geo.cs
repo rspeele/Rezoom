@@ -1,4 +1,5 @@
-﻿using Rezoom.IPGeo.Internals;
+﻿using Microsoft.FSharp.Core;
+using Rezoom.IPGeo.Internals;
 using Rezoom.CS;
 
 namespace Rezoom.IPGeo
@@ -10,6 +11,6 @@ namespace Rezoom.IPGeo
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        public static Plan<GeoInfo> Locate(string ip) => new GeoErrand(ip).ToPlan();
+        public static FSharpFunc<Unit, PlanState<GeoInfo>> Locate(string ip) => new GeoErrand(ip).ToPlan();
     }
 }
