@@ -28,7 +28,10 @@ and PlanState<'result> =
     | Result of 'result
     | Step of Step<'result>
 
-type Plan<'result> = unit -> PlanState<'result>
+[<Struct>]
+type Plan<'result> =
+    val public NextState : unit -> PlanState<'result>
+    new(next) = { NextState = next }
 
 /// Hint that it is OK to batch the given sequence or task
 type BatchHint<'a> = internal | BatchHint of 'a

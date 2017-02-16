@@ -19,7 +19,7 @@ type PlanBuilder() =
     member inline __.Bind((a, b, c), cont) = bind (tuple3 a b c) cont
     member inline __.Bind((a, b, c, d), cont) = bind (tuple4 a b c d) cont
 
-    member inline __.Delay(delayed : unit -> 'a Plan) : 'a Plan = fun () -> delayed () ()
+    member inline __.Delay(delayed : unit -> 'a Plan) : 'a Plan = Plan(fun () -> delayed().NextState())
     member inline __.Run(plan : 'a Plan) : 'a Plan = plan
 
     member inline __.For(sequence : #seq<'a>, iteration : 'a -> unit Plan) : unit Plan =
@@ -32,7 +32,7 @@ type PlanBuilder() =
             match disposable with
             | null -> ()
             | d -> d.Dispose()
-        tryFinally (fun () -> body disposable ()) dispose
+        tryFinally (Plan(fun () -> body(disposable).NextState())) dispose
 
     member inline __.TryFinally(body : 'a Plan, onExit : unit -> unit) : 'a Plan = tryFinally body onExit
     member inline __.TryWith(body : 'a Plan, onExn : exn -> 'a Plan) : 'a Plan = tryCatch body onExn
