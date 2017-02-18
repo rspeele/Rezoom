@@ -28,7 +28,9 @@ and PlanState<'result> =
     | Result of 'result
     | Step of Step<'result>
 
-type Plan<'result> = unit -> PlanState<'result>
+[<AbstractClass>]
+type Plan<'result>() =
+    abstract member Next : unit -> PlanState<'result>
 
 /// Hint that it is OK to batch the given sequence or task
 type BatchHint<'a> = internal | BatchHint of 'a

@@ -11,6 +11,6 @@ namespace Rezoom.IPGeo
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        public static FSharpFunc<Unit, PlanState<GeoInfo>> Locate(string ip) => new GeoErrand(ip).ToPlan();
+        public static Plan<GeoInfo> Locate(string ip) => new GeoErrand(ip).ToPlan();
     }
 }
