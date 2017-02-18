@@ -136,7 +136,7 @@ let ``nested finally`` () =
     } |> test
 
 [<Test>]
-let ``concurrent abortion`` () =
+let ``concurrent abortion good last`` () =
     let mutable ranFinally = false
     let deadly query =
         plan {
@@ -156,6 +156,64 @@ let ``concurrent abortion`` () =
             plan {
                 let! x, y, z =
                     deadly "x", deadly "y", good "z"
+                return x + y + z
+            }
+        Batches =
+            [   [ "x"; "y"; "z" ]
+            ]
+        Result = Bad (fun ex -> ranFinally)
+    } |> test
+
+[<Test>]
+let ``concurrent abortion good first`` () =
+    let mutable ranFinally = false
+    let deadly query =
+        plan {
+            let! x = failingRetrieve "fail" query
+            return x
+        }
+    let good query =
+        plan {
+            try
+                let! result = send query
+                let! next = send "jim"
+                return result + next
+            finally
+                ranFinally <- true
+        }
+    {   Task = fun () ->
+            plan {
+                let! x, y, z =
+                    good "x", deadly "y", deadly "z"
+                return x + y + z
+            }
+        Batches =
+            [   [ "x"; "y"; "z" ]
+            ]
+        Result = Bad (fun ex -> ranFinally)
+    } |> test
+
+[<Test>]
+let ``concurrent abortion good middle`` () =
+    let mutable ranFinally = false
+    let deadly query =
+        plan {
+            let! x = failingRetrieve "fail" query
+            return x
+        }
+    let good query =
+        plan {
+            try
+                let! result = send query
+                let! next = send "jim"
+                return result + next
+            finally
+                ranFinally <- true
+        }
+    {   Task = fun () ->
+            plan {
+                let! x, y, z =
+                    deadly "x", good "y", deadly "z"
                 return x + y + z
             }
         Batches =
