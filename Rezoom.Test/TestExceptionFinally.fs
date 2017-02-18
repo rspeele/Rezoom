@@ -313,7 +313,7 @@ let ``concurrent logic abortion good middle`` () =
     } |> test
 
 [<Test>]
-let ``concurrent loop abortion`` () =
+let ``concurrent loop retrieval abortion`` () =
     let mutable ranFinally = false
     let deadly query =
         plan {
@@ -340,6 +340,40 @@ let ``concurrent loop abortion`` () =
             }
         Batches =
             [   [ "x"; "y"; "z" ]
+            ]
+        Result = Bad (fun _ ->
+            ranFinally)
+    } |> test
+
+[<Test>]
+let ``concurrent loop logic abortion`` () =
+    let mutable ranFinally = false
+    let deadly query =
+        plan {
+            failwith "logic"
+            let! x = failingRetrieve "fail" query
+            return ()
+        }
+    let good query =
+        plan {
+            try
+                let! result = send query
+                let! next = send "jim"
+                return ()
+            finally
+                ranFinally <- true
+        }
+    {   Task = fun () ->
+            plan {
+                for q in batch ["x"; "y"; "z"] do
+                    if q = "y" then
+                        do! good q
+                    else
+                        do! deadly q
+                return ()
+            }
+        Batches =
+            [
             ]
         Result = Bad (fun _ ->
             ranFinally)
