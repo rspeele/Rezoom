@@ -156,12 +156,35 @@ let rec private applyState (taskF : PlanState<'a -> 'b>) (taskA : PlanState<'a>)
             | BatchMany _ -> logicFault "Incorrect response shape for applied pair"
         Step (pending, onResponses)
 
+let inline private next2 taskF taskA =
+    let mutable exnF : exn = null
+    let mutable exnA : exn = null
+    let mutable resF : PlanState<'a -> 'b> = Unchecked.defaultof<_>
+    let mutable resA : PlanState<'a> = Unchecked.defaultof<_>
+    try
+        resF <- taskF()
+    with
+    | exn ->
+        exnF <- exn
+    try
+        resA <- taskA()
+    with
+    | exn -> exnA <- exn
+    if isNull exnF && isNull exnA then
+        applyState resF resA
+    else if not (isNull exnF) && not (isNull exnA) then
+        raise (new AggregateException(exnF, exnA))
+    else if isNull exnF then
+        abortTask resF exnA
+    else
+        abortTask resA exnF
+
 /// Create a task that will eventually apply the function produced by
 /// `taskF` to the value produced by `taskA` to obtain its result.
 /// The two tasks are independent, so they will execute concurrently and
 /// share batchable resources.
 let apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
-    fun () -> applyState (taskF()) (taskA())
+    fun () -> next2 taskF taskA
 
 /// Create a task that runs `taskA` and `taskB` concurrently and combines their results into a tuple.
 let tuple2 (taskA : 'a Plan) (taskB : 'b Plan) : ('a * 'b) Plan =
