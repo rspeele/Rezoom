@@ -117,46 +117,7 @@ let inline combine (task : 'a Plan) (cont : 'b Plan) : 'b Plan =
 // concurrently and share batchable resources.
 ////////////////////////////////////////////////////////////
 
-let rec private applyState (taskF : PlanState<'a -> 'b>) (taskA : PlanState<'a>) : PlanState<'b> =
-    match taskF, taskA with
-    | Result f, Result a ->
-        Result (f a)
-    | Result f, step ->
-         _mapInline _mapRecursive ((<|) f) step
-    | step, Result a ->
-         _mapInline _mapRecursive ((|>) a) step
-    | Step (pendingF, resumeF), Step (pendingA, resumeA) ->
-        let pending = BatchPair (pendingF, pendingA)
-        let onResponses =
-            function
-            | BatchPair (rspF, rspA) ->
-                let mutable exnF : exn = null
-                let mutable exnA : exn = null
-                let mutable resF : PlanState<'a -> 'b> = Unchecked.defaultof<_>
-                let mutable resA : PlanState<'a> = Unchecked.defaultof<_>
-                try
-                    resF <- resumeF rspF
-                with
-                | exn ->
-                    exnF <- exn
-                try
-                    resA <- resumeA rspA
-                with
-                | exn -> exnA <- exn
-                if isNull exnF && isNull exnA then
-                    applyState resF resA
-                else if not (isNull exnF) && not (isNull exnA) then
-                    raise (new AggregateException(exnF, exnA))
-                else if isNull exnF then
-                    abortTask resF exnA
-                else
-                    abortTask resA exnF
-            | BatchAbort -> abort()
-            | BatchLeaf _
-            | BatchMany _ -> logicFault "Incorrect response shape for applied pair"
-        Step (pending, onResponses)
-
-let inline private next2 taskF taskA =
+let inline private next2 taskF taskA proceed =
     let mutable exnF : exn = null
     let mutable exnA : exn = null
     let mutable resF : PlanState<'a -> 'b> = Unchecked.defaultof<_>
@@ -171,7 +132,7 @@ let inline private next2 taskF taskA =
     with
     | exn -> exnA <- exn
     if isNull exnF && isNull exnA then
-        applyState resF resA
+        proceed resF resA
     else if not (isNull exnF) && not (isNull exnA) then
         raise (new AggregateException(exnF, exnA))
     else if isNull exnF then
@@ -179,12 +140,32 @@ let inline private next2 taskF taskA =
     else
         abortTask resA exnF
 
+let rec private applyState (taskF : PlanState<'a -> 'b>) (taskA : PlanState<'a>) : PlanState<'b> =
+    match taskF, taskA with
+    | Result f, Result a ->
+        Result (f a)
+    | Result f, step ->
+         _mapInline _mapRecursive ((<|) f) step
+    | step, Result a ->
+         _mapInline _mapRecursive ((|>) a) step
+    | Step (pendingF, resumeF), Step (pendingA, resumeA) ->
+       
+        let pending = BatchPair (pendingF, pendingA)
+        let onResponses =
+            function
+            | BatchPair (rspF, rspA) ->
+                next2 (fun () -> resumeF rspF) (fun () -> resumeA rspA) applyState
+            | BatchAbort -> abort()
+            | BatchLeaf _
+            | BatchMany _ -> logicFault "Incorrect response shape for applied pair"
+        Step (pending, onResponses)
+
 /// Create a task that will eventually apply the function produced by
 /// `taskF` to the value produced by `taskA` to obtain its result.
 /// The two tasks are independent, so they will execute concurrently and
 /// share batchable resources.
 let apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
-    fun () -> next2 taskF taskA
+    fun () -> next2 taskF taskA applyState
 
 /// Create a task that runs `taskA` and `taskB` concurrently and combines their results into a tuple.
 let tuple2 (taskA : 'a Plan) (taskB : 'b Plan) : ('a * 'b) Plan =
