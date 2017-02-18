@@ -297,7 +297,7 @@ let executeWithCancellation (token : CancellationToken) (config : ExecutionConfi
         let log = config.Log
         let cache = Cache()
         use context = new ExecutionServiceContext(config.ServiceConfig)
-        let mutable planState = plan()
+        let mutable planState = plan.Next()
         let mutable looping = true
         let mutable returned = Unchecked.defaultof<_>
         while looping do
