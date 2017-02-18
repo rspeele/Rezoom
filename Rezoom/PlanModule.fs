@@ -21,8 +21,8 @@ let internal abortSteps (steps : 'a Step seq) (reason : exn) : 'b =
     if exns.Count > 1 then raise (aggregate exns)
     else dispatchRaise reason
 
-let internal abortTask (task : 'a PlanState) (reason : exn) : 'b =
-    match task with
+let internal abortTask (state : 'a PlanState) (reason : exn) : 'b =
+    match state with
     | Step (_, resume) ->
         try
             ignore <| resume BatchAbort
@@ -66,15 +66,15 @@ let ofErrand (request : Errand<'a>) : Plan<'a> =
 // This lets you transform the eventual values produced by the task.
 ////////////////////////////////////////////////////////////
 
-let inline _mapInline map f task =
-    match task with
+let inline _mapInline map f plan =
+    match plan with
     | Result r -> Result (f r)
     | Step s -> Step (map f s)
 let rec _mapRecursive (f : 'a -> 'b) ((pending, resume) : 'a Step) : 'b Step =
     pending, fun responses -> _mapInline _mapRecursive f (resume responses)
 /// Map a function over the result of a `Plan<'a>`, producing a new `Plan<'b>`.
-and inline map (f : 'a -> 'b) (task : 'a Plan): 'b Plan =
-    fun () -> _mapInline _mapRecursive f (task())
+and inline map (f : 'a -> 'b) (plan : 'a Plan): 'b Plan =
+    fun () -> _mapInline _mapRecursive f (plan())
 
 ////////////////////////////////////////////////////////////
 // Monadic `bind`.
@@ -83,31 +83,31 @@ and inline map (f : 'a -> 'b) (task : 'a Plan): 'b Plan =
 // first task is necessary to decide what to do as the next task.
 ////////////////////////////////////////////////////////////
 
-let inline _bindInline bind task cont =
-    match task with
+let inline _bindInline bind plan cont =
+    match plan with
     | Result r -> cont r ()
     | Step (pending, resume) ->
         Step (pending, fun responses -> bind (resume responses) cont)
-let rec _bindRecursive task cont =
-    _bindInline _bindRecursive task cont
+let rec _bindRecursive plan cont =
+    _bindInline _bindRecursive plan cont
 /// Chain a continuation `Plan` onto an existing `Plan` to
 /// get a new `Plan`.
 /// The continuation can be dependent on the result of the first task.
-let inline bind (task : 'a Plan) (cont : 'a -> 'b Plan) : 'b Plan =
-    fun () -> _bindInline (_bindInline _bindRecursive) (task()) cont
+let inline bind (plan : 'a Plan) (cont : 'a -> 'b Plan) : 'b Plan =
+    fun () -> _bindInline (_bindInline _bindRecursive) (plan()) cont
 
-let inline _combineInline bind task cont =
-    match task with
+let inline _combineInline bind plan cont =
+    match plan with
     | Result _ -> cont ()
     | Step (pending, resume) ->
         Step (pending, fun responses -> bind (resume responses) cont)
-let rec _combineRecursive task cont =
-    _combineInline _combineRecursive task cont
+let rec _combineRecursive plan cont =
+    _combineInline _combineRecursive plan cont
 /// Chain a continuation `Plan` onto an existing `Plan` to
 /// get a new `Plan`.
 /// The continuation can be dependent on the result of the first task.
-let inline combine (task : 'a Plan) (cont : 'b Plan) : 'b Plan =
-    fun () -> _combineInline (_combineInline _combineRecursive) (task()) cont
+let inline combine (plan : 'a Plan) (cont : 'b Plan) : 'b Plan =
+    fun () -> _combineInline (_combineInline _combineRecursive) (plan()) cont
 
 ////////////////////////////////////////////////////////////
 // Applicative functor `apply`.
