@@ -297,14 +297,14 @@ let executeWithCancellation (token : CancellationToken) (config : ExecutionConfi
         let log = config.Log
         let cache = Cache()
         use context = new ExecutionServiceContext(config.ServiceConfig)
-        let mutable planState = plan.Next()
+        let mutable planState = Plan.advance plan
         let mutable looping = true
         let mutable returned = Unchecked.defaultof<_>
         while looping do
             match planState with
             | Result r ->
                 looping <- false
-                returned <- r
+                returned <- r 
             | Step (requests, resume) ->
                 log.OnBeginStep()
                 let mutable stepState = ExecutionFault
@@ -312,7 +312,7 @@ let executeWithCancellation (token : CancellationToken) (config : ExecutionConfi
                     let step = Step(log, context, cache)
                     let retrievals = requests.Map(step.AddRequest)
                     do! step.Execute(token).ConfigureAwait(continueOnCapturedContext = true)
-                    planState <- resume <| retrievals.Map((|>) ())
+                    planState <- retrievals.Map((|>) ()) |> resume |> Plan.advance
                     stepState <- ExecutionSuccess
                 finally
                     context.ClearLocals(stepState)
