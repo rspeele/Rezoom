@@ -33,31 +33,6 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Release\Rezoom.XML</DocumentationFile>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="ExceptionTypes.fs" />
-    <Compile Include="InternalUtilities.fs" />
-    <Compile Include="Services.fs" />
-    <Compile Include="CacheInfo.fs" />
-    <Compile Include="Errand.fs" />
-    <Compile Include="Plan.fs" />
-    <Compile Include="PlanModule.fs" />
-    <Compile Include="PlanBuilder.fs" />
-    <Compile Include="..\Shared\TaskBuilder.fs">
-      <Link>TaskBuilder.fs</Link>
-    </Compile>
-    <Compile Include="Execution.fs" />
-    <Compile Include="CS.fs" />
-  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
@@ -74,6 +49,32 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
+  <ItemGroup>
+    <None Include="Rezoom.nuspec" />
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="ExceptionTypes.fs" />
+    <Compile Include="InternalUtilities.fs" />
+    <Compile Include="Services.fs" />
+    <Compile Include="CacheInfo.fs" />
+    <Compile Include="Errand.fs" />
+    <Compile Include="Plan.fs" />
+    <Compile Include="PlanModule.fs" />
+    <Compile Include="PlanBuilder.fs" />
+    <Compile Include="..\Shared\TaskBuilder.fs">
+      <Link>TaskBuilder.fs</Link>
+    </Compile>
+    <Compile Include="Execution.fs" />
+    <Compile Include="CS.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
