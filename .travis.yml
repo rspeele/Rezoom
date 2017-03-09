@@ -8,5 +8,5 @@ install:
 script:
   - xbuild /p:Configuration=Release Rezoom.sln
   - mono ./testrunner/NUnit.ConsoleRunner.3.2.0/tools/nunit3-console.exe ./Rezoom.Test/bin/Release/Rezoom.Test.dll
-  - mono ./testrunner/NUnit.ConsoleRunner.3.2.0/tools/nunit3-console.exe ./Rezoom.SQL.Test/bin/Release/Rezoom.SQL.Test.dll
+
 
