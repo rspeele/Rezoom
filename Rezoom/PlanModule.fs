@@ -11,9 +11,9 @@ let inline internal advance plan =
     | Step (BatchNone, next) -> next BatchNone
     | _ -> plan
 
-let internal abort () = raise (PlanAbortException "Task aborted")
+let internal abort () = raise (PlanAbortException "Plan aborted")
 
-let internal abortTask (state : 'a Plan) (reason : exn) : 'b =
+let internal abortPlan (state : 'a Plan) (reason : exn) : 'b =
     match state with
     | Step (_, resume) ->
         try
@@ -27,7 +27,7 @@ let internal abortTask (state : 'a Plan) (reason : exn) : 'b =
 
 ////////////////////////////////////////////////////////////
 // Fundamentals:
-// Tasks that immediately return and tasks that encapsulate a single step.
+// Plans that immediately return and plans that encapsulate a single step.
 ////////////////////////////////////////////////////////////
 
 let inline delayed (plan : unit -> 'a Plan) =
@@ -59,7 +59,7 @@ let ofErrand (request : Errand<'a>) : Plan<'a> =
 ////////////////////////////////////////////////////////////
 // Mapping of plain-old functions over `Plan`s.
 //
-// This lets you transform the eventual values produced by the task.
+// This lets you transform the eventual values produced by the plan.
 ////////////////////////////////////////////////////////////
 
 /// Map a function over the result of a `Plan<'a>`, producing a new `Plan<'b>`.
@@ -71,13 +71,13 @@ let rec map (f : 'a -> 'b) (plan : 'a Plan): 'b Plan =
 ////////////////////////////////////////////////////////////
 // Monadic `bind`.
 //
-// This lets you sequence together tasks where the result of the
-// first task is necessary to decide what to do as the next task.
+// This lets you sequence together plans where the result of the
+// first plan is necessary to decide what to do as the next plan.
 ////////////////////////////////////////////////////////////
 
 /// Chain a continuation `Plan` onto an existing `Plan` to
 /// get a new `Plan`.
-/// The continuation can be dependent on the result of the first task.
+/// The continuation can be dependent on the result of the first plan.
 let rec bind (plan : 'a Plan) (cont : 'a -> 'b Plan) : 'b Plan =
     match plan with
     | Result r -> cont r
@@ -86,7 +86,7 @@ let rec bind (plan : 'a Plan) (cont : 'a -> 'b Plan) : 'b Plan =
 
 /// Chain a continuation `Plan` onto an existing `Plan` to
 /// get a new `Plan`.
-/// The continuation can be dependent on the result of the first task.
+/// The continuation can be dependent on the result of the first plan.
 let rec combine (plan : 'a Plan) (cont : unit -> 'b Plan) : 'b Plan =
     match plan with
     | Result _ -> cont()
@@ -97,22 +97,22 @@ let rec combine (plan : 'a Plan) (cont : unit -> 'b Plan) : 'b Plan =
 // Applicative functor `apply`.
 //
 // This lets you combine the results of multiple independent
-// tasks into a single value, while allowing them to execute
+// plans into a single value, while allowing them to execute
 // concurrently and share batchable resources.
 ////////////////////////////////////////////////////////////
 
-let inline private next2 taskF taskA proceed =
+let inline private next2 planF planA proceed =
     let mutable exnF : exn = null
     let mutable exnA : exn = null
     let mutable resF : Plan<'a -> 'b> = Unchecked.defaultof<_>
     let mutable resA : Plan<'a> = Unchecked.defaultof<_>
     try
-        resF <- advance (taskF ())
+        resF <- advance (planF ())
     with
     | exn ->
         exnF <- exn
     try
-        resA <- advance (taskA ())
+        resA <- advance (planA ())
     with
     | exn -> exnA <- exn
     if isNull exnF && isNull exnA then
@@ -120,12 +120,12 @@ let inline private next2 taskF taskA proceed =
     else if not (isNull exnF) && not (isNull exnA) then
         raise (aggregate [| exnF; exnA |])
     else if isNull exnF then
-        abortTask resF exnA
+        abortPlan resF exnA
     else
-        abortTask resA exnF
+        abortPlan resA exnF
 
-let rec private applyState (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
-    match taskF, taskA with
+let rec private applyState (planF : Plan<'a -> 'b>) (planA : Plan<'a>) : Plan<'b> =
+    match planF, planA with
     | Result f, Result a -> Result (f a)
     | Result f, step -> map ((<|) f) step
     | step, Result a -> map ((|>) a) step
@@ -141,46 +141,46 @@ let rec private applyState (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b
             | BatchMany _ -> logicFault "Incorrect response shape for applied pair"
         Step (pending, onResponses)
 
-/// Create a task that will eventually apply the function produced by
-/// `taskF` to the value produced by `taskA` to obtain its result.
-/// The two tasks are independent, so they will execute concurrently and
+/// Create a plan that will eventually apply the function produced by
+/// `planF` to the value produced by `planA` to obtain its result.
+/// The two plans are independent, so they will execute concurrently and
 /// share batchable resources.
-let apply (taskF : Plan<'a -> 'b>) (taskA : Plan<'a>) : Plan<'b> =
-    next2 (fun () -> taskF) (fun () -> taskA) applyState
+let apply (planF : Plan<'a -> 'b>) (planA : Plan<'a>) : Plan<'b> =
+    next2 (fun () -> planF) (fun () -> planA) applyState
 
-/// Create a task that runs `taskA` and `taskB` concurrently and combines their results into a tuple.
-let tuple2 (taskA : 'a Plan) (taskB : 'b Plan) : ('a * 'b) Plan =
+/// Create a plan that runs `planA` and `planB` concurrently and combines their results into a tuple.
+let tuple2 (planA : 'a Plan) (planB : 'b Plan) : ('a * 'b) Plan =
     apply
-        (map (fun a b -> a, b) taskA)
-        taskB
+        (map (fun a b -> a, b) planA)
+        planB
 
-/// Create a task that runs `taskA`, `taskB`, and `taskC` concurrently and combines their results into a tuple.
-let tuple3 (taskA : 'a Plan) (taskB : 'b Plan) (taskC : 'c Plan) : ('a * 'b * 'c) Plan =
+/// Create a plan that runs `planA`, `planB`, and `planC` concurrently and combines their results into a tuple.
+let tuple3 (planA : 'a Plan) (planB : 'b Plan) (planC : 'c Plan) : ('a * 'b * 'c) Plan =
     apply
         (apply
-            (map (fun a b c -> a, b, c) taskA)
-            taskB)
-        taskC
+            (map (fun a b c -> a, b, c) planA)
+            planB)
+        planC
 
-/// Create a task that runs `taskA`, `taskB`, `taskC`, and `taskD` concurrently
+/// Create a plan that runs `planA`, `planB`, `planC`, and `planD` concurrently
 /// and combines their results into a tuple.
 let tuple4
-    (taskA : 'a Plan)
-    (taskB : 'b Plan)
-    (taskC : 'c Plan)
-    (taskD : 'd Plan)
+    (planA : 'a Plan)
+    (planB : 'b Plan)
+    (planC : 'c Plan)
+    (planD : 'd Plan)
     : ('a * 'b * 'c * 'd) Plan =
     apply
         (apply
             (apply
-                (map (fun a b c d -> a, b, c, d) taskA)
-                taskB)
-            taskC)
-        taskD
+                (map (fun a b c d -> a, b, c, d) planA)
+                planB)
+            planC)
+        planD
 
 /// Create a plan that runs all the given plans concurrently and combines their results into a list.
-let rec concurrentList (tasks : 'a Plan list) : 'a list Plan =
-    match tasks with
+let rec concurrentList (plans : 'a Plan list) : 'a list Plan =
+    match plans with
     | [] -> ret []
     | head :: tail ->
         apply
@@ -194,7 +194,7 @@ let rec concurrentList (tasks : 'a Plan list) : 'a list Plan =
 /// Wrap a `Plan<'a>` with an exception handler.
 /// The exception handler `catcher` will be called if an exception is thrown
 /// during execution of `wrapped`, whether it's in creating the `Plan`
-/// to be run or in executing any step of the resulting task.
+/// to be run or in executing any step of the resulting plan.
 /// The exception handler may rethrow the exception.
 let rec tryCatch (wrapped : unit -> 'a Plan) (catcher : exn -> 'a Plan) : 'a Plan =
     try
@@ -209,12 +209,12 @@ let rec tryCatch (wrapped : unit -> 'a Plan) (catcher : exn -> 'a Plan) : 'a Pla
     | ex -> catcher ex
 
 /// Wrap a `Plan<'a>` with a block that must execute.
-/// When the task is executed, the function `onExit` will be called
-/// after `wrapped` completes, regardless of whether the task
+/// When the plan is executed, the function `onExit` will be called
+/// after `wrapped` completes, regardless of whether the plan
 /// succeeded, failed to be created, or failed while partially executed.
 let rec tryFinally (wrapped : unit -> 'a Plan) (onExit : unit -> unit) : 'a Plan =
     let mutable cleanExit = false
-    let task =
+    let plan =
         try
             match advance <| wrapped () with
             | Result _ as result ->
@@ -235,16 +235,16 @@ let rec tryFinally (wrapped : unit -> 'a Plan) (onExit : unit -> unit) : 'a Plan
     if cleanExit then
         // run outside of the try/catch so we don't risk recursion
         onExit()
-    task
+    plan
 
 ////////////////////////////////////////////////////////////
 // Looping.
 //
 // There are two ways to loop over a sequence of inputs.
 //
-// One is to lazily enumerate, chaining together the tasks handling each step with `bind`.
+// One is to lazily enumerate, chaining together the plans handling each step with `bind`.
 //
-// The other is to enumerate immediately and generate tasks for all the sequence's elements,
+// The other is to enumerate immediately and generate plans for all the sequence's elements,
 // then combine them with `apply` so that they can execute concurrently.
 // Rather than actually using `apply`, we treat this as a special case for efficiency's sake.
 ////////////////////////////////////////////////////////////
@@ -254,7 +254,7 @@ let rec private forIterator (enumerator : 'a IEnumerator) (iteration : 'a -> uni
     bind (iteration enumerator.Current) (fun () -> forIterator enumerator iteration)
 
 /// Monadic iteration.
-/// Create a task that lazily iterates a sequence, executing `iteration` for each element.
+/// Create a plan that lazily iterates a sequence, executing `iteration` for each element.
 let forM (sequence : 'a seq) (iteration : 'a -> unit Plan) : unit Plan =
     let enumerator = sequence.GetEnumerator()
     tryFinally
@@ -307,7 +307,7 @@ let rec private forAs (plans : (unit Plan) seq) : unit Plan =
         Step (pending, onResponses)
 
 /// Applicative iteration.
-/// Create a task that strictly iterates a sequence, creating a `Plan` for each element
-/// using the given `iteration` function, then runs those tasks concurrently.
+/// Create a plan that strictly iterates a sequence, creating a `Plan` for each element
+/// using the given `iteration` function, then runs those plans concurrently.
 let forA (sequence : 'a seq) (iteration : 'a -> unit Plan) : unit Plan =
     forAs (sequence |> Seq.map (fun element -> iteration element))
