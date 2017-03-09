@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>$author$</authors>
+    <owners>$author$</owners>
+    <licenseUrl>https://raw.githubusercontent.com/rspeele/Rezoom/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/rspeele/Rezoom</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>$description$</description>
+    <releaseNotes>Initial pre-prerelease.</releaseNotes>
+    <copyright>Copyright Robert Peele 2017</copyright>
+    <tags>rezoom monad resumption data</tags>
+  </metadata>
+</package>
