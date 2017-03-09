@@ -166,6 +166,7 @@ let ``concurrent retrieval abortion good last`` () =
 
 [<Test>]
 let ``concurrent retrieval abortion good first`` () =
+    let mutable started = false
     let mutable ranFinally = false
     let deadly query =
         plan {
@@ -174,6 +175,7 @@ let ``concurrent retrieval abortion good first`` () =
         }
     let good query =
         plan {
+            started <- true
             try
                 let! result = send query
                 let! next = send "jim"
@@ -190,11 +192,12 @@ let ``concurrent retrieval abortion good first`` () =
         Batches =
             [   [ "x"; "y"; "z" ]
             ]
-        Result = Bad (fun ex -> ranFinally)
+        Result = Bad (fun ex -> started && ranFinally)
     } |> test
 
 [<Test>]
 let ``concurrent retrieval abortion good middle`` () =
+    let mutable started = false
     let mutable ranFinally = false
     let deadly query =
         plan {
@@ -203,6 +206,7 @@ let ``concurrent retrieval abortion good middle`` () =
         }
     let good query =
         plan {
+            started <- true
             try
                 let! result = send query
                 let! next = send "jim"
@@ -219,11 +223,12 @@ let ``concurrent retrieval abortion good middle`` () =
         Batches =
             [   [ "x"; "y"; "z" ]
             ]
-        Result = Bad (fun ex -> ranFinally)
+        Result = Bad (fun ex -> started && ranFinally)
     } |> test
 
 [<Test>]
 let ``concurrent logic abortion good last`` () =
+    let mutable started = false
     let mutable ranFinally = false
     let deadly query =
         plan {
@@ -233,6 +238,7 @@ let ``concurrent logic abortion good last`` () =
         }
     let good query =
         plan {
+            started <- true
             try
                 let! result = send query
                 let! next = send "jim"
@@ -249,7 +255,7 @@ let ``concurrent logic abortion good last`` () =
         Batches =
             [
             ]
-        Result = Bad (fun ex -> ranFinally)
+        Result = Bad (fun ex -> not started && not ranFinally)
     } |> test
 
 [<Test>]
@@ -314,6 +320,7 @@ let ``concurrent logic abortion good middle`` () =
 
 [<Test>]
 let ``concurrent loop retrieval abortion`` () =
+    let mutable started = false
     let mutable ranFinally = false
     let deadly query =
         plan {
@@ -322,6 +329,7 @@ let ``concurrent loop retrieval abortion`` () =
         }
     let good query =
         plan {
+            started <- true
             try
                 let! result = send query
                 let! next = send "jim"
@@ -341,8 +349,7 @@ let ``concurrent loop retrieval abortion`` () =
         Batches =
             [   [ "x"; "y"; "z" ]
             ]
-        Result = Bad (fun _ ->
-            ranFinally)
+        Result = Bad (fun _ -> started && ranFinally)
     } |> test
 
 [<Test>]

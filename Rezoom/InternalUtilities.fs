@@ -6,7 +6,15 @@ open System.Runtime.ExceptionServices
 
 let aggregate (exns : exn ICollection) =
     if exns.Count = 1 then exns |> Seq.head
-    else new AggregateException(exns) :> exn
+    else
+        let exns =
+            seq {
+                for exn in exns do
+                    match exn with
+                    | :? AggregateException as agg -> yield! agg.InnerExceptions
+                    | _ -> yield exn
+            }
+        new AggregateException(exns) :> exn
 
 let inline notSupported (reason : string) =
     raise (new NotSupportedException(reason))

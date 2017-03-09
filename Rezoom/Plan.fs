@@ -9,12 +9,14 @@ type DataResponse =
     | RetrievalDeferred
 
 type Batch<'a> =
+    | BatchNone
     | BatchLeaf of 'a
     | BatchPair of ('a Batch * 'a Batch)
     | BatchMany of ('a Batch array)
     | BatchAbort
     member this.Map(f : 'a -> 'b) =
         match this with
+        | BatchNone -> BatchNone
         | BatchLeaf x -> BatchLeaf (f x)
         | BatchPair (l, r) -> BatchPair (l.Map(f), r.Map(f))
         | BatchMany arr -> BatchMany (arr |> Array.map (fun b -> b.Map(f)))
@@ -23,14 +25,9 @@ type Batch<'a> =
 type Requests = Errand Batch
 type Responses = DataResponse Batch
 
-type Step<'result> = Requests * (Responses -> PlanState<'result>)
-and PlanState<'result> =
+and Plan<'result> =
     | Result of 'result
-    | Step of Step<'result>
-
-[<AbstractClass>]
-type Plan<'result>() =
-    abstract member Next : unit -> PlanState<'result>
+    | Step of Requests * (Responses -> Plan<'result>)
 
 /// Hint that it is OK to batch the given sequence or task
 type BatchHint<'a> = internal | BatchHint of 'a
