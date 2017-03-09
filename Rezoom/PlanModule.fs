@@ -178,6 +178,15 @@ let tuple4
             taskC)
         taskD
 
+/// Create a plan that runs all the given plans concurrently and combines their results into a list.
+let rec concurrentList (tasks : 'a Plan list) : 'a list Plan =
+    match tasks with
+    | [] -> ret []
+    | head :: tail ->
+        apply
+            (head |> map (fun head tail -> head :: tail))
+            (concurrentList tail)
+
 ////////////////////////////////////////////////////////////
 // Exception handling.
 ////////////////////////////////////////////////////////////

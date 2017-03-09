@@ -1,7 +1,6 @@
 ﻿module Rezoom.Test.TestConcurrency
 open Rezoom
 open NUnit.Framework
-open FsUnit
 
 [<Test>]
 let ``strict pair`` () =
@@ -52,4 +51,17 @@ let ``chaining concurrency`` () =
                 [ "x3"; "y3"; "z3" ]
             ]
         Result = Good "x1x2x3 y1y2y3 z1z2z3"
+    } |> test
+
+[<Test>]
+let ``list concurrency`` () =
+    {   Task = fun () ->
+            plan {
+                let! xs = Plan.concurrentList [ send "x"; send "y"; send "z" ]
+                return xs
+            }
+        Batches =
+            [   [ "x"; "y"; "z" ]
+            ]
+        Result = Good [ "x"; "y"; "z" ]
     } |> test
