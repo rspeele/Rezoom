@@ -167,6 +167,7 @@ type private Cache() =
             cat.Store(info, arg, result)
 
 type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
+    static let completedTask = Task.Delay(0)
     static let defaultGroup _ = ResizeArray()
     static let retrievalDeferred () = RetrievalDeferred
     let ungrouped = ResizeArray()
@@ -232,7 +233,7 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
     member __.Execute(token) =
         for i = 0 to pending.Count - 1 do ignore <| pending.[i].Force()
         let taskCount = ungrouped.Count + grouped.Count
-        if taskCount <= 0 then Task.CompletedTask else
+        if taskCount <= 0 then completedTask else
         let all = Array.zeroCreate taskCount
         let mutable i = 0
         for group in grouped.Values do

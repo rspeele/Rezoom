@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/rspeele/Rezoom</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <releaseNotes>Use F# 4.1.</releaseNotes>
+    <releaseNotes>Retarget down to .NET 4.5.</releaseNotes>
     <copyright>Copyright Robert Peele 2017</copyright>
     <tags>rezoom monad resumption data</tags>
   </metadata>
