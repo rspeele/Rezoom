@@ -1,8 +1,6 @@
 ﻿module Rezoom.IPGeo.Test.TestGeo
 open Rezoom
 open Rezoom.IPGeo
-open NUnit.Framework
-open FsUnit
 
 let googleDNS = "8.8.8.8"
 let googleDNS2 = "8.8.4.4"
@@ -14,7 +12,6 @@ let googleDNS2ISP = "Level 3 Communications"
 let openDNSISP = "OpenDNS, LLC"
 let fbISP = "Facebook"
 
-[<Test>]
 let ``batches`` () =
     {   Task =
             plan {
@@ -29,7 +26,6 @@ let ``batches`` () =
         ExpectedResult = Value (googleDNSISP, googleDNS2ISP, openDNSISP)
     } |> test
 
-[<Test>]
 let ``caching`` () =
     {   Task =
             plan {
@@ -45,7 +41,6 @@ let ``caching`` () =
         ExpectedResult = Value (googleDNSISP, googleDNSISP, openDNSISP)
     } |> test
 
-[<Test>]
 let ``dedup`` () =
     {   Task =
             plan {
@@ -57,3 +52,10 @@ let ``dedup`` () =
             ]
         ExpectedResult = Value (googleDNSISP, fbISP, fbISP)
     } |> test
+
+[<EntryPoint>]
+let main argv =
+    batches()
+    caching()
+    dedup()
+    0
