@@ -9,6 +9,47 @@ open FSharp.Control.Tasks.ContextInsensitive
 open Rezoom
 open Rezoom.Caching
 
+type ExecutionLog() =
+    abstract member OnBeginStep : unit -> unit
+    default __.OnBeginStep() = ()
+    abstract member OnEndStep : unit -> unit
+    default __.OnEndStep() = ()
+    abstract member OnPreparingErrand : Errand -> unit
+    default __.OnPreparingErrand(_) = ()
+    abstract member OnPreparedErrand : Errand -> unit
+    default __.OnPreparedErrand(_) = ()
+
+type ConsoleExecutionLog() =
+    inherit ExecutionLog()
+    let write str =
+        Diagnostics.Debug.WriteLine(str)
+        Console.WriteLine(str)
+    override __.OnBeginStep() = write "Step {"
+    override __.OnEndStep() = write "} // end step"
+    override __.OnPreparingErrand(errand) =
+        write ("    Preparing errand " + string errand)
+    override __.OnPreparedErrand(errand) =
+        write ("    Prepared errand " + string errand)
+
+type ExecutionInstance(log : ExecutionLog) =
+    member __.Log = log
+    abstract member RunErrand : Errand * ServiceContext -> (CancellationToken -> obj Task)
+    default __.RunErrand(errand, context) = errand.PrepareUntyped context
+    abstract member CreateCache : unit -> Cache
+    default __.CreateCache() = upcast DefaultCache()
+
+type ExecutionConfig =
+    {   ServiceConfig : IServiceConfig
+        Instance : unit -> ExecutionInstance
+    }
+    static member Default =
+        {   ServiceConfig = { new IServiceConfig with member __.TryGetConfig() = None }
+            Instance = fun () -> ExecutionInstance(ExecutionLog())
+        }
+
+type IExecutionStrategy =
+    abstract member Execute : ExecutionConfig * plan : 'a Plan * token : CancellationToken -> 'a Task
+
 type private Step(instance : ExecutionInstance, context : ServiceContext, cache : Cache) =
     static let completedTask = Task.Delay(0)
     static let defaultGroup _ = ResizeArray()
@@ -42,7 +83,6 @@ type private Step(instance : ExecutionInstance, context : ServiceContext, cache 
                     | exn ->
                         result <- RetrievalException exn
                 }
-            let sequenceGroup = errand.SequenceGroup
             match errand.SequenceGroup with
             | null ->
                 ungrouped.Add(retrieve)
@@ -142,36 +182,39 @@ type private ExecutionServiceContext(config : IServiceConfig) =
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
-let executeWithCancellation (token : CancellationToken) (config : ExecutionConfig) (plan : 'a Plan) =
-    task {
-        let instance = config.Instance()
-        let cache = instance.CreateCache()
-        use context = new ExecutionServiceContext(config.ServiceConfig)
-        let mutable planState = Plan.advance plan
-        let mutable looping = true
-        let mutable returned = Unchecked.defaultof<_>
-        while looping do
-            match planState with
-            | Result r ->
-                looping <- false
-                returned <- r 
-            | Step (requests, resume) ->
-                instance.Log.OnBeginStep()
-                let mutable stepState = ExecutionFault
-                try
-                    let step = Step(instance, context, cache)
-                    let retrievals = requests.Map(step.AddRequest)
-                    do! step.Execute(token).ConfigureAwait(continueOnCapturedContext = true)
-                    planState <- retrievals.Map((|>) ()) |> resume |> Plan.advance
-                    stepState <- ExecutionSuccess
-                finally
-                    context.ClearLocals(stepState)
-                    instance.Log.OnEndStep()
-        context.SetSuccessful() // if we got this far we can dispose with success (commit)
-        return returned
+[<CompiledName("DefaultExecutionStrategy")>]
+let defaultExecutionStrategy =
+    { new IExecutionStrategy with
+        member __.Execute(config, plan, token) =
+            task {
+                let instance = config.Instance()
+                let cache = instance.CreateCache()
+                use context = new ExecutionServiceContext(config.ServiceConfig)
+                let mutable planState = Plan.advance plan
+                let mutable looping = true
+                let mutable returned = Unchecked.defaultof<_>
+                while looping do
+                    match planState with
+                    | Result r ->
+                        looping <- false
+                        returned <- r 
+                    | Step (requests, resume) ->
+                        instance.Log.OnBeginStep()
+                        let mutable stepState = ExecutionFault
+                        try
+                            token.ThrowIfCancellationRequested()
+                            let step = Step(instance, context, cache)
+                            let retrievals = requests.Map(step.AddRequest)
+                            do! step.Execute(token).ConfigureAwait(continueOnCapturedContext = true)
+                            planState <- retrievals.Map((|>) ()) |> resume |> Plan.advance
+                            stepState <- ExecutionSuccess
+                        finally
+                            context.ClearLocals(stepState)
+                            instance.Log.OnEndStep()
+                context.SetSuccessful() // if we got this far we can dispose with success (commit)
+                return returned
+            }
     }
-
-let execute (config : ExecutionConfig) (plan : 'a Plan) =
-    let token = CancellationToken()
-    executeWithCancellation token config plan
     
+let execute config plan =
+    defaultExecutionStrategy.Execute(config, plan, CancellationToken.None)
