@@ -65,14 +65,15 @@ type ExpectedResultTest<'a> =
 
 let testSpeed expectedResult =
     let log = TestExecutionLog()
-    let result = (execute { ExecutionConfig.Default with Log = log } (expectedResult.Task())).Result
+    let config = { ExecutionConfig.Default with Instance = fun () -> ExecutionInstance(log) }
+    let result = (execute config (expectedResult.Task())).Result
     match expectedResult.Result with
     | Good x when x = result -> ()
     | _ -> failwith "Invalid result for speed test (try running this as a regular test)"
 
 let test expectedResult =
     let log = TestExecutionLog()
-    let execContext = execute { ExecutionConfig.Default with Log = log }
+    let execContext = execute { ExecutionConfig.Default with Instance = fun () -> ExecutionInstance(log) }
     let result =
         try
             (execContext (expectedResult.Task())).Result |> Choice1Of2

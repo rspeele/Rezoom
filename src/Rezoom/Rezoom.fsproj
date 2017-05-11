@@ -64,6 +64,8 @@
     <Compile Include="..\Shared\TaskBuilder.fs">
       <Link>TaskBuilder.fs</Link>
     </Compile>
+    <Compile Include="Caching.fs" />
+    <Compile Include="ExecutionConfig.fs" />
     <Compile Include="Execution.fs" />
     <Compile Include="CS.fs" />
   </ItemGroup>

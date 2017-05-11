@@ -7,169 +7,18 @@ open System.Threading
 open System.Threading.Tasks
 open FSharp.Control.Tasks.ContextInsensitive
 open Rezoom
+open Rezoom.Caching
 
-type ExecutionLog() =
-    abstract member OnBeginStep : unit -> unit
-    default __.OnBeginStep() = ()
-    abstract member OnEndStep : unit -> unit
-    default __.OnEndStep() = ()
-    abstract member OnPreparingErrand : Errand -> unit
-    default __.OnPreparingErrand(_) = ()
-    abstract member OnPreparedErrand : Errand -> unit
-    default __.OnPreparedErrand(_) = ()
-
-type ConsoleExecutionLog() =
-    inherit ExecutionLog()
-    let write str =
-        Diagnostics.Debug.WriteLine(str)
-        Console.WriteLine(str)
-    override __.OnBeginStep() = write "Step {"
-    override __.OnEndStep() = write "} // end step"
-    override __.OnPreparingErrand(errand) =
-        write ("    Preparing errand " + string errand)
-    override __.OnPreparedErrand(errand) =
-        write ("    Prepared errand " + string errand)
-
-type ExecutionConfig =
-    {   Log : ExecutionLog
-        ServiceConfig : IServiceConfig
-    }
-    static member Default =
-        {   Log = ExecutionLog()
-            ServiceConfig = { new IServiceConfig with member __.TryGetConfig() = None }
-        }
-
-type Dictionary<'k, 'v> with
-    member this.GetValue(key : 'k, generate : 'k -> 'v) =
+type private Step(instance : ExecutionInstance, context : ServiceContext, cache : Cache) =
+    static let completedTask = Task.Delay(0)
+    static let defaultGroup _ = ResizeArray()
+    static let retrievalDeferred () = RetrievalDeferred
+    static let getValue (this : Dictionary<'k, 'v>) (key : 'k) (generate : 'k -> 'v) =
         let succ, v = this.TryGetValue(key)
         if succ then v else
         let generated = generate key
         this.Add(key, generated)
         generated
-
-[<Struct>]
-[<CustomEquality>]
-[<NoComparison>]
-type private CacheKey(identity : obj, argument : obj) =
-    member inline private __.Identity = identity
-    member inline private __.Argument = argument
-    member this.Equals(other : CacheKey) =
-        identity = other.Identity && argument = other.Argument
-    override this.Equals(other : obj) =
-        match other with
-        | :? CacheKey as k -> this.Equals(k)
-        | _ -> false
-    override __.GetHashCode() =
-        let h1 = identity.GetHashCode()
-        if isNull argument then h1 else
-        ((h1 <<< 5) + h1) ^^^ argument.GetHashCode()
-    interface IEquatable<CacheKey> with
-        member this.Equals(other) = this.Equals(other)
-
-[<Struct>]
-[<NoEquality>]
-[<NoComparison>]
-type private CacheValue(generation : int, value : obj) =
-    member __.Generation = generation
-    member __.Value = value
-
-[<AllowNullLiteral>]
-type private CategoryCache(windowSize : int, category : obj) =
-    let cache = Dictionary<CacheKey, CacheValue>()
-    /// Moving window of dependency bitmasks, indexed by generation % windowSize.
-    let history = Array.zeroCreate windowSize : BitMask array
-    /// Generation of invalidations we're on.
-    let mutable generation = 0
-    /// Pending invalidation mask.
-    let mutable invalidationMask = BitMask.Full
-
-    new(category) = CategoryCache(16, category)
-
-    member __.Category = category
-
-    member private __.Sweep() =
-        if invalidationMask.IsFull then () else
-        let mask = invalidationMask
-        let latest = generation % windowSize
-        let mutable i = latest
-        let mutable sweeping = true
-        // Go back in time invalidating bits. We can stop when we perform a mask that has no effect, since older
-        // entries will necessarily have only the same or a subset of the bits of newer entries.
-        while sweeping && i >= 0 do
-            let existing = history.[i]
-            let updated = existing &&& mask
-            sweeping <- not (existing.Equals(updated))
-            history.[i] <- updated
-            i <- i - 1
-        let anySwept = sweeping || i <> latest - 1
-        i <- windowSize - 1
-        while sweeping && i > latest do
-            let existing = history.[i]
-            let masked = existing &&& mask
-            sweeping <- not (existing.Equals(mask))
-            history.[i] <- masked
-            i <- i - 1
-        invalidationMask <- BitMask.Full
-        if anySwept then
-            generation <- generation + 1
-            history.[generation % windowSize] <- history.[latest]
-
-    member this.Store(info : CacheInfo, arg : obj, result : obj) =
-        this.Sweep()
-        cache.[CacheKey(info.Identity, arg)] <- CacheValue(generation, result)
-        let index = generation % windowSize
-        history.[index] <- history.[index] ||| info.DependencyMask
-
-    member this.Retrieve(info : CacheInfo, arg : obj) =
-        this.Sweep()
-        let mask = info.DependencyMask
-        // If we're not valid in the current generation, we definitely won't be valid in any older ones.
-        // This might save us from doing a dictionary lookup with a complex object as the key.
-        if not <| mask.Equals(mask &&& history.[generation % windowSize]) then None else
-        let succ, cached = cache.TryGetValue(CacheKey(info.Identity, arg))
-        if not succ then None else
-        if generation - cached.Generation >= windowSize then None else
-        // Check that all the dependency bits are still 1
-        if mask.Equals(mask &&& history.[cached.Generation % windowSize]) then Some cached.Value
-        else None
-
-    member __.Invalidate(info : CacheInfo) =
-        invalidationMask <- invalidationMask &&& ~~~info.InvalidationMask
-
-type private Cache() =
-    let byCategory = Dictionary<obj, CategoryCache>()
-    let sync = obj()
-    // Remember the last one touched as a shortcut.
-    let mutable lastCategory = CategoryCache(null)
-    let getExistingCategory (category : obj) =
-        if lastCategory.Category = category then lastCategory else
-        let succ, found = byCategory.TryGetValue(category)
-        if succ then found else null
-    let getCategory (category : obj) =
-        let existing = getExistingCategory category
-        if isNull existing then
-            let newCategory = CategoryCache(category)
-            lastCategory <- newCategory
-            byCategory.[category] <- newCategory
-            newCategory
-        else existing
-    member __.Invalidate(info : CacheInfo) =
-        match getExistingCategory info.Category with
-        | null -> () // nothing to invalidate
-        | cat -> cat.Invalidate(info)
-    member __.Retrieve(info : CacheInfo, arg : obj) =
-        match getExistingCategory info.Category with
-        | null -> None
-        | cat -> cat.Retrieve(info, arg)
-    member __.Store(info : CacheInfo, arg : obj, result : obj) =
-        lock sync <| fun unit -> // only stores run asynchronously and might need to be thread-safe
-            let cat = getCategory info.Category
-            cat.Store(info, arg, result)
-
-type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
-    static let completedTask = Task.Delay(0)
-    static let defaultGroup _ = ResizeArray()
-    static let retrievalDeferred () = RetrievalDeferred
     let ungrouped = ResizeArray()
     let grouped = Dictionary()
     let deduped = Dictionary()
@@ -179,9 +28,9 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
         if !anyCached then retrievalDeferred else
         try
             let mutable result = Unchecked.defaultof<_>
-            log.OnPreparingErrand(errand)
-            let prepared = errand.PrepareUntyped(context)
-            log.OnPreparedErrand(errand)
+            instance.Log.OnPreparingErrand(errand)
+            let prepared = instance.RunErrand(errand, context)
+            instance.Log.OnPreparedErrand(errand)
             let retrieve token =
                 cache.Invalidate(errand.CacheInfo)
                 task {
@@ -198,7 +47,7 @@ type private Step(log : ExecutionLog, context : ServiceContext, cache : Cache) =
             | null ->
                 ungrouped.Add(retrieve)
             | sequenceGroup ->
-                let group = grouped.GetValue(sequenceGroup, defaultGroup)
+                let group = getValue grouped sequenceGroup defaultGroup
                 group.Add(retrieve)
             fun () -> result
         with
@@ -295,8 +144,8 @@ type private ExecutionServiceContext(config : IServiceConfig) =
 
 let executeWithCancellation (token : CancellationToken) (config : ExecutionConfig) (plan : 'a Plan) =
     task {
-        let log = config.Log
-        let cache = Cache()
+        let instance = config.Instance()
+        let cache = instance.CreateCache()
         use context = new ExecutionServiceContext(config.ServiceConfig)
         let mutable planState = Plan.advance plan
         let mutable looping = true
@@ -307,17 +156,17 @@ let executeWithCancellation (token : CancellationToken) (config : ExecutionConfi
                 looping <- false
                 returned <- r 
             | Step (requests, resume) ->
-                log.OnBeginStep()
+                instance.Log.OnBeginStep()
                 let mutable stepState = ExecutionFault
                 try
-                    let step = Step(log, context, cache)
+                    let step = Step(instance, context, cache)
                     let retrievals = requests.Map(step.AddRequest)
                     do! step.Execute(token).ConfigureAwait(continueOnCapturedContext = true)
                     planState <- retrievals.Map((|>) ()) |> resume |> Plan.advance
                     stepState <- ExecutionSuccess
                 finally
                     context.ClearLocals(stepState)
-                    log.OnEndStep()
+                    instance.Log.OnEndStep()
         context.SetSuccessful() // if we got this far we can dispose with success (commit)
         return returned
     }
