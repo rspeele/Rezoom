@@ -68,6 +68,7 @@
     <Compile Include="Execution.fs" />
     <Compile Include="Replay.fs" />
     <Compile Include="CS.fs" />
+    <Compile Include="Stdlib.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

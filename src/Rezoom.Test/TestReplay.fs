@@ -23,6 +23,8 @@ type Result<'a> =
     | Good of 'a
     | Bad of exn
 
+exception MismatchedReplay
+
 let runReplayTest plan =
     task {
         let mutable saved = None
@@ -39,6 +41,7 @@ let runReplayTest plan =
                 with
                 | exn -> return Bad exn
             }
+        do! unitTask <| System.Threading.Tasks.Task.Delay(50)
         match saved with
         | None -> failwith "didn't save"
         | Some (state, blob) ->
@@ -60,7 +63,7 @@ let runReplayTest plan =
             | Bad ef, Bad es when ef.Message = es.Message ->
                 printfn "They both failed with %s" ef.Message
             | _ ->
-                failwith "mismatched replay"
+                raise MismatchedReplay
     }
 
 let testReplay plan = (runReplayTest plan).Wait()
@@ -121,3 +124,25 @@ let ``batches with throwing in retrieves work`` () =
         let! z, q = failingRetrieve "bad retrieve" "z", send "q"
         return x + y + z + q
     } |> testReplay
+
+[<Test>]
+let ``plan-based times work`` () =
+    plan {
+        let! now = DateTime.UtcNowPlan
+        let! x = send "x"
+        let! nowOffset = DateTimeOffset.NowPlan
+        return now, x, nowOffset
+    } |> testReplay
+
+[<Test>]
+let ``regular times don't work`` () =
+    try
+        plan {
+            let now = DateTime.UtcNow
+            let! x = send "x"
+            let nowOffset = DateTimeOffset.Now
+            return now, x, nowOffset
+        } |> testReplay
+        failwith "should've failed"
+    with
+    | :? AggregateException as agg when agg.InnerExceptions.Count = 1 && agg.InnerException = MismatchedReplay -> ()
