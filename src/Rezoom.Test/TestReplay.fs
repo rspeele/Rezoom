@@ -3,13 +3,9 @@ open FSharp.Control.Tasks.ContextInsensitive
 open Rezoom
 open Rezoom.Replay
 open System
-open System.Text
-open System.Diagnostics
 open NUnit.Framework
-open FsUnit
 open MBrace.FsPickler
 open Rezoom.Execution
-open FSharp.Control.Tasks.ContextSensitive
 open System.Threading
 
 let serializer =
