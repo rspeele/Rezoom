@@ -19,7 +19,7 @@ type Result<'a> =
     | Good of 'a
     | Bad of exn
 
-exception MismatchedReplay
+exception MismatchedReplay of string
 
 let runReplayTest plan =
     task {
@@ -58,8 +58,8 @@ let runReplayTest plan =
                 printfn "They both returned %O" f
             | Bad ef, Bad es when ef.Message = es.Message ->
                 printfn "They both failed with %s" ef.Message
-            | _ ->
-                raise MismatchedReplay
+            | _, _ ->
+                raise <| MismatchedReplay (sprintf "%A vs %A" firstResult secondResult)
     }
 
 let testReplay plan = (runReplayTest plan).Wait()
@@ -141,5 +141,7 @@ let ``regular times don't work`` () =
         } |> testReplay
         failwith "should've failed"
     with
-    | MismatchedReplay -> ()
-    | :? AggregateException as agg when agg.InnerExceptions.Count = 1 && agg.InnerException = MismatchedReplay -> ()
+    | MismatchedReplay _ -> ()
+    | :? AggregateException as agg
+        when agg.InnerExceptions.Count = 1
+        && agg.InnerException.GetType() = typeof<MismatchedReplay> -> ()
