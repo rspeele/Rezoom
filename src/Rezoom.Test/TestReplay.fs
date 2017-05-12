@@ -53,6 +53,7 @@ let runReplayTest plan =
                     with
                     | exn -> return Bad exn
                 }
+            printfn "%A" (firstResult, secondResult)
             match firstResult, secondResult with
             | Good f, Good s when f = unbox s ->
                 printfn "They both returned %O" f
