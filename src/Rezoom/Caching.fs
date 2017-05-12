@@ -30,7 +30,7 @@ type private CacheValue(generation : int, value : obj) =
     member __.Value = value
 
 [<AllowNullLiteral>]
-type private CategoryCache(windowSize : int, category : obj) =
+type private CategoryCache(windowSize : int, category : Type) =
     let cache = Dictionary<CacheKey, CacheValue>()
     /// Moving window of dependency bitmasks, indexed by generation % windowSize.
     let history = Array.zeroCreate windowSize : BitMask array
@@ -100,16 +100,15 @@ type Cache() =
 
 type DefaultCache() =
     inherit Cache()
-    static let objComparer = EqualityComparer<obj>.Default
-    let byCategory = Dictionary<obj, CategoryCache>()
+    let byCategory = Dictionary<Type, CategoryCache>()
     let sync = obj()
     // Remember the last one touched as a shortcut.
     let mutable lastCategory = CategoryCache(null)
-    let getExistingCategory (category : obj) =
-        if objComparer.Equals(lastCategory.Category, category) then lastCategory else
+    let getExistingCategory (category : Type) =
+        if obj.ReferenceEquals(lastCategory.Category, category) then lastCategory else
         let succ, found = byCategory.TryGetValue(category)
         if succ then found else null
-    let getCategory (category : obj) =
+    let getCategory (category : Type) =
         let existing = getExistingCategory category
         if isNull existing then
             let newCategory = CategoryCache(category)
