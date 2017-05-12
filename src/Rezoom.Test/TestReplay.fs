@@ -141,4 +141,5 @@ let ``regular times don't work`` () =
         } |> testReplay
         failwith "should've failed"
     with
+    | MismatchedReplay -> ()
     | :? AggregateException as agg when agg.InnerExceptions.Count = 1 && agg.InnerException = MismatchedReplay -> ()
