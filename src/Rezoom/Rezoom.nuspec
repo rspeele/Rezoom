@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/rspeele/Rezoom</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <releaseNotes>Retarget down to .NET 4.5.</releaseNotes>
+    <releaseNotes>New API supporting execution replay.</releaseNotes>
     <copyright>Copyright Robert Peele 2017</copyright>
     <tags>rezoom monad resumption data</tags>
   </metadata>
