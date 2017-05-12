@@ -25,9 +25,9 @@ module TrivialErrand =
                     fun () -> f arg
             }
 
-type private StdlibFunction = StdlibFunction
+type private StdlibFunction = class end
 
-let private category = box StdlibFunction
+let private category = typeof<StdlibFunction>
 let private trivial name f =
     TrivialErrand.ofSynchronous category name f
 let private trivialUnit name f =
