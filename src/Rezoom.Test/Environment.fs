@@ -27,7 +27,7 @@ type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : str
                 if idem then BitMask.Zero
                 else BitMask.Full
             override __.Cacheable = idem
-            override __.Category = typeof<TestExecutionLog>
+            override __.Category = upcast typeof<TestExecutionLog>
             override __.Identity = upcast query
         }
     override __.Prepare(serviceContext : ServiceContext) =
