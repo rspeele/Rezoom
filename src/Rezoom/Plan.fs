@@ -11,8 +11,8 @@ type DataResponse =
 type Batch<'a> =
     | BatchNone
     | BatchLeaf of 'a
-    | BatchPair of ('a Batch * 'a Batch)
-    | BatchMany of ('a Batch array)
+    | BatchPair of 'a Batch * 'a Batch
+    | BatchMany of 'a Batch array
     | BatchAbort
     member this.Map(f : 'a -> 'b) =
         match this with
