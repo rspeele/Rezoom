@@ -59,7 +59,7 @@ type CacheInfo() =
     /// own isolated cache, so results associated with it can't be interfered with by errands from other categories.
     /// Typically all errands defined by a library will have the same category because their identities are known
     /// not to collide. A good choice for overriding this is `typeof<PrivateTypeInMyLibrary`.
-    abstract member Category : obj
+    abstract member Category : Type
     /// A non-null comparable object that uniquely (within Category) identifies the function that produced this errand.
     /// For example, the string "userById" might be a reasonable identity for an errand returned from
     /// `getUserById 27`.

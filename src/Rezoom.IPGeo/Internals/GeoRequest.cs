@@ -12,7 +12,7 @@ namespace Rezoom.IPGeo.Internals
         {
             _ip = ip;
         }
-        public override object Category => typeof(GeoCacheInfo).Assembly;
+        public override Type Category => typeof(GeoCacheInfo);
         public override object Identity => _ip;
         public override bool Cacheable => true;
     }
