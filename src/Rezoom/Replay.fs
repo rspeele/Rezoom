@@ -96,9 +96,13 @@ type RecordingExecutionStrategy
             }
     static member Create(execution, serializer, saveBlob) =
         RecordingExecutionStrategy(execution, serializer, saveBlob) :> IExecutionStrategy
-    static member Create(execution, serializer, saveBlob : Action<ExecutionState, Func<byte array>>) =
+    static member Create
+        ( execution : IExecutionStrategy
+        , serializer : IReplaySerializer
+        , saveBlob : Action<ExecutionState, Func<byte array>>
+        ) =
         RecordingExecutionStrategy.Create(execution, serializer, fun state arr ->
-            saveBlob.Invoke(state, fun () -> arr.Invoke()))
+            saveBlob.Invoke(state, fun () -> arr()))
 
 exception UnreplayableException of string
 
