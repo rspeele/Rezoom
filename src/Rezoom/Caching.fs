@@ -100,12 +100,13 @@ type Cache() =
 
 type DefaultCache() =
     inherit Cache()
+    static let objComparer = EqualityComparer<obj>.Default
     let byCategory = Dictionary<obj, CategoryCache>()
     let sync = obj()
     // Remember the last one touched as a shortcut.
     let mutable lastCategory = CategoryCache(null)
     let getExistingCategory (category : obj) =
-        if lastCategory.Category = category then lastCategory else
+        if objComparer.Equals(lastCategory.Category, category) then lastCategory else
         let succ, found = byCategory.TryGetValue(category)
         if succ then found else null
     let getCategory (category : obj) =
