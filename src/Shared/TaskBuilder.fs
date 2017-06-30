@@ -24,17 +24,22 @@ module TaskBuilder =
     type Step<'a> =
         | Await of ICriticalNotifyCompletion * (unit -> Step<'a>)
         | Return of 'a
-    /// Implements the machinery of running a `Step<'m, 'm>` as a `Task<'m>`.
+        /// We model tail calls explicitly, but still can't run them without O(n) memory usage.
+        | ReturnFrom of 'a Task
+    /// Implements the machinery of running a `Step<'m, 'm>` as a task returning a continuation task.
     and StepStateMachine<'a>(firstStep) as this =
-        let methodBuilder = AsyncTaskMethodBuilder<'a>()
+        let methodBuilder = AsyncTaskMethodBuilder<'a Task>()
         /// The continuation we left off awaiting on our last MoveNext().
         let mutable continuation = fun () -> firstStep
-        /// Return true if we should call `AwaitOnCompleted` on the current awaitable.
+        /// Returns next pending awaitable or null if exiting (including tail call).
         let nextAwaitable() =
             try
                 match continuation() with
                 | Return r ->
-                    methodBuilder.SetResult(r)
+                    methodBuilder.SetResult(Task.FromResult(r))
+                    null
+                | ReturnFrom t ->
+                    methodBuilder.SetResult(t)
                     null
                 | Await (await, next) ->
                     continuation <- next
@@ -45,7 +50,7 @@ module TaskBuilder =
                 null
         let mutable self = this
 
-        /// Start execution as a `Task<'m>`.
+        /// Start execution as a `Task<Task<'a>>`.
         member __.Run() =
             methodBuilder.Start(&self)
             methodBuilder.Task
@@ -60,44 +65,69 @@ module TaskBuilder =
                     methodBuilder.AwaitUnsafeOnCompleted(&await, &self)    
             member __.SetStateMachine(_) = () // Doesn't really apply since we're a reference type.
 
+    let unwrapException (agg : AggregateException) =
+        let inners = agg.InnerExceptions
+        if inners.Count = 1 then inners.[0]
+        else agg :> Exception
+
     /// Used to represent no-ops like the implicit empty "else" branch of an "if" expression.
-    let inline zero() = Return ()
+    let zero = Return ()
 
     /// Used to return a value.
     let inline ret (x : 'a) = Return x
 
-    // The following flavors of `bind` are for sequencing tasks with the continuations
-    // that should run following them. They all follow pretty much the same formula.
+    type Binder<'out> =
+        // We put the output generic parameter up here at the class level, so it doesn't get subject to
+        // inline rules. If we put it all in the inline function, then the compiler gets confused at the
+        // below and demands that the whole function either is limited to working with (x : obj), or must
+        // be inline itself.
+        //
+        // let yieldThenReturn (x : 'a) =
+        //     task {
+        //         do! Task.Yield()
+        //         return x
+        //     }
 
+        static member inline GenericAwait< ^abl, ^awt, ^inp
+                                            when ^abl : (member GetAwaiter : unit -> ^awt)
+                                            and ^awt :> ICriticalNotifyCompletion 
+                                            and ^awt : (member get_IsCompleted : unit -> bool)
+                                            and ^awt : (member GetResult : unit -> ^inp) >
+            (abl : ^abl, continuation : ^inp -> 'out Step) : 'out Step =
+                let awt = (^abl : (member GetAwaiter : unit -> ^awt)(abl)) // get an awaiter from the awaitable
+                if (^awt : (member get_IsCompleted : unit -> bool)(awt)) then // shortcut to continue immediately
+                    continuation (^awt : (member GetResult : unit -> ^inp)(awt))
+                else
+                    Await (awt, fun () -> continuation (^awt : (member GetResult : unit -> ^inp)(awt)))
+
+        static member inline GenericAwaitConfigureFalse< ^tsk, ^abl, ^awt, ^inp
+                                                        when ^tsk : (member ConfigureAwait : bool -> ^abl)
+                                                        and ^abl : (member GetAwaiter : unit -> ^awt)
+                                                        and ^awt :> ICriticalNotifyCompletion 
+                                                        and ^awt : (member get_IsCompleted : unit -> bool)
+                                                        and ^awt : (member GetResult : unit -> ^inp) >
+            (tsk : ^tsk, continuation : ^inp -> 'out Step) : 'out Step =
+                let abl = (^tsk : (member ConfigureAwait : bool -> ^abl)(tsk, false))
+                Binder<'out>.GenericAwait(abl, continuation)
+
+    /// Special case of the above for `Task<'a>`. Have to write this out by hand to avoid confusing the compiler
+    /// trying to decide between satisfying the constraints with `Task` or `Task<'a>`.
     let inline bindTask (task : 'a Task) (continuation : 'a -> Step<'b>) =
-        let taskAwaiter = task.GetAwaiter()
-        if taskAwaiter.IsCompleted then // Proceed to the next step based on the result we already have.
-            taskAwaiter.GetResult() |> continuation
+        let awt = task.GetAwaiter()
+        if awt.IsCompleted then // Proceed to the next step based on the result we already have.
+            continuation(awt.GetResult())
         else // Await and continue later when a result is available.
-            Await (taskAwaiter, (fun () -> taskAwaiter.GetResult() |> continuation))
+            Await (awt, (fun () -> continuation(awt.GetResult())))
 
-    let inline bindVoidTask (task : Task) (continuation : unit -> Step<'b>) =
-        let taskAwaiter = task.GetAwaiter()
-        if taskAwaiter.IsCompleted then continuation() else
-        Await (taskAwaiter, continuation)
-
-    let inline bindConfiguredTask (task : 'a ConfiguredTaskAwaitable) (continuation : 'a -> Step<'b>) =
-        let taskAwaiter = task.GetAwaiter()
-        if taskAwaiter.IsCompleted then
-            taskAwaiter.GetResult() |> continuation
-        else
-            Await (taskAwaiter, (fun () -> taskAwaiter.GetResult() |> continuation))
-
-    let inline bindVoidConfiguredTask (task : ConfiguredTaskAwaitable) (continuation : unit -> Step<'b>) =
-        let taskAwaiter = task.GetAwaiter()
-        if taskAwaiter.IsCompleted then continuation() else
-        Await (taskAwaiter, continuation)
-
-    let inline
-        bindGenericAwaitable< ^a, ^b, ^c when ^a : (member GetAwaiter : unit -> ^b) and ^b :> ICriticalNotifyCompletion >
-        (awt : ^a) (continuation : unit -> Step< ^c >) =
-        let taskAwaiter = (^a : (member GetAwaiter : unit -> ^b)(awt))
-        Await (taskAwaiter, continuation)
+    /// Special case of the above for `Task<'a>`, for the context-insensitive builder.
+    /// Have to write this out by hand to avoid confusing the compiler thinking our built-in bind method
+    /// defined on the builder has fancy generic constraints on inp and out parameters.
+    let inline bindTaskConfigureFalse (task : 'a Task) (continuation : 'a -> Step<'b>) =
+        let awt = task.ConfigureAwait(false).GetAwaiter()
+        if awt.IsCompleted then // Proceed to the next step based on the result we already have.
+            continuation(awt.GetResult())
+        else // Await and continue later when a result is available.
+            Await (awt, (fun () -> continuation(awt.GetResult())))
 
     /// Chains together a step with its following step.
     /// Note that this requires that the first step has no result.
@@ -105,19 +135,27 @@ module TaskBuilder =
     let rec combine (step : Step<unit>) (continuation : unit -> Step<'b>) =
         match step with
         | Return _ -> continuation()
+        | ReturnFrom t ->
+            Await (t.GetAwaiter(), continuation)
         | Await (awaitable, next) ->
-            Await(awaitable, fun () -> combine (next()) continuation)
+            Await (awaitable, fun () -> combine (next()) continuation)
 
     /// Builds a step that executes the body while the condition predicate is true.
-    let inline whileLoop (cond : unit -> bool) (body : unit -> Step<unit>) =
+    let whileLoop (cond : unit -> bool) (body : unit -> Step<unit>) =
         if cond() then
             // Create a self-referencing closure to test whether to repeat the loop on future iterations.
             let rec repeat () =
-                if cond() then combine (body()) repeat
-                else zero()
+                if cond() then
+                    let body = body()
+                    match body with
+                    | Return _ -> repeat()
+                    | ReturnFrom t -> Await(t.GetAwaiter(), repeat)
+                    | Await (awaitable, next) ->
+                        Await (awaitable, fun () -> combine (next()) repeat)
+                else zero
             // Run the body the first time and chain it to the repeat logic.
             combine (body()) repeat
-        else zero()
+        else zero
 
     /// Wraps a step in a try/with. This catches exceptions both in the evaluation of the function
     /// to retrieve the step, and in the continuation of the step (if any).
@@ -125,6 +163,13 @@ module TaskBuilder =
         try
             match step() with
             | Return _ as i -> i
+            | ReturnFrom t ->
+                let awaitable = t.GetAwaiter()
+                Await(awaitable, fun () ->
+                    try
+                        awaitable.GetResult() |> Return
+                    with
+                    | exn -> catch exn)
             | Await (awaitable, next) -> Await (awaitable, fun () -> tryWith next catch)
         with
         | exn -> catch exn
@@ -145,6 +190,15 @@ module TaskBuilder =
         | Return _ as i ->
             fin()
             i
+        | ReturnFrom t ->
+            let awaitable = t.GetAwaiter()
+            Await(awaitable, fun () ->
+                try
+                    awaitable.GetResult() |> Return
+                with
+                | _ ->
+                    fin()
+                    reraise())
         | Await (awaitable, next) ->
             Await (awaitable, fun () -> tryFinally next fin)
 
@@ -163,12 +217,12 @@ module TaskBuilder =
             (fun e -> whileLoop e.MoveNext (fun () -> body e.Current))
 
     /// Runs a step as a task -- with a short-circuit for immediately completed steps.
-    let inline run (firstStep : unit -> Step<'a>) =
+    let run (firstStep : unit -> Step<'a>) =
         try
             match firstStep() with
             | Return x -> Task.FromResult(x)
-            | Await _ as step ->
-                StepStateMachine<'a>(step).Run()
+            | ReturnFrom t -> t
+            | Await _ as step -> StepStateMachine<'a>(step).Run().Unwrap() // sadly can't do tail recursion
         // Any exceptions should go on the task, rather than being thrown from this call.
         // This matches C# behavior where you won't see an exception until awaiting the task,
         // even if it failed before reaching the first "await".
@@ -182,6 +236,8 @@ module TaskBuilder =
         struct
             val public Task : Task
             new(task) = { Task = task }
+            member this.GetAwaiter() = this.Task.GetAwaiter()
+            member this.ConfigureAwait(continueOnCapturedContext) = this.Task.ConfigureAwait(continueOnCapturedContext)
         end
 
     type TaskBuilder() =
@@ -189,58 +245,44 @@ module TaskBuilder =
         // Unfortunately, inline members do not work with inheritance.
         member inline __.Delay(f : unit -> Step<_>) = f
         member inline __.Run(f : unit -> Step<'m>) = run f
-        member inline __.Zero() = zero()
+        member inline __.Zero() = zero
         member inline __.Return(x) = ret x
-        member inline __.ReturnFrom(task) = bindConfiguredTask task ret
-        member inline __.ReturnFrom(task) = bindVoidConfiguredTask task ret
-        member inline __.ReturnFrom(yld : YieldAwaitable) = bindGenericAwaitable yld ret
-        member inline __.Combine(step, continuation) = combine step continuation
-        member inline __.Bind(task, continuation) = bindConfiguredTask task continuation
-        member inline __.Bind(task, continuation) = bindVoidConfiguredTask task continuation
-        member inline __.Bind(yld : YieldAwaitable, continuation) = bindGenericAwaitable yld continuation
-        member inline __.While(condition, body) = whileLoop condition body
-        member inline __.For(sequence, body) = forLoop sequence body
-        member inline __.TryWith(body, catch) = tryWith body catch
-        member inline __.TryFinally(body, fin) = tryFinally body fin
-        member inline __.Using(disp, body) = using disp body
+        member inline __.ReturnFrom(task : _ Task) = ReturnFrom task
+        member inline __.Combine(step : unit Step, continuation) = combine step continuation
+        member inline __.While(condition : unit -> bool, body : unit -> unit Step) = whileLoop condition body
+        member inline __.For(sequence : _ seq, body : _ -> unit Step) = forLoop sequence body
+        member inline __.TryWith(body : unit -> _ Step, catch : exn -> _ Step) = tryWith body catch
+        member inline __.TryFinally(body : unit -> _ Step, fin : unit -> unit) = tryFinally body fin
+        member inline __.Using(disp : #IDisposable, body : #IDisposable -> _ Step) = using disp body
         // End of consistent methods -- the following methods are different between
         // `TaskBuilder` and `ContextInsensitiveTaskBuilder`!
 
-        member inline __.ReturnFrom(task : _ Task) =
-            bindTask task ret
-        member inline __.ReturnFrom(task : UnitTask) =
-            bindVoidTask task.Task ret
-        member inline __.Bind(task : _ Task, continuation) =
+        // We have to have a dedicated overload for Task<'a> so the compiler doesn't get confused.
+        // Everything else can use bindGenericAwaitable via an extension member (defined later).
+        member inline __.Bind(task : 'a Task, continuation : 'a -> 'b Step) : 'b Step =
             bindTask task continuation
-        member inline __.Bind(task : UnitTask, continuation) =
-            bindVoidTask task.Task continuation
 
     type ContextInsensitiveTaskBuilder() =
         // These methods are consistent between the two builders.
         // Unfortunately, inline members do not work with inheritance.
         member inline __.Delay(f : unit -> Step<_>) = f
         member inline __.Run(f : unit -> Step<'m>) = run f
-        member inline __.Zero() = zero()
+        member inline __.Zero() = zero
         member inline __.Return(x) = ret x
-        member inline __.ReturnFrom(task) = bindConfiguredTask task ret
-        member inline __.ReturnFrom(task) = bindVoidConfiguredTask task ret
-        member inline __.ReturnFrom(yld : YieldAwaitable) = bindGenericAwaitable yld ret
-        member inline __.Combine(step, continuation) = combine step continuation
-        member inline __.Bind(task, continuation) = bindConfiguredTask task continuation
-        member inline __.Bind(task, continuation) = bindVoidConfiguredTask task continuation
-        member inline __.Bind(yld : YieldAwaitable, continuation) = bindGenericAwaitable yld continuation
-        member inline __.While(condition, body) = whileLoop condition body
-        member inline __.For(sequence, body) = forLoop sequence body
-        member inline __.TryWith(body, catch) = tryWith body catch
-        member inline __.TryFinally(body, fin) = tryFinally body fin
-        member inline __.Using(disp, body) = using disp body
+        member inline __.ReturnFrom(task : _ Task) = ReturnFrom task
+        member inline __.Combine(step : unit Step, continuation) = combine step continuation
+        member inline __.While(condition : unit -> bool, body : unit -> unit Step) = whileLoop condition body
+        member inline __.For(sequence : _ seq, body : _ -> unit Step) = forLoop sequence body
+        member inline __.TryWith(body : unit -> _ Step, catch : exn -> _ Step) = tryWith body catch
+        member inline __.TryFinally(body : unit -> _ Step, fin : unit -> unit) = tryFinally body fin
+        member inline __.Using(disp : #IDisposable, body : #IDisposable -> _ Step) = using disp body
         // End of consistent methods -- the following methods are different between
         // `TaskBuilder` and `ContextInsensitiveTaskBuilder`!
 
-        member inline __.ReturnFrom(task : _ Task) =
-            bindConfiguredTask (task.ConfigureAwait(continueOnCapturedContext = false)) ret
-        member inline __.Bind(task : _ Task, continuation) =
-            bindConfiguredTask (task.ConfigureAwait(continueOnCapturedContext = false)) continuation
+        // We have to have a dedicated overload for Task<'a> so the compiler doesn't get confused.
+        // Everything else can use bindGenericAwaitable via an extension member (defined later).
+        member inline __.Bind(task : 'a Task, continuation : 'a -> 'b Step) : 'b Step =
+            bindTaskConfigureFalse task continuation
 
 // Don't warn about our use of the "obsolete" module we just defined (see notes at start of file).
 #nowarn "44"
@@ -250,7 +292,17 @@ module ContextSensitive =
     /// Builds a `System.Threading.Tasks.Task<'a>` similarly to a C# async/await method.
     /// Use this like `task { let! taskResult = someTask(); return taskResult.ToString(); }`.
     let task = TaskBuilder.TaskBuilder()
+
+    [<Obsolete("It is no longer necessary to wrap untyped System.Thread.Tasks.Task objects with \"unitTask\".")>]
     let inline unitTask t = TaskBuilder.UnitTask(t)
+
+    // These are fallbacks when the Bind and ReturnFrom on the builder object itself don't apply.
+    // This is how we support binding arbitrary task-like types.
+    type TaskBuilder.TaskBuilder with
+        member inline this.ReturnFrom(taskLike) =
+            TaskBuilder.Binder<_>.GenericAwait(taskLike, TaskBuilder.ret)
+        member inline this.Bind(taskLike, continuation : _ -> 'a TaskBuilder.Step) : 'a TaskBuilder.Step =
+            TaskBuilder.Binder<'a>.GenericAwait(taskLike, continuation)
 
 module ContextInsensitive =
     /// Builds a `System.Threading.Tasks.Task<'a>` similarly to a C# async/await method, but with
@@ -258,5 +310,23 @@ module ContextInsensitive =
     /// This is often preferable when writing library code that is not context-aware, but undesirable when writing
     /// e.g. code that must interact with user interface controls on the same thread as its caller.
     let task = TaskBuilder.ContextInsensitiveTaskBuilder()
+
+    [<Obsolete("It is no longer necessary to wrap untyped System.Thread.Tasks.Task objects with \"unitTask\".")>]
     let inline unitTask (t : Task) = t.ConfigureAwait(false)
 
+    // These are fallbacks when the Bind and ReturnFrom on the builder object itself don't apply.
+    // This is how we support binding arbitrary task-like types.
+    type TaskBuilder.ContextInsensitiveTaskBuilder with
+        member inline this.ReturnFrom(taskLike) =
+            TaskBuilder.Binder<_>.GenericAwait(taskLike, TaskBuilder.ret)
+        member inline this.Bind(taskLike, continuation : _ -> 'a TaskBuilder.Step) : 'a TaskBuilder.Step =
+            TaskBuilder.Binder<'a>.GenericAwait(taskLike, continuation)
+    
+    [<AutoOpen>]
+    module HigherPriorityBinds =
+        // When it's possible for these to work, the compiler should prefer them since they shadow the ones above.
+        type TaskBuilder.ContextInsensitiveTaskBuilder with
+            member inline this.ReturnFrom(configurableTaskLike) =
+                TaskBuilder.Binder<_>.GenericAwaitConfigureFalse(configurableTaskLike, TaskBuilder.ret)
+            member inline this.Bind(configurableTaskLike, continuation : _ -> 'a TaskBuilder.Step) : 'a TaskBuilder.Step =
+                TaskBuilder.Binder<'a>.GenericAwaitConfigureFalse(configurableTaskLike, continuation)

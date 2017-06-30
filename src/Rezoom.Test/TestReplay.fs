@@ -37,7 +37,7 @@ let runReplayTest plan =
                 with
                 | exn -> return Bad exn
             }
-        do! unitTask <| System.Threading.Tasks.Task.Delay(50)
+        do! System.Threading.Tasks.Task.Delay(50)
         match saved with
         | None -> failwith "didn't save"
         | Some (state, blob) ->
