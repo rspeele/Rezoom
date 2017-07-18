@@ -8,7 +8,31 @@ for users 37, 38, and 39".
 
 You can define your own errands to wrap whatever API calls you want.
 
-# Subclassing `Errand`
+# How does batching work?
+
+Batching is achieved by errands being executed in two steps. You override a
+`Prepare` method on your own errand type. When called, it is supposed to add
+itself to a batch of work to be done, and **return a function that forces
+execution of the batch** then extracts its individual result from the overall
+results of the batch.
+
+During plan execution, when multiple errands are pending, each one's `Prepare`
+method is called before any of the resulting "force evaluation" functions are
+called. This gives them the opportunity to add themselves to the same batch
+object, and execute the accumulated batch in a single round-trip when "forced".
+
+## How can errands share a batch?
+
+The `Prepare` method takes a `ServiceContext`. This allows resolving object
+instances that are local to either:
+
+1. Step: the part of execution dedicated to executing the current pending
+   errands. You can build up a batch of queries in a step-local service.
+
+2. Execution: the execution of the whole plan. This is where you'd have
+   something like a database connection.
+
+# An example of subclassing `Errand`
 
 To define your own errand, you should inherit either `Rezoom.AsynchronousErrand`
 or `Rezoom.SynchronousErrand`. Most tasks are best implemented using the former,
