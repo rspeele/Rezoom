@@ -65,3 +65,43 @@ let ``list concurrency`` () =
             ]
         Result = Good [ "x"; "y"; "z" ]
     } |> test
+
+[<Test>]
+let ``chaining list concurrency`` () =
+    {   Task = fun () ->
+            plan {
+                let! xs =
+                    [   plan { let! _ = send "x" in return! send "y" }
+                        plan { let! _ = send "y" in return! send "q" }
+                        plan { let! z = send "z" in return! send (z + "r") }
+                    ] |> Plan.concurrentList
+                return xs
+            }
+        Batches =
+            [   [ "x"; "y"; "z" ]
+                [ "q"; "zr" ]
+            ]
+        Result = Good [ "y"; "q"; "zr" ]
+    } |> test
+
+[<Test>]
+let ``chaining list concurrency with preceding cached`` () =
+    {   Task = fun () ->
+            plan {
+                let! x = send "x"
+                let! xs =
+                    [   [   plan { let! _ = send "x" in return! send "q" }
+                            plan { let! _ = send "y" in return! send "r" }
+                        ] |> Plan.concurrentList
+                        [   plan { let! z = send "z" in return! send "s" }
+                        ] |> Plan.concurrentList
+                    ] |> Plan.concurrentList
+                return xs
+            }
+        Batches =
+            [   [ "x" ]
+                [ "q"; "y"; "z" ]
+                [ "r"; "s" ]
+            ]
+        Result = Good [ ["q"; "r";]; ["s"] ]
+    } |> test
