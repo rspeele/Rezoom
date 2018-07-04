@@ -7,7 +7,7 @@ let googleDNS2 = "8.8.4.4"
 let openDNS = "208.67.220.220"
 let fb = "2a03:2880:2110:df07:face:b00c::1"
 
-let googleDNSISP = "Level 3 Communications"
+let googleDNSISP = "Google"
 let googleDNS2ISP = "Level 3 Communications"
 let openDNSISP = "OpenDNS, LLC"
 let fbISP = "Facebook"

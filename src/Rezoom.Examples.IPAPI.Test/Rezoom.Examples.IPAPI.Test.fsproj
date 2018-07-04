@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Environment.fs" />
+    <Compile Include="TestGeo.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FsUnit" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rezoom.Examples.IPAPI\Rezoom.Examples.IPAPI.csproj" />
+    <ProjectReference Include="..\Rezoom\Rezoom.fsproj" />
+  </ItemGroup>
+
+</Project>
