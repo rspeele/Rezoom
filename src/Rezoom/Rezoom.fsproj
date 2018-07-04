@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Robert Peele</Authors>
+    <Company>Robert Peele</Company>
+    <Copyright>Copyright Robert Peele 2017</Copyright>
+    <Description>A resumption monad for .NET targeting data access with automatic batching and caching.</Description>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/rspeele/Rezoom/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/rspeele/Rezoom</PackageProjectUrl>
+    <PackageTags>rezoom monad resumption data</PackageTags>
+    <PackageReleaseNotes>Target .NET Standard 2.0.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
