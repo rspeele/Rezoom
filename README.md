@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/rspeele/Rezoom.svg?branch=master)](https://travis-ci.org/rspeele/Rezoom)
-
 # What's this?
 
 Rezoom is a library intended to reduce the pain of dealing with data that lives
