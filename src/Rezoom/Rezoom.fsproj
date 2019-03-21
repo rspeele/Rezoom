@@ -10,6 +10,7 @@
     <PackageProjectUrl>https://github.com/rspeele/Rezoom</PackageProjectUrl>
     <PackageTags>rezoom monad resumption data</PackageTags>
     <PackageReleaseNotes>Target .NET Standard 2.0.</PackageReleaseNotes>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
