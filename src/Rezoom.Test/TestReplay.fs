@@ -1,5 +1,4 @@
 ﻿module Rezoom.Test.TestReplay
-open FSharp.Control.Tasks.ContextInsensitive
 open Rezoom
 open Rezoom.Replay
 open System

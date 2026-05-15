@@ -1,16 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <Authors>Robert Peele</Authors>
     <Company>Robert Peele</Company>
     <Copyright>Copyright Robert Peele 2017</Copyright>
     <Description>A resumption monad for .NET targeting data access with automatic batching and caching.</Description>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/rspeele/Rezoom/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/rspeele/Rezoom</PackageProjectUrl>
     <PackageTags>rezoom monad resumption data</PackageTags>
-    <PackageReleaseNotes>Target .NET Standard 2.0.</PackageReleaseNotes>
-    <Version>1.0.1</Version>
+    <PackageReleaseNotes>Drop TaskBuilder.fs (now built into FSharp.Core); multi-target netstandard2.0 and net8.0.</PackageReleaseNotes>
+    <Version>1.1.0</Version>
+    <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="TaskBuilder.fs" Version="2.0.0" />
+    <PackageReference Include="FSharp.Core" Version="8.0.401" />
   </ItemGroup>
 
 </Project>

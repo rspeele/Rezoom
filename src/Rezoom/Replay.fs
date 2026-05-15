@@ -1,5 +1,4 @@
 ﻿module Rezoom.Replay
-open FSharp.Control.Tasks.ContextInsensitive
 open Rezoom
 open Rezoom.Execution
 open System.Collections.Generic

@@ -5,7 +5,6 @@ open System.Collections.Generic
 open System.Runtime.InteropServices
 open System.Threading
 open System.Threading.Tasks
-open FSharp.Control.Tasks.ContextInsensitive
 open Rezoom
 open Rezoom.Caching
 
