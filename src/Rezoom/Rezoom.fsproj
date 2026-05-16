@@ -18,7 +18,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ExceptionTypes.fs" />
     <Compile Include="InternalUtilities.fs" />
-    <Compile Include="Services.fs" />
+    <Compile Include="PlanLocal.fs" />
     <Compile Include="CacheInfo.fs" />
     <Compile Include="Errand.fs" />
     <Compile Include="Plan.fs" />
