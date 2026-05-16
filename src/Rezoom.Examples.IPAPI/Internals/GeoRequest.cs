@@ -30,9 +30,9 @@ namespace Rezoom.IPGeo.Internals
 
         public override CacheInfo CacheInfo => new GeoCacheInfo(_ip);
 
-        public override Func<CancellationToken, Task<GeoInfo>> Prepare(ServiceContext context)
+        public override Func<CancellationToken, Task<GeoInfo>> Prepare(PlanContext context)
         {
-            var batch = context.GetService<StepLocal<GeoBatch>, GeoBatch>();
+            var batch = context.GetPlanLocal<StepLocal<GeoBatch>, GeoBatch>();
             return batch.Prepare(new GeoQuery { Query = _ip });
         }
     }

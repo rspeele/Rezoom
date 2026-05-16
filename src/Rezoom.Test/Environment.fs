@@ -30,7 +30,7 @@ type TestRequest<'a>(idem : bool, query : string, pre : unit -> unit, post : str
             override __.Category = upcast typeof<TestExecutionLog>
             override __.Identity = upcast query
         }
-    override __.Prepare(serviceContext : ServiceContext) =
+    override __.Prepare(serviceContext : PlanContext) =
         pre()
         fun () ->
             post query

@@ -32,24 +32,29 @@ type ConsoleExecutionLog() =
 
 type ExecutionInstance(log : ExecutionLog) =
     member __.Log = log
-    abstract member RunErrand : Errand * ServiceContext -> (CancellationToken -> obj Task)
+    abstract member RunErrand : Errand * PlanContext -> (CancellationToken -> obj Task)
     default __.RunErrand(errand, context) = errand.PrepareUntyped context
     abstract member CreateCache : unit -> Cache
     default __.CreateCache() = upcast DefaultCache()
 
 type ExecutionConfig =
-    {   ServiceConfig : IServiceConfig
+    {   /// The host's service provider. Used as the source of application-level
+        /// services that errands look up (e.g. Rezoom.SQL's ConnectionProvider).
+        /// Default is an empty provider that returns null for everything.
+        Services : IServiceProvider
         Instance : unit -> ExecutionInstance
     }
     static member Default =
-        {   ServiceConfig = { new IServiceConfig with member __.TryGetConfig() = None }
+        {   Services =
+                { new IServiceProvider with
+                    member __.GetService(_) = null }
             Instance = fun () -> ExecutionInstance(ExecutionLog())
         }
 
 type IExecutionStrategy =
     abstract member Execute : ExecutionConfig * plan : 'a Plan * token : CancellationToken -> 'a Task
 
-type private Step(instance : ExecutionInstance, context : ServiceContext, cache : Cache) =
+type private Step(instance : ExecutionInstance, context : PlanContext, cache : Cache) =
     static let completedTask = Task.Delay(0)
     static let defaultGroup _ = ResizeArray()
     static let retrievalDeferred () = RetrievalDeferred
@@ -136,29 +141,29 @@ type private Step(instance : ExecutionInstance, context : ServiceContext, cache 
             i <- i + 1
         Task.WhenAll(all)
 
-type private ExecutionServiceContext(config : IServiceConfig) =
-    inherit ServiceContext()
-    let services = Dictionary<Type, obj>()
+type private ExecutionPlanContext(services : IServiceProvider) =
+    inherit PlanContext()
+    let instances = Dictionary<Type, obj>()
     let locals = Stack<_>()
     let globals = Stack<_>()
     let mutable totalSuccess = false
-    override __.Configuration = config
-    override this.GetService<'f, 'a when 'f :> ServiceFactory<'a> and 'f : (new : unit -> 'f)>() =
+    override __.Services = services
+    override this.GetPlanLocal<'f, 'a when 'f :> PlanLocal<'a> and 'f : (new : unit -> 'f)>() =
         let ty = typeof<'f>
-        let succ, service = services.TryGetValue(ty)
-        if succ then Unchecked.unbox service else
+        let succ, existing = instances.TryGetValue(ty)
+        if succ then Unchecked.unbox existing else
         let factory = new 'f()
-        let service = factory.CreateService(this)
+        let instance = factory.Create(this)
         let stack =
-            match factory.ServiceLifetime with
-            | ServiceLifetime.ExecutionLocal -> globals
-            | ServiceLifetime.StepLocal -> locals
-            | other -> failwithf "Unknown service lifetime: %O" other
-        services.Add(ty, box service)
+            match factory.Lifetime with
+            | Lifetime.Execution -> globals
+            | Lifetime.Step -> locals
+            | other -> failwithf "Unknown PlanLocal lifetime: %O" other
+        instances.Add(ty, box instance)
         stack.Push(fun state ->
-            factory.DisposeService(state, service)
-            ignore <| services.Remove(ty))
-        service
+            factory.Dispose(state, instance)
+            ignore <| instances.Remove(ty))
+        instance
     static member private ClearStack(stack : _ Stack, state) =
         let mutable exn = null
         while stack.Count > 0 do
@@ -170,14 +175,14 @@ type private ExecutionServiceContext(config : IServiceConfig) =
                 if isNull exn then exn <- e
                 else exn <- AggregateException(exn, e)
         if not (isNull exn) then raise exn
-    member __.ClearLocals(state) = ExecutionServiceContext.ClearStack(locals, state)
+    member __.ClearLocals(state) = ExecutionPlanContext.ClearStack(locals, state)
     member __.SetSuccessful() = totalSuccess <- true
     member this.Dispose() =
         let state = if totalSuccess then ExecutionSuccess else ExecutionFault
         try
             this.ClearLocals(state)
         finally
-            ExecutionServiceContext.ClearStack(globals, state)
+            ExecutionPlanContext.ClearStack(globals, state)
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
@@ -188,7 +193,7 @@ let defaultExecutionStrategy =
             task {
                 let instance = config.Instance()
                 let cache = instance.CreateCache()
-                use context = new ExecutionServiceContext(config.ServiceConfig)
+                use context = new ExecutionPlanContext(config.Services)
                 let mutable planState = Plan.advance plan
                 let mutable looping = true
                 let mutable returned = Unchecked.defaultof<_>

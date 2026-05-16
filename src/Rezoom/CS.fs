@@ -10,7 +10,7 @@ type AsynchronousErrand<'a>() =
     inherit Errand<'a>()
     static member private BoxResult(task : 'a Task) =
         box task.Result
-    abstract member Prepare : ServiceContext -> Func<CancellationToken, 'a Task>
+    abstract member Prepare : PlanContext -> Func<CancellationToken, 'a Task>
     override this.PrepareUntyped(cxt) : CancellationToken -> obj Task =
         let typed = this.Prepare(cxt)
         fun token ->
@@ -20,7 +20,7 @@ type AsynchronousErrand<'a>() =
 [<AbstractClass>]
 type SynchronousErrand<'a>() =
     inherit Errand<'a>()
-    abstract member Prepare : ServiceContext -> Func<'a>
+    abstract member Prepare : PlanContext -> Func<'a>
     override this.PrepareUntyped(cxt) : CancellationToken -> obj Task =
         let sync = this.Prepare(cxt)
         fun _ ->

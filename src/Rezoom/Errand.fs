@@ -19,11 +19,11 @@ type Errand() =
     /// Errands with the same non-null sequence group will not be executed concurrently with one another.
     abstract member SequenceGroup : obj
     default __.SequenceGroup = null
-    /// Given a `ServiceContext` with which to obtain execution-local or step-local shared services,
+    /// Given a `PlanContext` with which to obtain execution-local or step-local shared services,
     /// adds the work this errand needs to do to a shared batch, and returns a function that can be called to
     /// force execution of the entire batch and return a task that will get this errand's result.
     /// Untyped version intended for internal use only.
-    abstract member PrepareUntyped : ServiceContext -> (CancellationToken -> obj Task)
+    abstract member PrepareUntyped : PlanContext -> (CancellationToken -> obj Task)
 
 /// An errand implements an activity that might run in batches or have a cacheable result.
 /// A SQL query, an HTTP request, or an FTP operation would all be good candidates to represent as errands.
@@ -38,10 +38,10 @@ type AsynchronousErrand<'a>() =
     inherit Errand<'a>()
     static member private BoxResult(task : 'a Task) =
         box task.Result
-    /// Given a `ServiceContext` with which to obtain execution-local or step-local shared services,
+    /// Given a `PlanContext` with which to obtain execution-local or step-local shared services,
     /// adds the work this errand needs to do to a shared batch, and returns a function that can be called to
     /// force execution of the entire batch and return a task that will get this errand's result.
-    abstract member Prepare : ServiceContext -> (CancellationToken -> 'a Task)
+    abstract member Prepare : PlanContext -> (CancellationToken -> 'a Task)
     override this.PrepareUntyped(cxt) : CancellationToken -> obj Task =
         let typed = this.Prepare(cxt)
         fun token ->
@@ -51,10 +51,10 @@ type AsynchronousErrand<'a>() =
 [<AbstractClass>]
 type SynchronousErrand<'a>() =
     inherit Errand<'a>()
-    /// Given a `ServiceContext` with which to obtain execution-local or step-local shared services,
+    /// Given a `PlanContext` with which to obtain execution-local or step-local shared services,
     /// adds the work this errand needs to do to a shared batch, and returns a function that can be called to
     /// force execution of the entire batch and return this errand's result.
-    abstract member Prepare : ServiceContext -> (unit -> 'a)
+    abstract member Prepare : PlanContext -> (unit -> 'a)
     override this.PrepareUntyped(cxt) : CancellationToken -> obj Task =
         let sync = this.Prepare(cxt)
         fun _ ->

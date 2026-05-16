@@ -10,7 +10,7 @@
     <PackageProjectUrl>https://github.com/rspeele/Rezoom</PackageProjectUrl>
     <PackageTags>rezoom monad resumption data</PackageTags>
     <PackageReleaseNotes>Drop TaskBuilder.fs (now built into FSharp.Core); multi-target netstandard2.0 and net8.0.</PackageReleaseNotes>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
   </PropertyGroup>
 

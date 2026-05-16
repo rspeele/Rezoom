@@ -23,14 +23,22 @@ object, and execute the accumulated batch in a single round-trip when "forced".
 
 ## How can errands share a batch?
 
-The `Prepare` method takes a `ServiceContext`. This allows resolving object
-instances that are local to either:
+The `Prepare` method takes a `PlanContext`. From this you can resolve a
+`PlanLocal<T>` instance — an object whose lifetime is scoped to one of:
 
 1. Step: the part of execution dedicated to executing the current pending
-   errands. You can build up a batch of queries in a step-local service.
+   errands. You'd typically use this for the batch object itself, since you
+   want every errand in the same step to add to the same batch.
 
 2. Execution: the execution of the whole plan. This is where you'd have
-   something like a database connection.
+   something like a database connection or other longer-lived resource.
+
+`PlanContext` also exposes the host's `System.IServiceProvider` via its
+`Services` property (or the typed convenience `cxt.TryGetService<T>()`) for
+pulling application-level dependencies — connection providers, logging
+configuration, anything the host wired into DI. `PlanLocal` is for Rezoom's
+own scope-managed coordination state; `IServiceProvider` is for everything
+else.
 
 # An example of subclassing `Errand`
 
@@ -101,9 +109,9 @@ type MyErrand(i : int) =
     // 1. add this errand's work to the step-local batch.
     // 2. return a function that can be evaluated to execute the batch
     //    and extract this errand's result.
-    override this.Prepare(context : ServiceContext) : unit -> string =
+    override this.Prepare(context : PlanContext) : unit -> string =
         // Get the batch for this execution step.
-        let batch = context.GetService<StepLocal<MyStepLocalBatch>>()
+        let batch = context.GetPlanLocal<StepLocal<MyStepLocalBatch>, _>()
         // Add ourselves to the batch, return the result getter.
         batch.AddToBatch(i)
 
