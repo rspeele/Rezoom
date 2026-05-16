@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <Authors>Robert Peele</Authors>
     <Company>Robert Peele</Company>
     <Copyright>Copyright Robert Peele 2017</Copyright>
@@ -10,7 +10,7 @@
     <PackageProjectUrl>https://github.com/rspeele/Rezoom</PackageProjectUrl>
     <PackageTags>rezoom monad resumption data</PackageTags>
     <PackageReleaseNotes>Drop TaskBuilder.fs (now built into FSharp.Core); multi-target netstandard2.0 and net8.0.</PackageReleaseNotes>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
   </PropertyGroup>
 
