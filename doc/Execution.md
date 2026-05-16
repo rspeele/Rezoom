@@ -6,20 +6,30 @@ Here is the simplest way to run a plan.
 
 ```fsharp
 open Rezoom
+open System
 open System.Threading.Tasks
 
-let run (plan : Plan<'a>) : Task<'a> =
-    let config = Execution.ExecutionConfig.Default
-    Execution.execute config plan
+let run (services : IServiceProvider) (plan : Plan<'a>) : Task<'a> =
+    PlanExecutor(services).Execute(plan)
 
 ```
 
+`services` is the host's `IServiceProvider`. In an ASP.NET Core app, register
+`PlanExecutor` and inject it directly:
+
+```csharp
+builder.Services.AddScoped<PlanExecutor>();
+```
+
+`PlanExecutor` wraps the underlying `Execution.execute` / `ExecutionConfig`
+machinery; reach for those directly only when you need to plug in a custom
+`ExecutionInstance` or `ExecutionStrategy`.
+
 You get a `System.Threading.Task`, which
 is the usual .NET asynchronous task representation. You can wait on the result
-of that task synchronously with `task.Result`, or convert it to an F# `Async`
-with `Async.AwaitTask`, or compose tasks together directly with a
-[TaskBuilder](https://github.com/rspeele/TaskBuilder.fs), which is included with
-Rezoom under the namespace `FSharp.Control.Tasks`.
+of that task synchronously with `task.Result`, convert it to an F# `Async` with
+`Async.AwaitTask`, or compose tasks together directly with F#'s built-in
+`task { }` computation expression (FSharp.Core 5.0+).
 
 ## Replaying failed plans
 
@@ -38,7 +48,6 @@ This example depends on the excellent [FsPickler](https://github.com/mbraceproje
 serialization library, which doesn't come with Rezoom but is easy to install from NuGet.
 
 ```fsharp
-open FSharp.Control.Tasks.ContextInsensitive
 open System.Threading
 open System.Threading.Tasks
 open Rezoom
@@ -57,9 +66,7 @@ type PlanResult<'a> =
    | Good of result : 'a
    | Bad of exception : exn * recording : byte array
 
-let config = ExecutionConfig.Default
-
-let runWithErrorsRecorded (plan : Plan<'a>) : Task<PlanResult'a>> =
+let runWithErrorsRecorded (services : System.IServiceProvider) (plan : Plan<'a>) : Task<PlanResult<'a>> =
     task {
         let mutable recording = None
         let save executionState serializeRecording =
@@ -67,7 +74,7 @@ let runWithErrorsRecorded (plan : Plan<'a>) : Task<PlanResult'a>> =
             | ExecutionFault ->
                  recording <- Some (serializeRecording()) // save result
             | ExecutionSuccess -> () // don't save on success
-        let config = ExecutionConfig.Default
+        let config = { ExecutionConfig.Default with Services = services }
         let strategy =
             RecordingExecutionStrategy.Create(defaultExecutionStrategy, serializer, save)
         try
@@ -77,7 +84,8 @@ let runWithErrorsRecorded (plan : Plan<'a>) : Task<PlanResult'a>> =
         | exn -> return Bad (exn, Option.get saved)
     }
 
-let replayRecordedError (recording : byte array) : Task<obj> =
+let replayRecordedError (services : System.IServiceProvider) (recording : byte array) : Task<obj> =
+    let config = { ExecutionConfig.Default with Services = services }
     replay config serializer recording
 
 ```

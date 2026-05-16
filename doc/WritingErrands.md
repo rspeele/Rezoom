@@ -24,7 +24,7 @@ object, and execute the accumulated batch in a single round-trip when "forced".
 ## How can errands share a batch?
 
 The `Prepare` method takes a `PlanContext`. From this you can resolve a
-`PlanLocal<T>` instance — an object whose lifetime is scoped to one of:
+`PlanLocal<T>` instance. That's an object whose lifetime is scoped to one of:
 
 1. Step: the part of execution dedicated to executing the current pending
    errands. You'd typically use this for the batch object itself, since you
@@ -35,7 +35,7 @@ The `Prepare` method takes a `PlanContext`. From this you can resolve a
 
 `PlanContext` also exposes the host's `System.IServiceProvider` via its
 `Services` property (or the typed convenience `cxt.TryGetService<T>()`) for
-pulling application-level dependencies — connection providers, logging
+pulling application-level dependencies: connection providers, logging
 configuration, anything the host wired into DI. `PlanLocal` is for Rezoom's
 own scope-managed coordination state; `IServiceProvider` is for everything
 else.
