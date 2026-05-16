@@ -15,16 +15,34 @@ type IServiceConfig =
 
 type ServiceConfig() =
     let configs = Dictionary<Type, obj>()
+    let fallbacks = ResizeArray<IServiceProvider>()
     member this.SetConfiguration(cfg : 'cfg) =
         let ty = typeof<'cfg>
         configs.[ty] <- box cfg
+        this
+    /// Add a standard .NET <see cref="System.IServiceProvider"/> as a fallback
+    /// resolver. Explicit <c>SetConfiguration</c> entries always win; anything not
+    /// found there is queried from the registered providers, MOST RECENTLY ADDED
+    /// FIRST. Adding several is fine and useful — e.g. a test override can be
+    /// pushed on top of an app-wide registration without rebuilding the config.
+    /// Lets ASP.NET Core consumers reuse their existing <c>services.AddSingleton</c>
+    /// registrations without juggling a separate Rezoom-only config layer.
+    member this.UseServiceProvider(provider : IServiceProvider) =
+        fallbacks.Add(provider)
         this
     interface IServiceConfig with
         member __.TryGetConfig<'cfg>() =
             let ty = typeof<'cfg>
             let succ, config = configs.TryGetValue(ty)
             if succ then Some (Unchecked.unbox config : 'cfg)
-            else None
+            else
+                let rec walk i =
+                    if i < 0 then None
+                    else
+                        match fallbacks.[i].GetService(ty) with
+                        | null -> walk (i - 1)
+                        | v -> Some (Unchecked.unbox v : 'cfg)
+                walk (fallbacks.Count - 1)
 
 [<AbstractClass>]
 type ServiceFactory<'a>() =
