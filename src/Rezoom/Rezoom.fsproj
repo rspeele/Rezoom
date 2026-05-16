@@ -9,9 +9,9 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/rspeele/Rezoom</PackageProjectUrl>
     <PackageTags>rezoom monad resumption data</PackageTags>
-    <PackageReleaseNotes>Modernized for the 2026 .NET ecosystem after a long dormancy. Now multi-targets netstandard2.0, net8.0, and net10.0. Drops the embedded TaskBuilder.fs in favor of FSharp.Core's built-in `task { }` (requires FSharp.Core 8.0.401+). Adds PlanExecutor for DI-friendly plan execution.</PackageReleaseNotes>
+    <PackageReleaseNotes>Modernized for the 2026 .NET ecosystem after a long dormancy. Multi-targets netstandard2.0, net8.0, and net10.0. Drops embedded TaskBuilder.fs in favor of FSharp.Core's built-in `task { }` (requires FSharp.Core 8.0.401+). Replaces the custom IServiceConfig with the standard IServiceProvider. Adds PlanExecutor for DI-friendly plan execution. ServiceContext renamed to PlanContext. Breaking changes for code that used the old service-config API.</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Version>1.4.0</Version>
+    <Version>2.0.0</Version>
     <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
   </PropertyGroup>
 
