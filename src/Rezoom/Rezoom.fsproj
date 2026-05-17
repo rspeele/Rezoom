@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Polyfills.fs" />
     <Compile Include="ExceptionTypes.fs" />
     <Compile Include="InternalUtilities.fs" />
     <Compile Include="PlanLocal.fs" />
@@ -33,8 +34,8 @@
     <Compile Include="Execution.fs" />
     <Compile Include="PlanExecutor.fs" />
     <Compile Include="Replay.fs" />
-    <Compile Include="CS.fs" />
     <Compile Include="Stdlib.fs" />
+    <Compile Include="CS.fs" />
   </ItemGroup>
 
   <ItemGroup>
