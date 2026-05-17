@@ -21,12 +21,12 @@
 
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Polyfills.fs" />
     <Compile Include="ExceptionTypes.fs" />
     <Compile Include="InternalUtilities.fs" />
     <Compile Include="PlanLocal.fs" />
     <Compile Include="CacheInfo.fs" />
     <Compile Include="Errand.fs" />
+    <Compile Include="Shims.fs" />
     <Compile Include="Plan.fs" />
     <Compile Include="PlanModule.fs" />
     <Compile Include="PlanBuilder.fs" />
